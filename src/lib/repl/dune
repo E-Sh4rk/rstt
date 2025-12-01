@@ -1,0 +1,7 @@
+
+(library
+ (name rstt_repl)
+ (public_name rstt-repl)
+ (libraries rstt rstt_utils str zarith))
+
+(include_subdirs unqualified)
