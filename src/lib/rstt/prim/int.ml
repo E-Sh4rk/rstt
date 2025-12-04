@@ -4,6 +4,8 @@ open Rstt_utils
 let tag = Tag.mk "int"
 
 let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
+let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
+                  |> Op.TagComp.as_atom |> snd
 
 type interval = int option * int option
 
@@ -21,15 +23,20 @@ let any_p =
   |> Descr.mk_interval |> Ty.mk_descr
 let any = add_tag any_p
 
+let destruct ty =
+  Ty.get_descr ty |> Descr.get_intervals |> Intervals.destruct
+  |> List.map (fun a ->
+            let i1, i2 = Intervals.Atom.get a in
+            i1 |> Option.map Z.to_int, i2 |> Option.map Z.to_int)
+
+
 let to_t _ _ comp =
   let (_, pty) = Op.TagComp.as_atom comp in
   if Ty.leq pty any_p && Ty.vars_toplevel pty |> VarSet.is_empty
-  then
-    Some (pty |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct
-          |> List.map (fun a ->
-            let i1, i2 = Intervals.Atom.get a in
-            i1 |> Option.map Z.to_int, i2 |> Option.map Z.to_int))
+  then Some (destruct pty)
   else None
+
+let destruct ty = proj_tag ty |> destruct
 
 open Prec
 let map _f v = v
