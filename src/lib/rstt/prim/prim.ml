@@ -38,8 +38,8 @@ let hat_opinfo = (hat_sym, hat_prec, hat_assoc)
 let map f = function TAny b -> TAny b | TComp (d,b) -> TComp (f d,b)
 let print prec assoc fmt t =
   match t with
-  | TAny true -> Format.fprintf fmt "prim"
-  | TAny false -> Prec.fprintf prec assoc hat_opinfo fmt "%sprim" hat_sym
+  | TAny true -> Format.fprintf fmt "any"
+  | TAny false -> Prec.fprintf prec assoc hat_opinfo fmt "%sany" hat_sym
   | TComp (d,true) -> Format.fprintf fmt "%a" (Printer.print_descr_ctx prec assoc) d
   | TComp (d,false) ->
     Prec.fprintf prec assoc hat_opinfo fmt "%s%a" hat_sym (Printer.print_descr_ctx hat_prec hat_assoc) d
