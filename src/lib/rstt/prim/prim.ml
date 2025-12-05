@@ -2,18 +2,18 @@ open Sstt
 
 module Int = Int
 module Chr = Chr
+module Dbl = Dbl
 module Raw = Raw
 module Clx = Clx
 module Lgl = Lgl
-module Str = Str
 (* module Na = Na *)
 
 let tag = Tag.mk "prim"
 let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
 let of_comp p = Ty.cup p Na.any |> add_tag
 let of_comp' p = add_tag p
-let any_p = [Int.any ; Chr.any ; Raw.any ; Clx.any ; Lgl.any ; Str.any ; Na.any] |> Ty.disj
-let any_p' = [Int.any ; Chr.any ; Raw.any ; Clx.any ; Lgl.any ; Str.any] |> Ty.disj
+let any_p = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any ; Na.any] |> Ty.disj
+let any_p' = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any] |> Ty.disj
 let na_p = Na.any
 let any = any_p |> add_tag
 let any' = any_p' |> add_tag

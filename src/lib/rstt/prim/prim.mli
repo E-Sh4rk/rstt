@@ -8,7 +8,7 @@ val of_comp' : Ty.t -> Ty.t
 
 module Int = Int
 module Chr = Chr
+module Dbl = Dbl
 module Raw = Raw
 module Clx = Clx
 module Lgl = Lgl
-module Str = Str
