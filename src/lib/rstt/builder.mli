@@ -30,4 +30,14 @@ module TIdMap : Map.S with type key=TId.t
 module TIdSet : Set.S with type elt=TId.t
 
 val build_prim : Var.t prim -> Ty.t
-val build : Ty.t TIdMap.t -> (Var.t,'r,TId.t) t -> Ty.t
+val build : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.t
+
+module StrMap : Map.S with type key=string
+type env = {
+             tids : TId.t StrMap.t ;
+             venv : Var.t StrMap.t ;
+             rvenv : RowVar.t StrMap.t ;
+             lenv : Label.t StrMap.t
+           }
+val resolve_prim : env -> string prim -> env * Var.t prim
+val resolve : env -> (string,string,string) t -> env * (Var.t,RowVar.t,TId.t) t

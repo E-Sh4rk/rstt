@@ -41,6 +41,8 @@ end
 module TIdMap = Map.Make(TId)
 module TIdSet = Set.Make(TId)
 
+(* === Construction of types === *)
+
 let rec build_prim t =
   match t with
   | PAny -> Prim.any
@@ -78,3 +80,88 @@ let rec build env t =
     let t, eqs = build env t, List.map (fun (_,v,t) -> v,build env t) eqs in
     let s = Ty.of_eqs eqs |> Subst.of_list1 in
     Subst.apply s t
+
+(* === Resolution of identifiers === *)
+
+module StrMap = Map.Make(String)
+type env = {
+             tids : TId.t StrMap.t ;
+             venv : Var.t StrMap.t ;
+             rvenv : RowVar.t StrMap.t ;
+             lenv : Label.t StrMap.t
+           }
+
+let tvar env str =
+  begin match StrMap.find_opt str env.venv with
+    | Some v -> v, env
+    | None ->
+      let v = Var.mk str in
+      let venv = StrMap.add str v env.venv in
+      let env = { env with venv } in
+      v, env
+  end
+
+(* let rvar env str =
+  begin match StrMap.find_opt str env.rvenv with
+    | Some v -> v, env
+    | None ->
+      let v = RowVar.mk str in
+      let rvenv = StrMap.add str v env.rvenv in
+      let env = { env with rvenv } in
+      v, env
+  end *)
+
+let tid env tids str =
+  begin match StrMap.find_opt str tids with
+    | Some v -> v
+    | None -> StrMap.find str env.tids
+  end
+
+let resolve_prim env t =
+  let env = ref env in
+  let rec aux t =
+    match t with
+    | PAny -> PAny
+    | PVar v ->
+      let v, env' = tvar !env v in
+      env := env' ; PVar v
+    | PLgl -> PLgl | PChr -> PChr | PInt -> PInt | PDbl -> PDbl | PClx -> PClx | PRaw -> PRaw
+    | PHat t -> PHat (aux t)
+    | PCup (t1, t2) -> PCup (aux t1, aux t2)
+    | PCap (t1, t2) -> PCap (aux t1, aux t2)
+    | PDiff (t1, t2) -> PDiff (aux t1, aux t2)
+    | PNeg t -> PNeg (aux t)
+    | PInt' (b1,b2) -> PInt' (b1,b2) | PChr' str -> PChr' str | PLgl' b -> PLgl' b
+  in
+  !env, aux t
+
+let resolve env t =
+  let env = ref env in
+  let rec aux tids t =
+    match t with
+    | TId str -> TId (tid !env tids str)
+    | TVar v ->
+      let v, env' = tvar !env v in
+      env := env' ; TVar v
+    | TAny -> TAny | TEmpty -> TEmpty | TNull -> TNull
+    | TCup (t1,t2) -> TCup (aux tids t1, aux tids t2)
+    | TCap (t1,t2) -> TCap (aux tids t1, aux tids t2)
+    | TDiff (t1,t2) -> TDiff (aux tids t1, aux tids t2)
+    | TNeg t -> TNeg (aux tids t)
+    | TVec p ->
+      let env', p = resolve_prim !env p in
+      env := env' ; TVec p
+    | TVecLen { len ; content } ->
+      let env', len = resolve_prim !env len in
+      let env', content = resolve_prim env' content in
+      env := env' ; TVecLen { len ; content }
+    | TVecCstLen (i, p) ->
+      let env', p = resolve_prim !env p in
+      env := env' ; TVecCstLen (i, p)
+    | TWhere (t, eqs) ->
+      let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in
+      let tids = List.fold_left (fun tids (x,v,_) -> StrMap.add x v tids) tids eqs in
+      let t, eqs = aux tids t, List.map (fun (_,v,t) -> v,aux tids t) eqs in
+      TWhere (t, eqs)
+  in
+  !env, aux StrMap.empty t
