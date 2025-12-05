@@ -9,7 +9,7 @@ let parse_id_or_builtin str =
     | "null" -> TNull
     | str -> TId str
 
-(* let parse_builtin_prim str =
+ let parse_builtin_prim str =
     match str with
     | "any" -> PAny
     | "lgl" -> PLgl
@@ -18,14 +18,17 @@ let parse_id_or_builtin str =
     | "dbl" -> PDbl
     | "clx" -> PClx
     | "raw" -> PRaw
-    | str -> raise (Errors.E_Parser ("Unknown primitive builtin "^str)) *)
+    | "tt" -> PLgl' true
+    | "ff" -> PLgl' false
+    | str -> raise (Errors.E_Parser ("Unknown primitive builtin "^str))
 %}
 
 %token<string> STRING
-%token<Z.t> INT
+%token<Z.t> INT, VLEN
 %token<string> ID, VARID, RVARID
 %token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON
+%token V HAT
 %token DPOINT QUESTION_MARK
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token LEQ GEQ
@@ -40,7 +43,7 @@ let parse_id_or_builtin str =
 %left TOR
 %left TAND
 %left TDIFF
-%nonassoc TNEG
+%nonassoc TNEG HAT
 
 %%
 
@@ -108,5 +111,21 @@ simple_ty:
 atomic_ty:
 | id=ID { parse_id_or_builtin id }
 | id=VARID { TVar (id) }
+| V LPAREN p=prim RPAREN { TVec p }
+| V LBRACKET l=prim RBRACKET LPAREN p=prim RPAREN { TVecLen {len=l ; content=p} }
+| i=VLEN LPAREN p=prim RPAREN { TVecCstLen (Z.to_int i, p) }
 // | id=RVARID { TRowVar (id) }
 | LPAREN ty=ty RPAREN { ty }
+
+prim:
+| id=ID { parse_builtin_prim id }
+| id=VARID { PVar (id) }
+| p1=prim TOR p2=prim { PCup (p1, p2) }
+| p1=prim TDIFF p2=prim { PDiff (p1, p2) }
+| p1=prim TAND p2=prim { PCap (p1, p2) }
+| TNEG p=prim { PNeg p }
+| HAT p=prim { PHat p }
+| str=STRING { PChr' str }
+| i=INT { let i = Z.to_int i in PInt' (Some i, Some i) }
+| LPAREN i1=INT? DPOINT i2=INT? RPAREN
+{ let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in PInt' (i1,i2) }

@@ -24,18 +24,20 @@ let varid = '\''['A'-'Z']['a'-'z''A'-'Z''0'-'9''_']*
 let rvarid = '`'['A'-'Z']['a'-'z''A'-'Z''0'-'9''_']*
 
 let int = ('+'|'-')? ['0'-'9']+ ('_'+ ['0'-'9']+)*
+let vlen = 'v'['0'-'9']+
 
 rule token = parse
 | "type" { TYPE } | "where" { WHERE } | "and" { AND }
 | int as i { INT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
+| "v"  { V } | vlen as s { VLEN (String.sub s 1 ((String.length s) - 1) |> Z.of_string) }
 | id as s  { ID s }
 | varid as s  { VARID s }
 | rvarid as s  { RVARID s }
 | newline  { Lexing.new_line lexbuf ; token lexbuf }
 | blank    { token lexbuf }
 | ";;" { BREAK } | ',' { COMMA } | ':' { COLON } | ';' { SEMICOLON } | '=' { EQUAL }
-| ".." { DPOINT } | "?" { QUESTION_MARK }
+| ".." { DPOINT } | "?" { QUESTION_MARK } | "^" { HAT }
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE }
 | "[" { LBRACKET } | "]" { RBRACKET }
 | "<=" { LEQ } | ">=" { GEQ }
