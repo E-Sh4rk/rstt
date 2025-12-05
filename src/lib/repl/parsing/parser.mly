@@ -1,23 +1,24 @@
 %{
 open Ast
+open Rstt.Builder
 
-let parse_atom_or_builtin str =
+let parse_id_or_builtin str =
     match str with
-    | "empty" -> TBuiltin TEmpty
-    | "any" -> TBuiltin TAny
-    | "tuple" -> TBuiltin TAnyTuple
-    | "arrow" -> TBuiltin TAnyArrow
-    | "record" -> TBuiltin TAnyRecord
-    | "enum" -> TBuiltin TAnyEnum
-    | "tag" -> TBuiltin TAnyTag
-    | "int" -> TBuiltin TAnyInt
-    | str ->
-      let regexp = Str.regexp {|^tuple\([0-9]*\)$|} in
-      if Str.string_match regexp str 0 then
-        let nb = Str.matched_group 1 str in
-        TBuiltin (TAnyTupleComp (int_of_string nb))
-      else
-        TNamed str
+    | "empty" -> TEmpty
+    | "any" -> TAny
+    | "null" -> TNull
+    | str -> TId str
+
+(* let parse_builtin_prim str =
+    match str with
+    | "any" -> PAny
+    | "lgl" -> PLgl
+    | "chr" -> PChr
+    | "int" -> PInt
+    | "dbl" -> PDbl
+    | "clx" -> PClx
+    | "raw" -> PRaw
+    | str -> raise (Errors.E_Parser ("Unknown primitive builtin "^str)) *)
 %}
 
 %token<string> STRING
@@ -76,8 +77,7 @@ tsubst:
 | LBRACKET bindings=separated_list(SEMICOLON, subst_binding) RBRACKET { bindings }
 
 %inline subst_binding:
-| v=VARID COLON ty=ty { (Poly, v, ty) }
-| v=RVARID COLON ty=ty { (PolyRow, v, ty) }
+| v=VARID COLON ty=ty { (v, ty) }
 
 tally:
 | LBRACKET cs=separated_nonempty_list(SEMICOLON, tally_binding) RBRACKET { cs }
@@ -96,30 +96,17 @@ ty:
 
 ty_norec:
 | ty=simple_ty { ty }
-| hd=simple_ty COMMA tl=separated_nonempty_list(COMMA, simple_ty) { TVarop (TTuple, hd::tl) }
 
 simple_ty:
 | ty=atomic_ty { ty }
-| ty1=simple_ty TOR ty2=simple_ty { TBinop (TCup, ty1, ty2) }
-| ty1=simple_ty TDIFF ty2=simple_ty { TBinop (TDiff, ty1, ty2) }
-| ty1=simple_ty TAND ty2=simple_ty { TBinop (TCap, ty1, ty2) }
-| TNEG ty=simple_ty { TUnop (TNeg, ty) }
-| ty=atomic_ty QUESTION_MARK { TUnop (TOption, ty) }
+| ty1=simple_ty TOR ty2=simple_ty { TCup (ty1, ty2) }
+| ty1=simple_ty TDIFF ty2=simple_ty { TDiff (ty1, ty2) }
+| ty1=simple_ty TAND ty2=simple_ty { TCap (ty1, ty2) }
+| TNEG ty=simple_ty { TNeg (ty) }
+// | ty=atomic_ty QUESTION_MARK { TOption (ty) }
 
 atomic_ty:
-| id=ID { parse_atom_or_builtin id }
-| id=VARID { TVar (Poly, id) }
-| id=RVARID { TVar (PolyRow, id) }
-| i=INT { TInterval (Some i, Some i) }
-| LPAREN i1=INT? DPOINT i2=INT? RPAREN { TInterval (i1,i2) }
-| LBRACE bindings=separated_list(SEMICOLON, record_field) tl=record_tail RBRACE { TRecord (bindings, tl) }
+| id=ID { parse_id_or_builtin id }
+| id=VARID { TVar (id) }
+// | id=RVARID { TRowVar (id) }
 | LPAREN ty=ty RPAREN { ty }
-| LPAREN RPAREN { TBuiltin (TAnyTupleComp 0) }
-
-%inline record_tail:
-| BREAK ty=ty { ty }
-| DPOINT { TUnop (TOption, TBuiltin TAny) }
-| { TUnop (TOption, TBuiltin TEmpty) }
-
-%inline record_field:
-| l=ID COLON ty=ty { (l, ty) }

@@ -90,26 +90,27 @@ type env = {
              rvenv : RowVar.t StrMap.t ;
              lenv : Label.t StrMap.t
            }
+let empty_env = { tids=StrMap.empty ; venv=StrMap.empty ; rvenv=StrMap.empty ; lenv=StrMap.empty }
 
 let tvar env str =
   begin match StrMap.find_opt str env.venv with
-    | Some v -> v, env
+    | Some v -> env, v
     | None ->
       let v = Var.mk str in
       let venv = StrMap.add str v env.venv in
       let env = { env with venv } in
-      v, env
+      env, v
   end
 
-(* let rvar env str =
+let rvar env str =
   begin match StrMap.find_opt str env.rvenv with
-    | Some v -> v, env
+    | Some v -> env, v
     | None ->
       let v = RowVar.mk str in
       let rvenv = StrMap.add str v env.rvenv in
       let env = { env with rvenv } in
-      v, env
-  end *)
+      env, v
+  end
 
 let tid env tids str =
   begin match StrMap.find_opt str tids with
@@ -123,7 +124,7 @@ let resolve_prim env t =
     match t with
     | PAny -> PAny
     | PVar v ->
-      let v, env' = tvar !env v in
+      let env', v = tvar !env v in
       env := env' ; PVar v
     | PLgl -> PLgl | PChr -> PChr | PInt -> PInt | PDbl -> PDbl | PClx -> PClx | PRaw -> PRaw
     | PHat t -> PHat (aux t)
@@ -141,7 +142,7 @@ let resolve env t =
     match t with
     | TId str -> TId (tid !env tids str)
     | TVar v ->
-      let v, env' = tvar !env v in
+      let env', v = tvar !env v in
       env := env' ; TVar v
     | TAny -> TAny | TEmpty -> TEmpty | TNull -> TNull
     | TCup (t1,t2) -> TCup (aux tids t1, aux tids t2)

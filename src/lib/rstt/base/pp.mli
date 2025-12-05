@@ -5,3 +5,5 @@ val printer_params : unit -> Printer.params
 val printer_params' : (Ty.t * string) list -> Printer.params
 val ty : Format.formatter -> Ty.t -> unit
 val ty' : (Ty.t * string) list -> Format.formatter -> Ty.t -> unit
+val subst : Format.formatter -> Subst.t -> unit
+val subst' : (Ty.t * string) list -> Format.formatter -> Subst.t -> unit

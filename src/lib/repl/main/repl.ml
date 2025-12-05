@@ -7,13 +7,15 @@ open Output
 type res = RBool of bool list | RTy of Ty.t list | RSubst of Subst.t list
 let empty_env = empty_env
 
-let poly_leq env t1 t2 =
-  let vars = VarSet.union (Ty.vars t1) (Ty.vars t2) in
-  if VarSet.subset vars env.mono then
-    Ty.leq t1 t2
-  else
-    Tallying.tally (MixVarSet.of_set env.mono env.rmono)
-      [ t1, t2 ] |> List.is_empty |> not
+let is_mono_var v =
+  String.starts_with ~prefix:"'_" (Var.name v)
+let is_mono_rvar v =
+  String.starts_with ~prefix:"`_" (RowVar.name v)
+
+let poly_leq t1 t2 =
+  let delta = MixVarSet.union (Ty.all_vars t1) (Ty.all_vars t2)
+    |> MixVarSet.filter is_mono_var is_mono_rvar in
+  Tallying.tally delta [ t1, t2 ] |> List.is_empty |> not
 
 let rec compute_expr env e =
   match e with
@@ -25,7 +27,11 @@ let rec compute_expr env e =
     RSubst [s], env
   | CTally cs ->
     let cs, env = build_tally env cs in
-    RSubst (Tallying.tally (MixVarSet.of_set env.mono env.rmono) cs), env
+    let vars_of_constr (a,b) = MixVarSet.union (Ty.all_vars a) (Ty.all_vars b) in
+    let delta = List.fold_left (fun acc c -> MixVarSet.union acc (vars_of_constr c))
+      MixVarSet.empty cs
+      |> MixVarSet.filter is_mono_var is_mono_rvar in
+    RSubst (Tallying.tally delta cs), env
   | CCat (e1, e2) ->
     let r1, env = compute_expr env e1 in
     let r2, env = compute_expr env e2 in
@@ -62,45 +68,39 @@ let rec compute_expr env e =
     in
     let aux (ty1, ty2) =
       match op with
-      | LEQ -> poly_leq env ty1 ty2
-      | GEQ -> poly_leq env ty2 ty1
-      | EQ -> poly_leq env ty1 ty2 && poly_leq env ty2 ty1
+      | LEQ -> poly_leq ty1 ty2
+      | GEQ -> poly_leq ty2 ty1
+      | EQ -> poly_leq ty1 ty2 && poly_leq ty2 ty1
     in
     RBool (cartesian_product tys1 tys2 |> List.map aux), env
 
-let params pparams env =
-  let aliases =
-    StrMap.bindings env.tenv |> List.map (fun (str, ty) -> (ty, str))
-  in
-  Printer.merge_params [ pparams ; { Printer.empty_params with aliases } ]
+let aliases _env = [] (* TODO *)
 
-let print_res pparams env fmt res =
+let print_res env fmt res =
   match res with
   | RBool bs ->
     let print_bool fmt b = Format.fprintf fmt "%b" b in
     Format.fprintf fmt "%a" (print_seq_space print_bool) bs
   | RTy tys ->
     Format.fprintf fmt "%a"
-      (print_seq_cut (Printer.print_ty (params pparams env))) tys
+      (print_seq_cut (Pp.ty' (aliases env))) tys
   | RSubst ss ->
     Format.fprintf fmt "%a"
-      (print_seq_cut (Printer.print_subst (params pparams env))) ss
+      (print_seq_cut (Pp.subst' (aliases env))) ss
 
-let treat_elt ?(pparams=Printer.empty_params) env elt =
+let treat_elt env elt =
   match elt with
   | DefineAlias (ids, e) ->
-    let r, env = compute_expr env e in
+    let r, _env = compute_expr env e in
     begin match r with
     | RTy tys when List.length tys = List.length ids ->
-      let tenv = List.fold_left (fun tenv (str,ty) -> StrMap.add str ty tenv)
-        env.tenv (List.combine ids tys) in
-      { env with tenv }
+      failwith "TODO"
     | _ -> failwith "Definitions must be types." 
     end
   | Expr (str, e) ->
     let r, env = compute_expr env e in
     begin match str with
-    | None -> print Msg "@[<v 0>%a@]" (print_res pparams env) r
-    | Some str -> print Msg "%s:@[<v 0> %a@]" str (print_res pparams env) r
+    | None -> print Msg "@[<v 0>%a@]" (print_res env) r
+    | Some str -> print Msg "%s:@[<v 0> %a@]" str (print_res env) r
     end ;
     env

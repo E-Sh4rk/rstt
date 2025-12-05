@@ -39,5 +39,8 @@ type env = {
              rvenv : RowVar.t StrMap.t ;
              lenv : Label.t StrMap.t
            }
+val empty_env : env
+val tvar : env -> string -> env * Var.t
+val rvar : env -> string -> env * RowVar.t
 val resolve_prim : env -> string prim -> env * Var.t prim
 val resolve : env -> (string,string,string) t -> env * (Var.t,RowVar.t,TId.t) t
