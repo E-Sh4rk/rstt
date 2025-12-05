@@ -8,7 +8,7 @@ type 'v prim =
 and ('v,'r,'i) t =
 | TId of 'i
 | TVar of 'v
-| TRowVar of 'r
+(* | TRowVar of 'r *)
 | TAny | TEmpty | TNull
 | TVec of 'v prim
 | TVecLen of {len:'v prim ; content:'v prim}
@@ -24,4 +24,25 @@ and ('v,'r,'i) t =
 (* | TOption of ('v,'r,'i) t *)
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
-(* let build t = *)
+module TId = struct
+  type t = int
+  let compare = Stdlib.Int.compare
+  let equal = Stdlib.Int.equal
+  let pp fmt t = Format.fprintf fmt "%d" t
+
+  let next_id =
+    let last = ref 0 in
+    fun () ->
+      last := !last + 1 ;
+      !last
+  let create () = next_id ()
+end
+
+module TIdMap = Map.Make(TId)
+module TIdSet = Set.Make(TId)
+
+(* let rec build env t =
+  match t with
+  | TId i -> TIdMap.find i env
+  | TVar v -> Ty.mk_var v
+  | TAny -> Ty.any | TEmpty -> Ty.empty *)
