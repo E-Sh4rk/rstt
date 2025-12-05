@@ -1,4 +1,3 @@
-open Rstt
 open Rstt_repl
 
 let%expect_test "tests" =

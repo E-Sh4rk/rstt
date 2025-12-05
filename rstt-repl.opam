@@ -5,8 +5,8 @@ synopsis: "R Set-Theoretic Types REPL library"
 maintainer: ["Mickael Laurent"]
 authors: ["Mickael Laurent"]
 license: "MIT"
-homepage: "https://github.com/E-Sh4rk/r-types"
-bug-reports: "https://github.com/E-Sh4rk/r-types/issues"
+homepage: "https://github.com/E-Sh4rk/rstt"
+bug-reports: "https://github.com/E-Sh4rk/rstt"
 depends: [
   "dune" {>= "3.17"}
   "rstt"
