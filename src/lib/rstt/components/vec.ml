@@ -2,10 +2,11 @@
   open Rstt_utils
 
   let tag = Tag.mk' "v" (Tag.Monotonic {preserves_cap=true; preserves_cup=false ; preserves_extremum=true})
+  let prim_int = Prim.of_comp' Prim.Int.any
   let mk ?(len=Ty.any) v =
-    let ty = Descr.mk_tuple [Ty.cap v Prim.any ; Ty.cap len Prim.Int.any] |> Ty.mk_descr in
+    let ty = Descr.mk_tuple [Ty.cap v Prim.any ; Ty.cap len prim_int] |> Ty.mk_descr in
     TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
-  let mk_len n v = mk ~len:(Prim.Int.int n) v
+  let mk_len n v = mk ~len:(Prim.Int.int n |> Prim.of_comp') v
   let any = mk Ty.any
 
   type 'a atom =
@@ -27,10 +28,10 @@
     Ty.get_descr ty |> Descr.get_tuples |> Tuples.get 2 |>
     Op.TupleComp.approx |> (function [a;b] -> a,b | _ -> assert false)
   let pair_to_atom (v,l) =
-    if Ty.leq Prim.Int.any l
+    if Ty.leq prim_int l
     then AnyLength v
     else
-      match Prim.Int.destruct l with
+      match Prim.destruct l |> Prim.Int.destruct with
       | [(Some n1, Some n2)] when Stdlib.Int.equal n1 n2 -> CstLength (n1, v)
       | _ -> VarLength (l, v)
   let extract_pairs dnf =

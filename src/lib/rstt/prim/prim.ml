@@ -10,6 +10,8 @@ module Lgl = Lgl
 
 let tag = Tag.mk "prim"
 let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
+let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
+                  |> Op.TagComp.as_atom |> snd
 let of_comp p = Ty.cup p Na.any |> add_tag
 let of_comp' p = add_tag p
 let any_p = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any ; Na.any] |> Ty.disj
@@ -17,6 +19,7 @@ let any_p' = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any] |> Ty.d
 let na_p = Na.any
 let any = any_p |> add_tag
 let any' = any_p' |> add_tag
+let destruct = proj_tag
 
 type t = | TAny of bool (* na *)
          | TComp of Printer.descr * bool (* na *)
