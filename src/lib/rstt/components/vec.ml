@@ -2,11 +2,11 @@
   open Rstt_utils
 
   let tag = Tag.mk' "v" (Tag.Monotonic {preserves_cap=true; preserves_cup=false ; preserves_extremum=true})
-  let prim_int = Prim.of_comp' Prim.Int.any
+  let prim_int = Prim.mk' Prim.Int.any
   let mk ?(len=Ty.any) v =
     let ty = Descr.mk_tuple [Ty.cap v Prim.any ; Ty.cap len prim_int] |> Ty.mk_descr in
     TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
-  let mk_len n v = mk ~len:(Prim.Int.int n |> Prim.of_comp') v
+  let mk_len n v = mk ~len:(Prim.Int.int n |> Prim.mk') v
   let any = mk Ty.any
 
   type 'a atom =

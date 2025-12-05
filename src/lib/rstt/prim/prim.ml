@@ -12,8 +12,8 @@ let tag = Tag.mk "prim"
 let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
 let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
                   |> Op.TagComp.as_atom |> snd
-let of_comp p = Ty.cup p Na.any |> add_tag
-let of_comp' p = add_tag p
+let mk p = Ty.cup p Na.any |> add_tag
+let mk' p = add_tag p
 let any_p = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any ; Na.any] |> Ty.disj
 let any_p' = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any] |> Ty.disj
 let na_p = Na.any
