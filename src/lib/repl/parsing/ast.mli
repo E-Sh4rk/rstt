@@ -37,7 +37,6 @@ type def =
   | DTag of string * tag_prop
 type elt =
   | DefineAlias of string list * expr
-  | Define of def list
   | Expr of string option * expr
 
 type program = elt list

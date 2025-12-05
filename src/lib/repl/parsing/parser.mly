@@ -22,20 +22,20 @@ let parse_atom_or_builtin str =
 
 %token<string> STRING
 %token<Z.t> INT
-%token<string> ID, TAGID, VARID, MVARID, RVARID, MRVARID
-%token DEFINE TYPE WHERE AND
+%token<string> ID, VARID, RVARID
+%token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON
 %token DPOINT QUESTION_MARK
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token LEQ GEQ
-%token TOR TAND TNEG TDIFF TARROW
+%token TOR TAND TNEG TDIFF
 %token EOF
 
 %start<program> program
 %start<ty> ty_main
 %start<command> command
 
-%right TARROW
+// %right TARROW
 %left TOR
 %left TAND
 %left TDIFF
@@ -51,18 +51,8 @@ command:
 | EOF { End }
 
 elt:
-| TYPE ids=separated_nonempty_list(SEMICOLON, ID) EQUAL e=expr_nocmp BREAK
-  { DefineAlias (ids, e) }
-| DEFINE defs=separated_nonempty_list(SEMICOLON, def) BREAK { Define defs }
+| TYPE ids=separated_nonempty_list(SEMICOLON, ID) EQUAL e=expr_nocmp BREAK { DefineAlias (ids, e) }
 | str=STRING? e=expr BREAK { Expr (str, e) }
-
-def:
-| id=ID { DAtom id }
-| id=TAGID p=prop RPAREN { DTag (id, p) }
-
-%inline prop:
-| EQUAL { PId } | LEQ { PMono } | TAND { PAnd } | TAND TAND { PAndEx }
-| TOR { POr } | TOR TOR { POrEx } | { PNone }
 
 expr:
 | e=expr_nocmp { e }
@@ -87,9 +77,7 @@ tsubst:
 
 %inline subst_binding:
 | v=VARID COLON ty=ty { (Poly, v, ty) }
-| v=MVARID COLON ty=ty { (Mono, v, ty) }
 | v=RVARID COLON ty=ty { (PolyRow, v, ty) }
-| v=MRVARID COLON ty=ty { (MonoRow, v, ty) }
 
 tally:
 | LBRACKET cs=separated_nonempty_list(SEMICOLON, tally_binding) RBRACKET { cs }
@@ -117,14 +105,11 @@ simple_ty:
 | ty1=simple_ty TAND ty2=simple_ty { TBinop (TCap, ty1, ty2) }
 | TNEG ty=simple_ty { TUnop (TNeg, ty) }
 | ty=atomic_ty QUESTION_MARK { TUnop (TOption, ty) }
-| ty1=simple_ty TARROW ty2=simple_ty { TBinop (TArrow, ty1, ty2) }
 
 atomic_ty:
 | id=ID { parse_atom_or_builtin id }
-| id=TAGID ty=ty RPAREN { TTag (id, Some ty) }
-| id=TAGID RPAREN { TTag (id, None) }
-| id=VARID { TVar (Poly, id) } | id=MVARID { TVar (Mono, id) }
-| id=RVARID { TVar (PolyRow, id) } | id=MRVARID { TVar (MonoRow, id) }
+| id=VARID { TVar (Poly, id) }
+| id=RVARID { TVar (PolyRow, id) }
 | i=INT { TInterval (Some i, Some i) }
 | LPAREN i1=INT? DPOINT i2=INT? RPAREN { TInterval (i1,i2) }
 | LBRACE bindings=separated_list(SEMICOLON, record_field) tl=record_tail RBRACE { TRecord (bindings, tl) }

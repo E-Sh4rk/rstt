@@ -20,23 +20,18 @@ let newline = ('\010' | '\013' | "\013\010")
 let blank   = [' ' '\009' '\012']
 
 let id = ['a'-'z''A'-'Z''_']['a'-'z''A'-'Z''0'-'9''_''\'']*
-let tagid = ['a'-'z''A'-'Z''_']['a'-'z''A'-'Z''0'-'9''_''\'']*'('
-
 let varid = '\''['A'-'Z']['a'-'z''A'-'Z''0'-'9''_']*
-let mvarid = '\''['a'-'z']['a'-'z''A'-'Z''0'-'9''_']*
 let rvarid = '`'['A'-'Z']['a'-'z''A'-'Z''0'-'9''_']*
-let mrvarid = '`'['a'-'z']['a'-'z''A'-'Z''0'-'9''_']*
 
 let int = ('+'|'-')? ['0'-'9']+ ('_'+ ['0'-'9']+)*
 
 rule token = parse
-| "type" { TYPE } | "define" { DEFINE } | "where" { WHERE } | "and" { AND }
+| "type" { TYPE } | "where" { WHERE } | "and" { AND }
 | int as i { INT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
 | id as s  { ID s }
-| tagid as s  { TAGID (String.sub s 0 (String.length s - 1)) }
-| varid as s  { VARID s } | mvarid as s  { MVARID s }
-| rvarid as s  { RVARID s } | mrvarid as s  { MRVARID s }
+| varid as s  { VARID s }
+| rvarid as s  { RVARID s }
 | newline  { Lexing.new_line lexbuf ; token lexbuf }
 | blank    { token lexbuf }
 | ";;" { BREAK } | ',' { COMMA } | ':' { COLON } | ';' { SEMICOLON } | '=' { EQUAL }
@@ -44,7 +39,7 @@ rule token = parse
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE }
 | "[" { LBRACKET } | "]" { RBRACKET }
 | "<=" { LEQ } | ">=" { GEQ }
-| '|' { TOR } | '&' { TAND } | '~' { TNEG } | '\\' { TDIFF } | "->" { TARROW }
+| '|' { TOR } | '&' { TAND } | '~' { TNEG } | '\\' { TDIFF }
 | eof { EOF }
 | _ { raise (Errors.E_Lexer ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
 
