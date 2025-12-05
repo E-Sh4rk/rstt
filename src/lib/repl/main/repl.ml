@@ -8,9 +8,11 @@ type res = RBool of bool list | RTy of Ty.t list | RSubst of Subst.t list
 let empty_env = empty_env
 
 let is_mono_var v =
-  String.starts_with ~prefix:"'_" (Var.name v)
+  let c = String.get (Var.name v) 1 in
+  Char.equal c (Char.lowercase_ascii c)
 let is_mono_rvar v =
-  String.starts_with ~prefix:"`_" (RowVar.name v)
+  let c = String.get (RowVar.name v) 1 in
+  Char.equal c (Char.lowercase_ascii c)
 
 let poly_leq t1 t2 =
   let delta = MixVarSet.union (Ty.all_vars t1) (Ty.all_vars t2)
