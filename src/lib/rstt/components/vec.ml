@@ -61,12 +61,16 @@
 
   let print prec assoc fmt t =
     let print_atom fmt = function
-      | VarLength (l,v) -> 
+      | VarLength (l,v) ->
+        let l = Utils.prune_printer_descr ~any:prim_int l in
+        let v = Utils.prune_printer_descr ~any:Prim.any v in
         Format.fprintf fmt "%a[%a](%a)" Tag.pp tag
           Printer.print_descr l Printer.print_descr v
-      | AnyLength v -> 
+      | AnyLength v ->
+        let v = Utils.prune_printer_descr ~any:Prim.any v in
         Format.fprintf fmt "%a(%a)" Tag.pp tag Printer.print_descr v
-      | CstLength (n,v) -> 
+      | CstLength (n,v) ->
+        let v = Utils.prune_printer_descr ~any:Prim.any v in
         Format.fprintf fmt "%a%i(%a)" Tag.pp tag n Printer.print_descr v
     in
     let print_atom_neg prec assoc fmt a =
