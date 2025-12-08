@@ -1,19 +1,19 @@
 open Sstt
 
-let tag = Tag.mk "dbl"
+module P = struct
+  let tag_name = "dbl"
+  let any = Descr.mk_enum (Enum.mk "_") |> Ty.mk_descr
 
-let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
-let any_p = Ty.any
-let any = add_tag any_p
+  type t = unit
+  let any_t = ()
+  let to_t _ _ ty =
+    if Ty.leq ty any then Some () else None
 
-let to_t _ _ comp =
-  let (_, pty) = Op.TagComp.as_atom comp in
-  if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty)
-  then Some ()
-  else None
+  let map _f v = v
+  let print _ _ fmt () = Format.fprintf fmt "dbl"
+end
 
-let map _f v = v
-let print _ _ fmt () = Format.fprintf fmt "dbl"
+include Na.MakeCompWithNa(P)
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}
