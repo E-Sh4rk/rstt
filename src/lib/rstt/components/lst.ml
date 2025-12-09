@@ -1,4 +1,5 @@
 open Sstt
+open Rstt_utils
 
 let tag = Tag.mk "lst"
 let mk pos named tail =
@@ -34,48 +35,42 @@ let record_to_atom { Records.Atom.bindings ; tail } =
 let extract t : Ty.F.t t =
   extract_records t |> List.map
     (fun (ps, ns) -> List.map record_to_atom ps, List.map record_to_atom ns)
-let to_t node ctx comp =
+let to_t ctx comp =
   let ty = Op.TagComp.as_atom comp |> snd in
-  if Ty.leq ty any_d then Some (extract ty |> map (node ctx))
+  if Ty.leq ty any_d then Some (extract ty |> map ctx.Printer.build_fop)
   else None
 
 let destruct ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd |> extract
 
-(* TODO *)
-
-(*
 let print prec assoc fmt t =
-  let print_atom fmt = function
-    | VarLength (l,v) ->
-      let l = Utils.prune_printer_descr ~any:prim_int l in
-      let v = Utils.prune_printer_descr ~any:Prim.any v in
-      Format.fprintf fmt "%a[%a](%a)" Tag.pp tag
-        Printer.print_descr l Printer.print_descr v
-    | AnyLength v ->
-      let v = Utils.prune_printer_descr ~any:Prim.any v in
-      Format.fprintf fmt "%a(%a)" Tag.pp tag Printer.print_descr v
-    | CstLength (n,v) ->
-      let v = Utils.prune_printer_descr ~any:Prim.any v in
-      Format.fprintf fmt "%a%i(%a)" Tag.pp tag n Printer.print_descr v
+  let print_pos_atom fmt (pos,named,tail) =
+    let print_field_ty = Printer.print_field_ctx Prec.min_prec Prec.NoAssoc in
+    let print_field fmt (name,ty) =
+      match name with
+      | None -> Format.fprintf fmt "%a" print_field_ty ty
+      | Some str -> Format.fprintf fmt "%s: %a" str print_field_ty ty
+    in
+    let pos, named = List.map (fun t -> None, t) pos, List.map (fun (str,t) -> Some str, t) named in
+    Format.fprintf fmt "{ %a ; %a }" (print_seq print_field ", ") (pos@named) print_field_ty tail
   in
-  let print_atom_neg prec assoc fmt a =
+  let print_neg_atom prec assoc fmt a =
     let sym,_,_ as opinfo = Prec.unop_info Neg in
-    Prec.fprintf prec assoc opinfo fmt "%s%a" sym print_atom a
+    Prec.fprintf prec assoc opinfo fmt "%s%a" sym print_pos_atom a
   in
-  let print_line prec assoc fmt (a, ns) =
-    if ns <> [] then
-      let sym,prec',_ as opinfo = Prec.varop_info Cap in
-      Prec.fprintf prec assoc opinfo fmt "%a%s%a"
-        print_atom a sym (print_seq (print_atom_neg prec' NoAssoc) sym) ns
-    else
-      Format.fprintf fmt "%a" print_atom a
+  let print_atom prec assoc fmt (pos,a) =
+    if pos then print_pos_atom fmt a
+    else print_neg_atom prec assoc fmt a
+  in
+  let print_line prec assoc fmt (ps, ns) =
+    let ps, ns = List.map (fun p -> true,p) ps, List.map (fun n -> false,n) ns in
+    let sym,prec',_ as opinfo = Prec.varop_info Cap in
+    Prec.fprintf prec assoc opinfo fmt "%a" (print_seq (print_atom prec' NoAssoc) sym) (ps@ns)
   in
   let sym,prec',_ as opinfo = Prec.varop_info Cup in
   Prec.fprintf prec assoc opinfo fmt "%a" (print_seq (print_line prec' NoAssoc) sym) t
 
 let printer_builder =
-  Printer.builder ~to_t:to_t ~map:map ~print:print
+  Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print
 let printer_params = Printer.{ aliases = []; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params
-*)
