@@ -45,10 +45,10 @@ let pair_to_atom (v,l) =
 let extract dnf =
   dnf |> extract_pairs |> List.map (fun (p, ns) -> pair_to_atom p, List.map pair_to_atom ns)
 
-let to_t node ctx comp =
+let to_t ctx comp =
   let dnf = TagComp.dnf comp in
   let ty = Descr.mk_tagcomp comp |> Ty.mk_descr in
-  if Ty.leq ty any then Some (extract dnf |> map (node ctx))
+  if Ty.leq ty any then Some (extract dnf |> map ctx.Printer.build)
   else None
 
 let destruct ty =

@@ -27,7 +27,7 @@ module P = struct
 
   type t = bool * string list
   let any_t = true, []
-  let to_t _ _ ty =
+  let to_t _ ty =
     try
       let pty = proj_tag ty in
       if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty) then

@@ -6,7 +6,7 @@ let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
 let any_p = Ty.any
 let any = add_tag any_p
 
-let to_t _ _ comp =
+let to_t _ comp =
   let (_, pty) = Op.TagComp.as_atom comp in
   if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty)
   then Some ()

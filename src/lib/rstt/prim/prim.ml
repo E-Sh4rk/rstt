@@ -19,13 +19,13 @@ let any' = any_p' |> add_tag
 let destruct = proj_tag
 
 type t = | TAny | TAny' | TComp of Printer.descr
-let to_t node ctx comp =
+let to_t ctx comp =
   let (_, pty) = Op.TagComp.as_atom comp in
   if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty)
   then
     if Ty.leq any_p pty then Some TAny
     else if Ty.equiv any_p' pty then Some TAny'
-    else Some (TComp (node ctx pty))
+    else Some (TComp (ctx.Printer.build pty))
   else None
 let map f = function TAny -> TAny | TAny' -> TAny' | TComp d -> TComp (f d)
 let print prec assoc fmt t =

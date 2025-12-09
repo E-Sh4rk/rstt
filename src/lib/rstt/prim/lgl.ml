@@ -10,7 +10,7 @@ module P = struct
   type t = { t : bool ; f : bool }
   let any_t = { t=true; f=true }
 
-  let to_t _ _ ty =
+  let to_t _ ty =
     if Ty.leq ty any then
       let t = Ty.leq tt ty in
       let f = Ty.leq ff ty in

@@ -6,7 +6,7 @@ module P = struct
 
   type t = unit
   let any_t = ()
-  let to_t _ _ ty =
+  let to_t _ ty =
     if Ty.leq ty any then Some () else None
 
   let map _f v = v

@@ -28,7 +28,7 @@ module P = struct
   type t = (int option * int option) list
   let any_t = [None,None]
 
-  let to_t _ _ ty =
+  let to_t _ ty =
     if Ty.leq ty any then Some (destruct ty) else None
 
   open Prec

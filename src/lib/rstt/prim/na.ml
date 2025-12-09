@@ -16,7 +16,7 @@ module type PrimComp = sig
     val any : Ty.t
     type t
     val any_t : t
-    val to_t : (ctx -> Ty.t -> descr) -> ctx -> Ty.t -> t option
+    val to_t : build_ctx -> Ty.t -> t option
     val map : (descr -> descr) -> t -> t
     val print : (int -> Prec.assoc -> Format.formatter -> t -> unit)
 end
@@ -42,13 +42,13 @@ module MakeCompWithNa(P:PrimComp) = struct
     else WithoutNa ty
 
   let map f = function Na -> Na | WithNa t -> WithNa (P.map f t) | WithoutNa t -> WithoutNa (P.map f t)
-  let to_t node ctx comp =
+  let to_t ctx comp =
     let (_, pty) = Op.TagComp.as_atom comp in
     if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty) then
       let pty, na = Ty.diff pty na_ty, Ty.leq na_ty pty in
       if Ty.is_empty pty then Some Na
-      else if na then P.to_t node ctx pty |> Option.map (fun t -> WithNa t)
-      else P.to_t node ctx pty |> Option.map (fun t -> WithoutNa t)
+      else if na then P.to_t ctx pty |> Option.map (fun t -> WithNa t)
+      else P.to_t ctx pty |> Option.map (fun t -> WithoutNa t)
     else
       None
 
