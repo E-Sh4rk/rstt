@@ -17,6 +17,9 @@ let any_p' = [Int.any' ; Chr.any' ; Dbl.any' ; Raw.any' ; Clx.any' ; Lgl.any'] |
 let any = any_p |> add_tag
 let any' = any_p' |> add_tag
 let destruct = proj_tag
+let partition =
+  [ Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any ]
+  |> List.map (fun ty -> mk ty)
 
 type t = | TAny | TAny' | TComp of Printer.descr
 let to_t ctx comp =

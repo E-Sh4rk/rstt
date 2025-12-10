@@ -6,3 +6,4 @@ module Vec = Vec
 module Lst = Lst
 module Null = Null
 module Pp = Pp
+module Simplify = Simplify

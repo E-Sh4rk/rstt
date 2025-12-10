@@ -59,6 +59,8 @@ let length ty =
 let content ty =
   let v ((v,_),_) = v in
   destruct ty |> List.map v |> Ty.disj
+let partition =
+  Prim.partition |> List.map mk
 
 let print prec assoc fmt t =
   let print_atom fmt = function

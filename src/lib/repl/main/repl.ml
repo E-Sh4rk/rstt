@@ -80,7 +80,7 @@ let simplify_res e =
   match e with
   | RBool bs -> RBool bs
   | RSubst ss -> RSubst ss
-  | RTy tys -> RTy (List.map Transform.simplify tys)
+  | RTy tys -> RTy (List.map Simplify.simplify tys)
 
 let aliases _env = [] (* TODO *)
 
