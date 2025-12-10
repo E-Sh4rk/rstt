@@ -19,6 +19,8 @@ let partition_vecs vd =
 let partition_vecs ty =
   Transform.transform partition_vecs ty
 
+let leq_partition ty1 ty2 = Ty.diff ty1 ty2 |> partition_vecs |> Ty.is_empty
+
 (* Type simplification *)
 let simplify_dnf to_ty dnf =
   let decorate_atom a =
@@ -95,8 +97,7 @@ let simpl_descr d =
     ) |>  Descr.of_components
 
 let simpl_vdescr = VDescr.map simpl_descr
-let normalize = Transform.transform simpl_vdescr
+let simplify = Transform.transform simpl_vdescr
 
-let leq_partition ty1 ty2 = Ty.diff ty1 ty2 |> normalize |> Ty.is_empty
 let simplify ty =
-  normalize ty |> Transform.simplify
+  simplify ty |> Transform.simplify
