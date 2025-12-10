@@ -48,20 +48,20 @@ let rec build_prim t =
   match t with
   | PAny -> Prim.any
   | PVar v -> Ty.cap Prim.any (Ty.mk_var v)
-  | PLgl -> Prim.mk Prim.Lgl.any
-  | PChr -> Prim.mk Prim.Chr.any
-  | PInt -> Prim.mk Prim.Int.any
-  | PDbl -> Prim.mk Prim.Dbl.any
-  | PClx -> Prim.mk Prim.Clx.any
-  | PRaw -> Prim.mk Prim.Raw.any
+  | PLgl -> Prim.Lgl.any
+  | PChr -> Prim.Chr.any
+  | PInt -> Prim.Int.any
+  | PDbl -> Prim.Dbl.any
+  | PClx -> Prim.Clx.any
+  | PRaw -> Prim.Raw.any
   | PHat t -> Ty.cap Prim.any' (build_prim t)
   | PCup (t1, t2) -> Ty.cup (build_prim t1) (build_prim t2)
   | PCap (t1, t2) -> Ty.cap (build_prim t1) (build_prim t2)
   | PDiff (t1, t2) -> Ty.diff (build_prim t1) (build_prim t2)
   | PNeg t -> Ty.diff Prim.any (build_prim t)
-  | PInt' (b1,b2) -> Prim.Int.interval (b1,b2) |> Prim.mk
-  | PChr' str -> Prim.Chr.str str |> Prim.mk
-  | PLgl' b -> Prim.Lgl.bool b |> Prim.mk
+  | PInt' (b1,b2) -> Prim.Int.interval (b1,b2)
+  | PChr' str -> Prim.Chr.str str
+  | PLgl' b -> Prim.Lgl.bool b
 
 let rec build env t =
   match t with

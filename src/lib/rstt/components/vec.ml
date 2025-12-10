@@ -2,12 +2,17 @@ open Sstt
 open Rstt_utils
 
 let tag = Tag.mk' "v" (Tag.Monotonic {preserves_cap=true; preserves_cup=false ; preserves_extremum=true})
-let prim_int = Prim.mk Prim.Int.any'
+let len_ty = Prim.Int.any'
+let content_tys = [ Prim.Chr.any ; Prim.Clx.any ; Prim.Dbl.any ; Prim.Int.any ; Prim.Lgl.any ; Prim.Raw.any ]
 let mk ?(len=Ty.any) v =
-  let ty = Descr.mk_tuple [Ty.cap v Prim.any ; Ty.cap len prim_int] |> Ty.mk_descr in
-  TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
-let mk_len n v = mk ~len:(Prim.Int.int' n |> Prim.mk) v
-(* let any_d = Descr.mk_tuple [ Prim.any ; prim_int ] |> Ty.mk_descr *)
+  let tys = content_tys |> List.map (fun cty ->
+      let ty = Descr.mk_tuple [Ty.cap v cty ; Ty.cap len len_ty] |> Ty.mk_descr in
+      TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
+    )
+  in
+  Ty.disj tys
+
+let mk_len n v = mk ~len:(Prim.Int.int' n) v
 let any = mk Ty.any
 
 type 'a atom =
@@ -36,10 +41,10 @@ let extract_pairs dnf =
     p, ns
   )
 let pair_to_atom (v,l) =
-  if Ty.leq prim_int l
+  if Ty.leq len_ty l
   then AnyLength v
   else
-    match Prim.destruct l |> Prim.Int.destruct with
+    match Prim.Int.destruct l with
     | false, [(Some n1, Some n2)] when Stdlib.Int.equal n1 n2 -> CstLength (n1, v)
     | _ -> VarLength (l, v)
 let extract dnf =
@@ -63,15 +68,12 @@ let content ty =
 let print prec assoc fmt t =
   let print_atom fmt = function
     | VarLength (l,v) ->
-      let l = Utils.prune_printer_descr ~any:prim_int l in
-      let v = Utils.prune_printer_descr ~any:Prim.any v in
+      let l = Utils.prune_printer_descr ~any:len_ty l in
       Format.fprintf fmt "%a[%a](%a)" Tag.pp tag
         Printer.print_descr l Printer.print_descr v
     | AnyLength v ->
-      let v = Utils.prune_printer_descr ~any:Prim.any v in
       Format.fprintf fmt "%a(%a)" Tag.pp tag Printer.print_descr v
     | CstLength (n,v) ->
-      let v = Utils.prune_printer_descr ~any:Prim.any v in
       Format.fprintf fmt "%a%i(%a)" Tag.pp tag n Printer.print_descr v
   in
   let print_atom_neg prec assoc fmt a =

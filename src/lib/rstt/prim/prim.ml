@@ -7,6 +7,10 @@ module Raw = Raw
 module Clx = Clx
 module Lgl = Lgl
 
+let any = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any] |> Ty.disj
+let any' = [Int.any' ; Chr.any' ; Dbl.any' ; Raw.any' ; Clx.any' ; Lgl.any'] |> Ty.disj
+
+(*
 let tag = Tag.mk "prim"
 let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
 let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
@@ -36,4 +40,4 @@ let print prec assoc fmt t =
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}
-let () = Pp.add_printer_param printer_params
+let () = Pp.add_printer_param printer_params *)
