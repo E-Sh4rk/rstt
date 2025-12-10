@@ -28,7 +28,7 @@ let parse_id_or_builtin str =
 %token<string> ID, VARID, RVARID
 %token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON
-%token V HAT
+%token V HAT ARROW
 %token DPOINT QUESTION_MARK
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token LEQ GEQ
@@ -39,7 +39,7 @@ let parse_id_or_builtin str =
 %start<ty> ty_main
 %start<command> command
 
-// %right TARROW
+%right ARROW
 %left TOR
 %left TAND
 %left TDIFF
@@ -99,6 +99,7 @@ ty:
 
 ty_norec:
 | ty=simple_ty { ty }
+| hd=simple_ty COMMA tl=separated_nonempty_list(COMMA, simple_ty) { TTuple (hd::tl) }
 
 simple_ty:
 | ty=atomic_ty { ty }
@@ -106,6 +107,7 @@ simple_ty:
 | ty1=simple_ty TDIFF ty2=simple_ty { TDiff (ty1, ty2) }
 | ty1=simple_ty TAND ty2=simple_ty { TCap (ty1, ty2) }
 | TNEG ty=simple_ty { TNeg (ty) }
+| ty1=simple_ty ARROW ty2=simple_ty { TArrow (ty1, ty2) }
 // | ty=atomic_ty QUESTION_MARK { TOption (ty) }
 
 atomic_ty:
@@ -116,6 +118,7 @@ atomic_ty:
 | i=VLEN LPAREN p=prim RPAREN { TVecCstLen (Z.to_int i, p) }
 // | id=RVARID { TRowVar (id) }
 | LPAREN ty=ty RPAREN { ty }
+| LPAREN RPAREN { TTuple [] }
 
 prim:
 | id=ID { parse_builtin_prim id }

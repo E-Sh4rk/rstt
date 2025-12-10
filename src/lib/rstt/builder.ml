@@ -14,14 +14,15 @@ and ('v,'r,'i) t =
 | TCap of ('v,'r,'i) t * ('v,'r,'i) t
 | TDiff of ('v,'r,'i) t * ('v,'r,'i) t
 | TNeg of ('v,'r,'i) t
+| TTuple of ('v,'r,'i) t list
+| TArrow of ('v,'r,'i) t * ('v,'r,'i) t
 | TVec of 'v prim
 | TVecLen of {len:'v prim ; content:'v prim}
 | TVecCstLen of int * 'v prim
-(* | TTuple of ('v,'r,'i) t list
+(*
 | TRecord of (string * ('v,'r,'i) t) list * ('v,'r,'i) t
 | TCons of ('v,'r,'i) t * ('v,'r,'i) t
-| TArrow of ('v,'r,'i) t * ('v,'r,'i) t *)
-(* | TOption of ('v,'r,'i) t *)
+| TOption of ('v,'r,'i) t *)
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
 module TId = struct
@@ -71,6 +72,8 @@ let rec build env t =
   | TCap (t1,t2) -> Ty.cap (build env t1) (build env t2)
   | TDiff (t1,t2) -> Ty.diff (build env t1) (build env t2)
   | TNeg t -> Ty.neg (build env t)
+  | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
+  | TArrow (t1,t2) -> Descr.mk_arrow (build env t1, build env t2) |> Ty.mk_descr
   | TVec p -> Vec.mk (build_prim p)
   | TVecLen { len ; content } -> Vec.mk ~len:(build_prim len) (build_prim content)
   | TVecCstLen (i, p) -> Vec.mk_len i (build_prim p)
@@ -149,6 +152,8 @@ let resolve env t =
     | TCap (t1,t2) -> TCap (aux tids t1, aux tids t2)
     | TDiff (t1,t2) -> TDiff (aux tids t1, aux tids t2)
     | TNeg t -> TNeg (aux tids t)
+    | TTuple lst -> TTuple (List.map (aux tids) lst)
+    | TArrow (t1,t2) -> TArrow (aux tids t1, aux tids t2)
     | TVec p ->
       let env', p = resolve_prim !env p in
       env := env' ; TVec p

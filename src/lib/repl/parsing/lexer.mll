@@ -37,7 +37,7 @@ rule token = parse
 | newline  { Lexing.new_line lexbuf ; token lexbuf }
 | blank    { token lexbuf }
 | ";;" { BREAK } | ',' { COMMA } | ':' { COLON } | ';' { SEMICOLON } | '=' { EQUAL }
-| ".." { DPOINT } | "?" { QUESTION_MARK } | "^" { HAT }
+| ".." { DPOINT } | "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW }
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE }
 | "[" { LBRACKET } | "]" { RBRACKET }
 | "<=" { LEQ } | ">=" { GEQ }
