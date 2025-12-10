@@ -76,6 +76,12 @@ let rec compute_expr env e =
     in
     RBool (cartesian_product tys1 tys2 |> List.map aux), env
 
+let simplify_res e =
+  match e with
+  | RBool bs -> RBool bs
+  | RSubst ss -> RSubst ss
+  | RTy tys -> RTy (List.map Transform.simplify tys)
+
 let aliases _env = [] (* TODO *)
 
 let print_res env fmt res =
@@ -94,6 +100,7 @@ let treat_elt env elt =
   match elt with
   | DefineAlias (ids, e) ->
     let r, _env = compute_expr env e in
+    let r = simplify_res r in
     begin match r with
     | RTy tys when List.length tys = List.length ids ->
       failwith "TODO"
@@ -101,6 +108,7 @@ let treat_elt env elt =
     end
   | Expr (str, e) ->
     let r, env = compute_expr env e in
+    let r = simplify_res r in
     begin match str with
     | None -> print Msg "@[<v 0>%a@]" (print_res env) r
     | Some str -> print Msg "%s:@[<v 0> %a@]" str (print_res env) r
