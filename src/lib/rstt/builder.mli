@@ -20,6 +20,12 @@ and ('v,'r,'i) t =
 | TVecCstLen of int * 'v prim
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
+val map_prim : ('v prim -> 'v prim)
+  -> 'v prim -> 'v prim
+val map : (('v,'r,'i) t -> ('v,'r,'i) t)
+  -> ('v prim -> 'v prim)
+  -> ('v,'r,'i) t -> ('v,'r,'i) t
+
 module TId : sig
   type t
   val compare : t -> t -> int

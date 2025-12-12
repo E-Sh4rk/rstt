@@ -25,6 +25,40 @@ and ('v,'r,'i) t =
 | TOption of ('v,'r,'i) t *)
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
+let map_prim f p =
+  let rec aux p =
+    let p = match p with
+    | PInt' _ | PChr' _ | PLgl' _
+    | PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny | PVar _ -> p
+    | PHat p -> PHat (aux p)
+    | PCup (p1, p2) -> PCup (aux p1, aux p2)
+    | PCap (p1, p2) -> PCap (aux p1, aux p2)
+    | PDiff (p1, p2) -> PDiff (aux p1, aux p2)
+    | PNeg p -> PNeg (aux p)
+    in
+    f p
+  in
+  aux p
+
+let map f fp t =
+  let rec aux t =
+    let t = match t with
+    | TId _ | TVar _ | TAny | TEmpty | TNull -> t
+    | TCup (t1, t2) -> TCup (aux t1, aux t2)
+    | TCap (t1, t2) -> TCap (aux t1, aux t2)
+    | TDiff (t1, t2) -> TDiff (aux t1, aux t2)
+    | TNeg t -> TNeg (aux t)
+    | TTuple ts -> TTuple (List.map aux ts)
+    | TArrow (t1, t2) -> TArrow (aux t1, aux t2)
+    | TVec p -> TVec (map_prim fp p)
+    | TVecLen { len ; content } -> TVecLen { len ; content=map_prim fp content }
+    | TVecCstLen (i, p) -> TVecCstLen (i, map_prim fp p)
+    | TWhere (t, lst) -> TWhere (aux t, lst |> List.map (fun (id, t) -> id, aux t))
+    in
+    f t
+  in
+  aux t
+
 module TId = struct
   type t = int
   let compare = Stdlib.Int.compare
