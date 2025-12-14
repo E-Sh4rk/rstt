@@ -29,7 +29,7 @@ let parse_id_or_builtin str =
 %token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON
 %token V HAT ARROW
-%token DPOINT QUESTION_MARK
+%token DPOINT QUESTION_MARK EXCL_MARK
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token LEQ GEQ
 %token TOR TAND TNEG TDIFF
@@ -71,6 +71,7 @@ simpl_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
 | ty=ty { CTy ty }
+| EXCL_MARK LBRACKET e=expr_nocmp RBRACKET { CNorm e }
 | LBRACKET e=expr_nocmp RBRACKET { e }
 
 op:

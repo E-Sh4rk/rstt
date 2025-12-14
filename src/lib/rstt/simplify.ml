@@ -27,4 +27,4 @@ let partition_vecs ty =
 
 let leq_partition ty1 ty2 = Ty.diff ty1 ty2 |> partition_vecs |> Ty.is_empty
 
-let simplify = Transform.simplify ~normalize:partition_vecs
+(* let simplify = Transform.simplify ~normalize:partition_vecs *)

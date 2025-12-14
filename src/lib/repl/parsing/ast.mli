@@ -11,6 +11,7 @@ type expr =
   | CCat of expr * expr
   | CApp of expr * expr
   | CCmp of expr * op * expr
+  | CNorm of expr
 type elt =
   | DefineAlias of string list * expr
   | Expr of string option * expr

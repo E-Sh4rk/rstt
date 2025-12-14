@@ -75,12 +75,21 @@ let rec compute_expr env e =
       | EQ -> poly_leq ty1 ty2 && poly_leq ty2 ty1
     in
     RBool (cartesian_product tys1 tys2 |> List.map aux), env
+  | CNorm e ->
+    let r, env = compute_expr env e in
+    let r =
+      match r with
+      | RBool bs -> RBool bs
+      | RSubst ss -> RSubst ss
+      | RTy tys -> RTy (List.map Simplify.partition_vecs tys)
+    in
+    r, env
 
 let simplify_res e =
   match e with
   | RBool bs -> RBool bs
   | RSubst ss -> RSubst ss
-  | RTy tys -> RTy (List.map Simplify.simplify tys)
+  | RTy tys -> RTy (List.map Transform.simplify tys)
 
 let aliases _env = [] (* TODO *)
 
