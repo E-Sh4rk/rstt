@@ -15,6 +15,7 @@ and ('v,'r,'i) t =
 | TDiff of ('v,'r,'i) t * ('v,'r,'i) t
 | TNeg of ('v,'r,'i) t
 | TTuple of ('v,'r,'i) t list
+| TPrim of 'v prim
 | TArrow of ('v,'r,'i) t * ('v,'r,'i) t
 | TVec of 'v prim
 | TVecLen of {len:'v prim ; content:'v prim}
@@ -49,6 +50,7 @@ let map f fp t =
     | TDiff (t1, t2) -> TDiff (aux t1, aux t2)
     | TNeg t -> TNeg (aux t)
     | TTuple ts -> TTuple (List.map aux ts)
+    | TPrim p -> TPrim (fp p)
     | TArrow (t1, t2) -> TArrow (aux t1, aux t2)
     | TVec p -> TVec (map_prim fp p)
     | TVecLen { len ; content } -> TVecLen { len ; content=map_prim fp content }
@@ -107,6 +109,7 @@ let rec build env t =
   | TDiff (t1,t2) -> Ty.diff (build env t1) (build env t2)
   | TNeg t -> Ty.neg (build env t)
   | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
+  | TPrim p -> build_prim p
   | TArrow (t1,t2) -> Descr.mk_arrow (build env t1, build env t2) |> Ty.mk_descr
   | TVec p -> Vec.mk (build_prim p)
   | TVecLen { len ; content } -> Vec.mk ~len:(build_prim len) (build_prim content)
@@ -187,6 +190,9 @@ let resolve env t =
     | TDiff (t1,t2) -> TDiff (aux tids t1, aux tids t2)
     | TNeg t -> TNeg (aux tids t)
     | TTuple lst -> TTuple (List.map (aux tids) lst)
+    | TPrim p ->
+      let env', p = resolve_prim !env p in
+      env := env' ; TPrim p
     | TArrow (t1,t2) -> TArrow (aux tids t1, aux tids t2)
     | TVec p ->
       let env', p = resolve_prim !env p in

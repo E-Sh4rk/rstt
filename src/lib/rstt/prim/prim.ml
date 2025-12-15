@@ -11,11 +11,11 @@ let tag = Tag.mk "prim"
 let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
 let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
                   |> Op.TagComp.as_atom |> snd
-let mk p = add_tag p
 let any_p = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any] |> Ty.disj
 let any_p' = [Int.any' ; Chr.any' ; Dbl.any' ; Raw.any' ; Clx.any' ; Lgl.any'] |> Ty.disj
 let any = any_p |> add_tag
 let any' = any_p' |> add_tag
+let mk p = add_tag (Ty.cap p any)
 let destruct = proj_tag
 let partition =
   [ Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any ]

@@ -30,7 +30,7 @@ rule token = parse
 | "type" { TYPE } | "where" { WHERE } | "and" { AND }
 | int as i { INT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
-| "v"  { V } | vlen as s { VLEN (String.sub s 1 ((String.length s) - 1) |> Z.of_string) }
+| "v"  { V } | "p"  { P } | vlen as s { VLEN (String.sub s 1 ((String.length s) - 1) |> Z.of_string) }
 | id as s  { ID s }
 | varid as s  { VARID s }
 | rvarid as s  { RVARID s }

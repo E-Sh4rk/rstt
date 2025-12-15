@@ -28,7 +28,7 @@ let parse_id_or_builtin str =
 %token<string> ID, VARID, RVARID
 %token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON
-%token V HAT ARROW
+%token V P HAT ARROW
 %token DPOINT QUESTION_MARK EXCL_MARK
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token LEQ GEQ
@@ -115,6 +115,7 @@ atomic_ty:
 | id=ID { parse_id_or_builtin id }
 | id=VARID { TVar (id) }
 | V LPAREN p=prim RPAREN { TVec p }
+| P LPAREN p=prim RPAREN { TPrim p }
 | V LBRACKET l=prim RBRACKET LPAREN p=prim RPAREN { TVecLen {len=l ; content=p} }
 | i=VLEN LPAREN p=prim RPAREN { TVecCstLen (Z.to_int i, p) }
 // | id=RVARID { TRowVar (id) }
