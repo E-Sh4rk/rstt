@@ -7,6 +7,7 @@ let parse_id_or_builtin str =
     | "empty" -> TEmpty
     | "any" -> TAny
     | "null" -> TNull
+    | "list" -> TList([],[],TOption TAny)
     | str -> TId str
 
  let parse_builtin_prim str =
@@ -21,13 +22,29 @@ let parse_id_or_builtin str =
     | "tt" -> PLgl' true
     | "ff" -> PLgl' false
     | str -> raise (Errors.E_Parser ("Unknown primitive builtin "^str))
+
+ type field = Pos of ty | Named of string * ty
+ let split_list_fields lst =
+    let rec pos_fields lst =
+        match lst with
+        | (Pos t)::lst ->
+            let ts, lst = pos_fields lst in
+            (t::ts), lst
+        | _ -> [], lst
+    in
+    let pos, lst = pos_fields lst in
+    let named = lst |> List.map (function
+        | Named (str,t) -> (str,t)
+        | _ -> raise (Errors.E_Parser ("Unexpected positional field"))
+    ) in
+    pos, named
 %}
 
 %token<string> STRING
 %token<Z.t> INT, VLEN
 %token<string> ID, VARID, RVARID
 %token TYPE WHERE AND
-%token BREAK COMMA EQUAL COLON SEMICOLON
+%token BREAK COMMA EQUAL COLON SEMICOLON DOUBLEPOINT
 %token V P HAT ARROW
 %token DPOINT QUESTION_MARK EXCL_MARK
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
@@ -109,18 +126,29 @@ simple_ty:
 | ty1=simple_ty TAND ty2=simple_ty { TCap (ty1, ty2) }
 | TNEG ty=simple_ty { TNeg (ty) }
 | ty1=simple_ty ARROW ty2=simple_ty { TArrow (ty1, ty2) }
-// | ty=atomic_ty QUESTION_MARK { TOption (ty) }
+| ty=atomic_ty QUESTION_MARK { TOption (ty) }
 
 atomic_ty:
 | id=ID { parse_id_or_builtin id }
 | id=VARID { TVar (id) }
+| id=RVARID { TRowVar (id) }
 | V LPAREN p=prim RPAREN { TVec p }
 | P LPAREN p=prim RPAREN { TPrim p }
 | V LBRACKET l=prim RBRACKET LPAREN p=prim RPAREN { TVecLen {len=l ; content=p} }
 | i=VLEN LPAREN p=prim RPAREN { TVecCstLen (Z.to_int i, p) }
-// | id=RVARID { TRowVar (id) }
+| LBRACE fs=separated_list(COMMA, ty_field) tail=optional_tail RBRACE
+{ let pos,named = split_list_fields fs in TList (pos,named,tail) }
 | LPAREN ty=ty RPAREN { ty }
 | LPAREN RPAREN { TTuple [] }
+
+%inline optional_tail:
+| SEMICOLON ty=ty { TOption ty }
+| DOUBLEPOINT { TOption TAny }
+| { TOption TEmpty }
+
+%inline ty_field:
+| id=ID COLON t=simple_ty { Named (id, t) }
+| t=simple_ty { Pos t }
 
 prim:
 | id=ID { parse_builtin_prim id }

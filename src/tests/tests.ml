@@ -13,4 +13,9 @@ let%expect_test "tests" =
   in
   Output.with_basic_output Format.std_formatter
     (fun () -> test Repl.empty_env) () ;
-  [%expect {| |}]
+  [%expect {|
+    base: any
+    base: v(any)
+    norm1: any
+    norm2: v(lgl) | v(clx) | v(raw) | v(dbl) | v(chr) | v(int)
+    |}]

@@ -1,0 +1,6 @@
+
+"base" any ;;
+"base" v(any) ;;
+
+"norm1" ![ any ] ;;
+"norm2" ![ v(any) ] ;;

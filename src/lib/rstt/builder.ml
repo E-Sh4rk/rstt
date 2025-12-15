@@ -8,7 +8,7 @@ type 'v prim =
 and ('v,'r,'i) t =
 | TId of 'i
 | TVar of 'v
-(* | TRowVar of 'r *)
+| TRowVar of 'r
 | TAny | TEmpty | TNull
 | TCup of ('v,'r,'i) t * ('v,'r,'i) t
 | TCap of ('v,'r,'i) t * ('v,'r,'i) t
@@ -20,10 +20,8 @@ and ('v,'r,'i) t =
 | TVec of 'v prim
 | TVecLen of {len:'v prim ; content:'v prim}
 | TVecCstLen of int * 'v prim
-(*
-| TRecord of (string * ('v,'r,'i) t) list * ('v,'r,'i) t
-| TCons of ('v,'r,'i) t * ('v,'r,'i) t
-| TOption of ('v,'r,'i) t *)
+| TList of (('v,'r,'i) t list) * (string * ('v,'r,'i) t) list * ('v,'r,'i) t
+| TOption of ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
 let map_prim f p =
@@ -44,7 +42,7 @@ let map_prim f p =
 let map f fp t =
   let rec aux t =
     let t = match t with
-    | TId _ | TVar _ | TAny | TEmpty | TNull -> t
+    | TId _ | TVar _ | TRowVar _ | TAny | TEmpty | TNull -> t
     | TCup (t1, t2) -> TCup (aux t1, aux t2)
     | TCap (t1, t2) -> TCap (aux t1, aux t2)
     | TDiff (t1, t2) -> TDiff (aux t1, aux t2)
@@ -55,6 +53,9 @@ let map f fp t =
     | TVec p -> TVec (map_prim fp p)
     | TVecLen { len ; content } -> TVecLen { len ; content=map_prim fp content }
     | TVecCstLen (i, p) -> TVecCstLen (i, map_prim fp p)
+    | TList (pos,named,tl) ->
+      TList (List.map aux pos, List.map (fun (str,t) -> str, aux t) named, aux tl)
+    | TOption t -> TOption (aux t)
     | TWhere (t, lst) -> TWhere (aux t, lst |> List.map (fun (id, t) -> id, aux t))
     in
     f t
@@ -103,6 +104,7 @@ let rec build env t =
   match t with
   | TId i -> TIdMap.find i env
   | TVar v -> Ty.mk_var v
+  | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TAny -> Ty.any | TEmpty -> Ty.empty | TNull -> Null.any
   | TCup (t1,t2) -> Ty.cup (build env t1) (build env t2)
   | TCap (t1,t2) -> Ty.cap (build env t1) (build env t2)
@@ -114,12 +116,37 @@ let rec build env t =
   | TVec p -> Vec.mk (build_prim p)
   | TVecLen { len ; content } -> Vec.mk ~len:(build_prim len) (build_prim content)
   | TVecCstLen (i, p) -> Vec.mk_len i (build_prim p)
+  | TList (pos, named, tl) ->
+    let pos = List.map (build_field env) pos in
+    let named = List.map (fun (str, t) -> str, build_field env t) named in
+    let tl = build_field env tl in
+    Lst.mk pos named tl
+  | TOption _ -> invalid_arg "Unexpected optional type"
   | TWhere (t, eqs) ->
     let eqs = eqs |> List.map (fun (x,t) -> x,Var.mk "_",t) in
     let env = List.fold_left (fun env (x,v,_) -> TIdMap.add x (Ty.mk_var v) env) env eqs in
     let t, eqs = build env t, List.map (fun (_,v,t) -> v,build env t) eqs in
     let s = Ty.of_eqs eqs |> Subst.of_list1 in
     Subst.apply s t
+
+and build_field env t =
+  match t with
+  | TOption t -> Ty.F.mk_descr (build env t |> Ty.O.optional)
+  | TRowVar v -> Ty.F.mk_var v
+  | TCup (t1,t2) ->
+      let t1 = build_field env t1 in
+      let t2 = build_field env t2 in
+      Ty.F.cup t1 t2
+  | TCap (t1,t2) ->
+      let t1 = build_field env t1 in
+      let t2 = build_field env t2 in
+      Ty.F.cap t1 t2
+  | TDiff (t1,t2) ->
+      let t1 = build_field env t1 in
+      let t2 = build_field env t2 in
+      Ty.F.diff t1 t2
+  | TNeg t -> Ty.F.neg (build_field env t)
+  | t -> Ty.F.mk_descr (build env t |> Ty.O.required)
 
 (* === Resolution of identifiers === *)
 
@@ -184,6 +211,9 @@ let resolve env t =
     | TVar v ->
       let env', v = tvar !env v in
       env := env' ; TVar v
+    | TRowVar v ->
+      let env', v = rvar !env v in
+      env := env' ; TRowVar v
     | TAny -> TAny | TEmpty -> TEmpty | TNull -> TNull
     | TCup (t1,t2) -> TCup (aux tids t1, aux tids t2)
     | TCap (t1,t2) -> TCap (aux tids t1, aux tids t2)
@@ -204,6 +234,12 @@ let resolve env t =
     | TVecCstLen (i, p) ->
       let env', p = resolve_prim !env p in
       env := env' ; TVecCstLen (i, p)
+    | TList (pos, named, tl) ->
+      let pos = List.map (aux tids) pos in
+      let named = List.map (fun (str,t) -> str, aux tids t) named in
+      let tl = aux tids tl in
+      TList (pos, named, tl)
+    | TOption t -> TOption (aux tids t)
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in
       let tids = List.fold_left (fun tids (x,v,_) -> StrMap.add x v tids) tids eqs in

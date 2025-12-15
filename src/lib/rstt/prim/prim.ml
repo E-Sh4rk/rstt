@@ -15,7 +15,7 @@ let any_p = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any] |> Ty.di
 let any_p' = [Int.any' ; Chr.any' ; Dbl.any' ; Raw.any' ; Clx.any' ; Lgl.any'] |> Ty.disj
 let any = any_p |> add_tag
 let any' = any_p' |> add_tag
-let mk p = add_tag (Ty.cap p any)
+let mk p = add_tag (Ty.cap p any_p)
 let destruct = proj_tag
 let partition =
   [ Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any ]
