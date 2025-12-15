@@ -2,14 +2,16 @@ open Sstt
 open Rstt_utils
 
 let tag = Tag.mk "lst"
+let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
+let proj_tag ty =
+  ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
 let mk pos named tail =
   let pos = List.mapi (fun i ty -> Labels.pos i, ty) pos in
   let named = List.map (fun (str,ty) -> Labels.named str, ty) named in
   let bindings = LabelMap.of_list (pos@named) in
-  let ty = { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr in
-  TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
+  { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let any_d = Records.any |> Descr.mk_records |> Ty.mk_descr
-let any = mk [] [] Ty.F.any
+let any = add_tag any_d
 
 type 'a atom = 'a list * (string * 'a) list * 'a
 type 'a line = 'a atom list * 'a atom list
@@ -40,8 +42,7 @@ let to_t ctx comp =
   if Ty.leq ty any_d then Some (extract ty |> map ctx.Printer.build_fop)
   else None
 
-let destruct ty =
-  ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd |> extract
+let destruct ty = proj_tag ty |> extract
 
 let print prec assoc fmt t =
   let print_pos_atom fmt (pos,named,tail) =
