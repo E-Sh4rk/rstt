@@ -1,8 +1,13 @@
 open Sstt
 
 val tag : Tag.t
-type 'a t = { pos : 'a list ; pos_named : (string * 'a) list ; tl : 'a ; named : (string * 'a) list }
+type 'a atom = { pos : 'a list ; pos_named : (string * 'a) list ; tl : 'a ; named : (string * 'a) list }
+type 'a atom' = { pos' : 'a list ; tl' : 'a ; named' : (string * 'a) list }
+type 'a t =
+| DefSite of 'a atom list
+| CallSite of 'a atom' list
 
 val any : Ty.t
-val mk : Ty.F.t t -> Ty.t
+val mk : Ty.F.t atom -> Ty.t
+val mk' : Ty.F.t atom' -> Ty.t
 val destruct : Ty.t -> Ty.F.t t
