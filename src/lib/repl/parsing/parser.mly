@@ -47,7 +47,7 @@ let parse_id_or_builtin str =
 %token BREAK COMMA EQUAL COLON SEMICOLON DOUBLEPOINT
 %token V P HAT ARROW
 %token DPOINT QUESTION_MARK EXCL_MARK
-%token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
+%token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
 %token LEQ GEQ
 %token TOR TAND TNEG TDIFF
 %token EOF
@@ -117,7 +117,7 @@ ty:
 
 ty_norec:
 | ty=simple_ty { ty }
-| hd=simple_ty COMMA tl=separated_nonempty_list(COMMA, simple_ty) { TTuple (hd::tl) }
+// | hd=simple_ty COMMA tl=separated_nonempty_list(COMMA, simple_ty) { TTuple (hd::tl) }
 
 simple_ty:
 | ty=atomic_ty { ty }
@@ -138,17 +138,28 @@ atomic_ty:
 | i=VLEN LPAREN p=prim RPAREN { TVecCstLen (Z.to_int i, p) }
 | LBRACE fs=separated_list(COMMA, ty_field) tail=optional_tail RBRACE
 { let pos,named = split_list_fields fs in TList (pos,named,tail) }
+| ALPAREN fs=separated_list(COMMA, ty_field) tl=optional_tail RPAREN
+{ let pos',named' = split_list_fields fs in TArg' { tl'=tl ; pos' ; named' } }
+| LPAREN pos_named=separated_list(COMMA, ty_named_field) tl=optional_tail named=optional_named RPAREN
+{ TArg { tl ; pos=[] ; pos_named ; named } }
 | LPAREN ty=ty RPAREN { ty }
-| LPAREN RPAREN { TTuple [] }
+// | LPAREN RPAREN { TTuple [] }
 
 %inline optional_tail:
 | SEMICOLON ty=ty { TOption ty }
 | DOUBLEPOINT { TOption TAny }
 | { TOption TEmpty }
 
+%inline optional_named:
+| SEMICOLON named=separated_list(COMMA, ty_named_field) { named }
+| { [] }
+
 %inline ty_field:
 | id=ID COLON t=simple_ty { Named (id, t) }
 | t=simple_ty { Pos t }
+
+%inline ty_named_field:
+| id=ID COLON t=simple_ty { (id, t) }
 
 prim:
 | id=ID { parse_builtin_prim id }

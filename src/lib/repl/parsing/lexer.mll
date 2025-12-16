@@ -39,7 +39,7 @@ rule token = parse
 | ";;" { BREAK } | ',' { COMMA } | ':' { COLON } | ';' { SEMICOLON } | '=' { EQUAL }
 | ".." { DOUBLEPOINT }
 | ".." { DPOINT } | "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW } | "!" { EXCL_MARK }
-| '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE }
+| '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE } | "@(" { ALPAREN }
 | "[" { LBRACKET } | "]" { RBRACKET }
 | "<=" { LEQ } | ">=" { GEQ }
 | '|' { TOR } | '&' { TAND } | '~' { TNEG } | '\\' { TDIFF }
