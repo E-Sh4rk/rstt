@@ -117,7 +117,7 @@ ty:
 
 ty_norec:
 | ty=simple_ty { ty }
-// | hd=simple_ty COMMA tl=separated_nonempty_list(COMMA, simple_ty) { TTuple (hd::tl) }
+| hd=simple_ty COMMA tl=separated_nonempty_list(COMMA, simple_ty) { TTuple (hd::tl) }
 
 simple_ty:
 | ty=atomic_ty { ty }
