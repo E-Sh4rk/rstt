@@ -20,7 +20,9 @@ and ('v,'r,'i) t =
 | TVec of 'v prim
 | TVecLen of {len:'v prim ; content:'v prim}
 | TVecCstLen of int * 'v prim
-| TList of (('v,'r,'i) t list) * (string * ('v,'r,'i) t) list * ('v,'r,'i) t
+| TList of ('v,'r,'i) t Lst.atom
+| TArg of ('v,'r,'i) t Arg.atom
+| TArg' of ('v,'r,'i) t Arg.atom'
 | TOption of ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 

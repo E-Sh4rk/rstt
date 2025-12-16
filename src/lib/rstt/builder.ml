@@ -20,7 +20,9 @@ and ('v,'r,'i) t =
 | TVec of 'v prim
 | TVecLen of {len:'v prim ; content:'v prim}
 | TVecCstLen of int * 'v prim
-| TList of (('v,'r,'i) t list) * (string * ('v,'r,'i) t) list * ('v,'r,'i) t
+| TList of ('v,'r,'i) t Lst.atom
+| TArg of ('v,'r,'i) t Arg.atom
+| TArg' of ('v,'r,'i) t Arg.atom'
 | TOption of ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
@@ -53,8 +55,9 @@ let map f fp t =
     | TVec p -> TVec (map_prim fp p)
     | TVecLen { len ; content } -> TVecLen { len ; content=map_prim fp content }
     | TVecCstLen (i, p) -> TVecCstLen (i, map_prim fp p)
-    | TList (pos,named,tl) ->
-      TList (List.map aux pos, List.map (fun (str,t) -> str, aux t) named, aux tl)
+    | TList a -> TList (Lst.map_atom aux a)
+    | TArg a -> TArg (Arg.map_atom aux a)
+    | TArg' a -> TArg' (Arg.map_atom' aux a)
     | TOption t -> TOption (aux t)
     | TWhere (t, lst) -> TWhere (aux t, lst |> List.map (fun (id, t) -> id, aux t))
     in
@@ -116,11 +119,9 @@ let rec build env t =
   | TVec p -> Vec.mk (build_prim p)
   | TVecLen { len ; content } -> Vec.mk ~len:(build_prim len) (build_prim content)
   | TVecCstLen (i, p) -> Vec.mk_len i (build_prim p)
-  | TList (pos, named, tl) ->
-    let pos = List.map (build_field env) pos in
-    let named = List.map (fun (str, t) -> str, build_field env t) named in
-    let tl = build_field env tl in
-    Lst.mk pos named tl
+  | TList a -> Lst.map_atom (build_field env) a |> Lst.mk
+  | TArg a -> Arg.map_atom (build_field env) a |> Arg.mk
+  | TArg' a -> Arg.map_atom' (build_field env) a |> Arg.mk'
   | TOption _ -> invalid_arg "Unexpected optional type"
   | TWhere (t, eqs) ->
     let eqs = eqs |> List.map (fun (x,t) -> x,Var.mk "_",t) in
@@ -234,11 +235,9 @@ let resolve env t =
     | TVecCstLen (i, p) ->
       let env', p = resolve_prim !env p in
       env := env' ; TVecCstLen (i, p)
-    | TList (pos, named, tl) ->
-      let pos = List.map (aux tids) pos in
-      let named = List.map (fun (str,t) -> str, aux tids t) named in
-      let tl = aux tids tl in
-      TList (pos, named, tl)
+    | TList a -> TList (Lst.map_atom (aux tids) a)
+    | TArg a -> TArg (Arg.map_atom (aux tids) a)
+    | TArg' a -> TArg' (Arg.map_atom' (aux tids) a)
     | TOption t -> TOption (aux tids t)
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in

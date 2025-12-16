@@ -5,17 +5,18 @@ let tag = Tag.mk "lst"
 let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
 let proj_tag ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
-let mk pos named tail =
+
+type 'a atom = 'a list * (string * 'a) list * 'a
+type 'a line = 'a atom list * 'a atom list
+type 'a t = 'a line list
+
+let mk (pos, named, tail) =
   let pos = List.mapi (fun i ty -> Labels.pos i, ty) pos in
   let named = List.map (fun (str,ty) -> Labels.named str, ty) named in
   let bindings = LabelMap.of_list (pos@named) in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let any_d = Records.any |> Descr.mk_records |> Ty.mk_descr
 let any = add_tag any_d
-
-type 'a atom = 'a list * (string * 'a) list * 'a
-type 'a line = 'a atom list * 'a atom list
-type 'a t = 'a line list
 
 let map_atom f (pos,named,tl) = List.map f pos, List.map (fun (str,t) -> str, f t) named, f tl
 let map_line f (ps,ns) = (List.map (map_atom f) ps, List.map (map_atom f) ns)
