@@ -146,7 +146,7 @@ atomic_ty:
 // | LPAREN RPAREN { TTuple [] }
 
 %inline optional_tail:
-| SEMICOLON ty=ty { TOption ty }
+| SEMICOLON ty=ty { ty }
 | DOUBLEPOINT { TOption TAny }
 | { TOption TEmpty }
 

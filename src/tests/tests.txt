@@ -4,3 +4,14 @@
 
 "norm1" ![ any ] ;;
 "norm2" ![ v(any) ] ;;
+
+"lst1" { ; v(int)? } <= { ..} ;;
+"lst2" { v(42), a:v(43) ; v(int)? } <= { ; v(int)?} ;;
+"lst3" { v(42), a:v(ff) ; v(int)? } <= { ; v(int)?} ;;
+"lst4" { v(42), a:v(ff) ; v(int)? } <= { a:v(ff) ; v(int)?} ;;
+
+"arg1" @(v(int), v(lgl)) <= (a:v(int), b:v(lgl)) ;;
+"arg2" @(v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
+"arg3" @(a:v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
+"arg4" @(a:v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
+"arg5" [ @(v('A), b:'B, c:'C, d:'D) <= (a:v(int), b:v(lgl) ; `R ; c:v(int)) ] ;;
