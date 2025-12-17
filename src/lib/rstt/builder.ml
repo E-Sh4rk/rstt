@@ -7,6 +7,7 @@ type 'v prim =
 
 and ('v,'r,'i) t =
 | TId of 'i
+| TTy of Ty.t
 | TVar of 'v
 | TRowVar of 'r
 | TAny | TEmpty | TNull
@@ -44,7 +45,7 @@ let map_prim f p =
 let map f fp t =
   let rec aux t =
     let t = match t with
-    | TId _ | TVar _ | TRowVar _ | TAny | TEmpty | TNull -> t
+    | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TNull -> t
     | TCup (t1, t2) -> TCup (aux t1, aux t2)
     | TCap (t1, t2) -> TCap (aux t1, aux t2)
     | TDiff (t1, t2) -> TDiff (aux t1, aux t2)
@@ -106,6 +107,7 @@ let rec build_prim t =
 let rec build env t =
   match t with
   | TId i -> TIdMap.find i env
+  | TTy ty -> ty
   | TVar v -> Ty.mk_var v
   | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TAny -> Ty.any | TEmpty -> Ty.empty | TNull -> Null.any
@@ -209,6 +211,7 @@ let resolve env t =
   let rec aux tids t =
     match t with
     | TId str -> TId (tid !env tids str)
+    | TTy ty -> TTy ty
     | TVar v ->
       let env', v = tvar !env v in
       env := env' ; TVar v

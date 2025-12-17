@@ -7,6 +7,7 @@ type 'v prim =
 
 and ('v,'r,'i) t =
 | TId of 'i
+| TTy of Ty.t
 | TVar of 'v
 | TRowVar of 'r
 | TAny | TEmpty | TNull
