@@ -16,6 +16,8 @@ let%expect_test "tests" =
   [%expect {|
     base: any
     base: v(any)
+    tuple1: tuple0
+    tuple2: true
     norm1: any
     norm2: v(lgl) | v(clx) | v(raw) | v(dbl) | v(chr) | v(int)
     lst1: true

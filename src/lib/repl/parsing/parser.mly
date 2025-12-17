@@ -45,7 +45,7 @@ let parse_id_or_builtin str =
 %token<string> ID, VARID, RVARID
 %token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON DOUBLEPOINT
-%token V P HAT ARROW
+%token V P T HAT ARROW
 %token DPOINT QUESTION_MARK EXCL_MARK
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
 %token LEQ GEQ
@@ -117,7 +117,6 @@ ty:
 
 ty_norec:
 | ty=simple_ty { ty }
-| hd=simple_ty COMMA tl=separated_nonempty_list(COMMA, simple_ty) { TTuple (hd::tl) }
 
 simple_ty:
 | ty=atomic_ty { ty }
@@ -143,7 +142,8 @@ atomic_ty:
 | LPAREN pos_named=separated_list(COMMA, ty_named_field) tl=optional_tail named=optional_named RPAREN
 { TArg { tl ; pos=[] ; pos_named ; named } }
 | LPAREN ty=ty RPAREN { ty }
-// | LPAREN RPAREN { TTuple [] }
+| T LPAREN lst=separated_list(COMMA, simple_ty) RPAREN
+{ TTuple lst }
 
 %inline optional_tail:
 | SEMICOLON ty=ty { ty }

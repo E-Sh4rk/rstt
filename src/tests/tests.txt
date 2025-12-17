@@ -2,6 +2,9 @@
 "base" any ;;
 "base" v(any) ;;
 
+"tuple1" t() ;;
+"tuple2" t(p(42),p(73)) <= t(p(int),p(int)) ;;
+
 "norm1" ![ any ] ;;
 "norm2" ![ v(any) ] ;;
 
