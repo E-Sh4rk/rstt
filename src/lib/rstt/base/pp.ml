@@ -7,7 +7,7 @@ let printer_params' aliases = { !pparams with aliases=aliases }
 let printer_params () = printer_params' []
 
 let ty' aliases fmt t =
-  let t = Printer.get ~inline:true (printer_params' aliases) t in
+  let t = Printer.get ~factorize:false (printer_params' aliases) t in
   Printer.print fmt t
 let ty = ty' []
 let subst' aliases fmt s =
