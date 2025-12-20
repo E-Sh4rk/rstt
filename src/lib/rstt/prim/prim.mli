@@ -6,6 +6,7 @@ val any' : Ty.t
 val mk : Ty.t -> Ty.t
 val destruct : Ty.t -> Ty.t
 val partition : Ty.t list
+val is_simple : Ty.t -> bool
 
 module Int = Int
 module Chr = Chr

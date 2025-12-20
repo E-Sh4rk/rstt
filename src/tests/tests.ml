@@ -29,7 +29,7 @@ let%expect_test "tests" =
     arg3: true
     arg4: true
     arg5: [
-            'A: 'A \ any
+            'A: 'A \ prim
           ]
          [
            'A: 'A \ (chr | clx | dbl | lgl | raw) ;

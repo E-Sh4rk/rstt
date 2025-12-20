@@ -17,9 +17,16 @@ let any = any_p |> add_tag
 let any' = any_p' |> add_tag
 let mk p = add_tag (Ty.cap p any_p)
 let destruct = proj_tag
-let partition =
+let comps =
   [ Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any ]
   |> List.map (fun ty -> mk ty)
+let comps' =
+  [ Int.any' ; Chr.any' ; Dbl.any' ; Raw.any' ; Clx.any' ; Lgl.any' ]
+  |> List.map (fun ty -> mk ty)
+let partition = comps
+let is_simple ty =
+  comps |> List.exists (Ty.equiv ty) ||
+  comps' |> List.exists (Ty.equiv ty)
 
 type t = | TAny | TAny' | TComp of Printer.descr
 let to_t ctx comp =
@@ -33,8 +40,8 @@ let to_t ctx comp =
 let map f = function TAny -> TAny | TAny' -> TAny' | TComp d -> TComp (f d)
 let print prec assoc fmt t =
   match t with
-  | TAny -> Format.fprintf fmt "any"
-  | TAny' -> Prec.fprintf prec assoc Na.Hat.opinfo fmt "^any"
+  | TAny -> Format.fprintf fmt "prim"
+  | TAny' -> Prec.fprintf prec assoc Na.Hat.opinfo fmt "^prim"
   | TComp d -> Format.fprintf fmt "%a" (Printer.print_descr_ctx prec assoc) d
 
 let printer_builder = Printer.builder ~to_t ~map ~print
