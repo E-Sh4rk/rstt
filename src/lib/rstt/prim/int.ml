@@ -1,5 +1,4 @@
 open Sstt
-open Rstt_utils
 
 module P = struct
   let tag_name = "int"
@@ -33,7 +32,7 @@ module P = struct
 
   open Prec
   let map _f v = v
-  let print_interval fmt (lb,ub) =
+  let print_interval _prec _assoc fmt (lb,ub) =
     match lb, ub with
     | None, None -> Format.fprintf fmt "int"
     | Some lb, Some ub when Stdlib.Int.equal lb ub ->
@@ -45,13 +44,7 @@ module P = struct
     | Some lb, None ->
       Format.fprintf fmt "(%i..)" lb
   let print prec assoc fmt ints =
-    match ints with
-    | [] -> assert false
-    | [i] -> Format.fprintf fmt "%a" print_interval i
-    | ints ->
-      let sym,_,_ as opinfo = varop_info Cup in
-      (* TODO: no paren if only one *)
-      fprintf prec assoc opinfo fmt "%a" (print_seq print_interval sym) ints
+    print_cup print_interval prec assoc fmt ints
 end
 
 include Na.MakeCompWithNa(P)

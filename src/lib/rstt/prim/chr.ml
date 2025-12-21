@@ -1,5 +1,4 @@
 open Sstt
-open Rstt_utils
 
 module P = struct
   let tag = Tag.mk "str"
@@ -42,16 +41,8 @@ module P = struct
   open Prec
 
   let print prec assoc fmt (pos, strs) =
-    let pp_string fmt str = Format.fprintf fmt "%S" str in
-    let aux prec assoc fmt strs =
-      match strs with
-      | [] -> assert false
-      | [elt] -> Format.fprintf fmt "%a" pp_string elt
-      | strs ->
-        let sym,_,_ as opinfo = varop_info Cup in
-        (* TODO: no paren if only one *)
-        fprintf prec assoc opinfo fmt "%a" (print_seq pp_string sym) strs
-    in
+    let pp_string _prec _assoc fmt str = Format.fprintf fmt "%S" str in
+    let aux = print_cup pp_string in
     if pos then
       aux prec assoc fmt strs
     else if not pos && strs = [] then

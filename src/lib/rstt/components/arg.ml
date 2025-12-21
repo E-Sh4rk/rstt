@@ -113,7 +113,7 @@ let print prec assoc fmt t =
       | None -> Format.fprintf fmt "%a" print_field_ty ty
       | Some str -> Format.fprintf fmt "%s: %a" str print_field_ty ty
   in
-  let print_atom fmt a =
+  let print_atom _prec _assoc fmt a =
     let pos, named, pos_named =
       List.map (fun t -> None, t) a.pos,
       List.map (fun (str,t) -> Some str, t) a.named,
@@ -121,18 +121,16 @@ let print prec assoc fmt t =
     Format.fprintf fmt "( %a ; %a ; %a )" (print_seq print_field ", ")
       (pos@pos_named) print_field_ty a.tl (print_seq print_field ", ") named
   in
-  let print_atom' fmt a =
+  let print_atom' _prec _assoc fmt a =
     let pos, named =
       List.map (fun t -> None, t) a.pos',
       List.map (fun (str,t) -> Some str, t) a.named' in
     Format.fprintf fmt "@( %a ; %a ; %a )" (print_seq print_field ", ")
       pos print_field_ty a.tl' (print_seq print_field ", ") named
   in
-  (* TODO: no paren if only one *)
-  let sym,_,_ as opinfo = Prec.varop_info Cup in
   match t with
-  | DefSite t -> Prec.fprintf prec assoc opinfo fmt "%a" (print_seq print_atom sym) t
-  | CallSite t -> Prec.fprintf prec assoc opinfo fmt "%a" (print_seq print_atom' sym) t
+  | DefSite t -> Prec.print_cup print_atom prec assoc fmt t
+  | CallSite t -> Prec.print_cup print_atom' prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print

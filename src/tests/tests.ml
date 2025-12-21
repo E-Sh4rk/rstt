@@ -33,8 +33,8 @@ let%expect_test "tests" =
           ]
          [
            'A: 'A \ (chr | clx | dbl | lgl | raw) ;
-           'B: 'B & (lgl) ;
-           'C: 'C & (int) ;
+           'B: 'B & lgl ;
+           'C: 'C & int ;
            `R: { _npos : `R ; 0 : `R ; b : `R ; c : `R ; d : 'D | `R ;; empty? | `R }
          ]
          [

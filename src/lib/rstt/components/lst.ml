@@ -46,7 +46,7 @@ let to_t ctx comp =
 let destruct ty = proj_tag ty |> extract
 
 let print prec assoc fmt t =
-  let print_pos_atom fmt (pos,named,tail) =
+  let print_atom _prec _assoc fmt (pos,named,tail) =
     let print_field_ty = Printer.print_field_ctx Prec.min_prec Prec.NoAssoc in
     let print_field fmt (name,ty) =
       match name with
@@ -56,23 +56,7 @@ let print prec assoc fmt t =
     let pos, named = List.map (fun t -> None, t) pos, List.map (fun (str,t) -> Some str, t) named in
     Format.fprintf fmt "{ %a ; %a }" (print_seq print_field ", ") (pos@named) print_field_ty tail
   in
-  let print_neg_atom prec assoc fmt a =
-    let sym,_,_ as opinfo = Prec.unop_info Neg in
-    Prec.fprintf prec assoc opinfo fmt "%s%a" sym print_pos_atom a
-  in
-  let print_atom prec assoc fmt (pos,a) =
-    if pos then print_pos_atom fmt a
-    else print_neg_atom prec assoc fmt a
-  in
-  let print_line prec assoc fmt (ps, ns) =
-    let ps, ns = List.map (fun p -> true,p) ps, List.map (fun n -> false,n) ns in
-    let sym,prec',_ as opinfo = Prec.varop_info Cap in
-    (* TODO: no paren if only one *)
-    Prec.fprintf prec assoc opinfo fmt "%a" (print_seq (print_atom prec' NoAssoc) sym) (ps@ns)
-  in
-  (* TODO: no paren if only one *)
-  let sym,prec',_ as opinfo = Prec.varop_info Cup in
-  Prec.fprintf prec assoc opinfo fmt "%a" (print_seq (print_line prec' NoAssoc) sym) t
+  Prec.print_non_empty_dnf ~any:"{ ..}" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print

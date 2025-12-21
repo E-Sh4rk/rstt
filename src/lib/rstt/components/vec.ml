@@ -1,5 +1,4 @@
 open Sstt
-open Rstt_utils
 
 let tag = Tag.mk' "v" (Tag.Monotonic {preserves_cap=true; preserves_cup=false ; preserves_extremum=true})
 let prim_int = Prim.mk Prim.Int.any'
@@ -75,7 +74,7 @@ let print prec assoc fmt t =
       let v = Utils.prune_printer_descr ~any:Prim.any v in
       Format.fprintf fmt "%a%s(%a)" Tag.pp tag len Printer.print_descr v
   in
-  let print_atom fmt = function
+  let print_atom _prec _assoc fmt = function
     | VarLength (l,v) ->
       let l = Utils.prune_printer_descr ~any:prim_int l in
       Format.fprintf fmt "%a[%a]" (print_v ~len:None) v Printer.print_descr l
@@ -84,21 +83,8 @@ let print prec assoc fmt t =
     | CstLength (n,v) ->
       Format.fprintf fmt "%a" (print_v ~len:(Some n)) v
   in
-  let print_atom_neg prec assoc fmt a =
-    let sym,_,_ as opinfo = Prec.unop_info Neg in
-    Prec.fprintf prec assoc opinfo fmt "%s%a" sym print_atom a
-  in
-  let print_line prec assoc fmt (a, ns) =
-    if ns <> [] then
-      let sym,prec',_ as opinfo = Prec.varop_info Cap in
-      Prec.fprintf prec assoc opinfo fmt "%a%s%a"
-        print_atom a sym (print_seq (print_atom_neg prec' NoAssoc) sym) ns
-    else
-      Format.fprintf fmt "%a" print_atom a
-  in
-  let sym,prec',_ as opinfo = Prec.varop_info Cup in
-  (* TODO: no paren if only one *)
-  Prec.fprintf prec assoc opinfo fmt "%a" (print_seq (print_line prec' NoAssoc) sym) t
+  let t = t |> List.map (fun (p,ns) -> [p],ns) in
+  Prec.print_non_empty_dnf ~any:"" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:map ~print:print
