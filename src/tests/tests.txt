@@ -8,6 +8,9 @@
 "norm1" ![ any ] ;;
 "norm2" ![ v(any) ] ;;
 
+"vec1" int1 | lgl2 | lgl['a] | v[42](raw) ;;
+"vec2" v(^any) = ^vec ;;
+
 "lst1" { ; v(int)? } <= { ..} ;;
 "lst2" { v(42), a:v(43) ; v(int)? } <= { ; v(int)?} ;;
 "lst3" { v(42), a:v(ff) ; v(int)? } <= { ; v(int)?} ;;
