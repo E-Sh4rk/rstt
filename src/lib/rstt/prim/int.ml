@@ -50,6 +50,7 @@ module P = struct
     | [i] -> Format.fprintf fmt "%a" print_interval i
     | ints ->
       let sym,_,_ as opinfo = varop_info Cup in
+      (* TODO: no paren if only one *)
       fprintf prec assoc opinfo fmt "%a" (print_seq print_interval sym) ints
 end
 

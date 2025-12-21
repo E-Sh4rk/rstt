@@ -63,18 +63,26 @@ let partition =
   Prim.partition |> List.map mk
 
 let print prec assoc fmt t =
+  let print_v ~len fmt v =
+    let len = match len with None -> "" | Some n -> Format.asprintf "%i" n in
+    if Ty.leq Prim.any v.Printer.ty then
+      Format.fprintf fmt "vec%s" len
+    else if Ty.equiv Prim.any' v.ty then
+      Format.fprintf fmt "%svec%s" Na.Hat.sym len
+    else if Prim.is_simple v.ty then
+      Format.fprintf fmt "%a%s" Printer.print_descr v len
+    else
+      let v = Utils.prune_printer_descr ~any:Prim.any v in
+      Format.fprintf fmt "%a%s(%a)" Tag.pp tag len Printer.print_descr v
+  in
   let print_atom fmt = function
     | VarLength (l,v) ->
       let l = Utils.prune_printer_descr ~any:prim_int l in
-      let v = Utils.prune_printer_descr ~any:Prim.any v in
-      Format.fprintf fmt "%a[%a](%a)" Tag.pp tag
-        Printer.print_descr l Printer.print_descr v
+      Format.fprintf fmt "%a[%a]" (print_v ~len:None) v Printer.print_descr l
     | AnyLength v ->
-      let v = Utils.prune_printer_descr ~any:Prim.any v in
-      Format.fprintf fmt "%a(%a)" Tag.pp tag Printer.print_descr v
+      Format.fprintf fmt "%a" (print_v ~len:None) v
     | CstLength (n,v) ->
-      let v = Utils.prune_printer_descr ~any:Prim.any v in
-      Format.fprintf fmt "%a%i(%a)" Tag.pp tag n Printer.print_descr v
+      Format.fprintf fmt "%a" (print_v ~len:(Some n)) v
   in
   let print_atom_neg prec assoc fmt a =
     let sym,_,_ as opinfo = Prec.unop_info Neg in
@@ -89,6 +97,7 @@ let print prec assoc fmt t =
       Format.fprintf fmt "%a" print_atom a
   in
   let sym,prec',_ as opinfo = Prec.varop_info Cup in
+  (* TODO: no paren if only one *)
   Prec.fprintf prec assoc opinfo fmt "%a" (print_seq (print_line prec' NoAssoc) sym) t
 
 let printer_builder =

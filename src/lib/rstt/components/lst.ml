@@ -67,8 +67,10 @@ let print prec assoc fmt t =
   let print_line prec assoc fmt (ps, ns) =
     let ps, ns = List.map (fun p -> true,p) ps, List.map (fun n -> false,n) ns in
     let sym,prec',_ as opinfo = Prec.varop_info Cap in
+    (* TODO: no paren if only one *)
     Prec.fprintf prec assoc opinfo fmt "%a" (print_seq (print_atom prec' NoAssoc) sym) (ps@ns)
   in
+  (* TODO: no paren if only one *)
   let sym,prec',_ as opinfo = Prec.varop_info Cup in
   Prec.fprintf prec assoc opinfo fmt "%a" (print_seq (print_line prec' NoAssoc) sym) t
 

@@ -15,11 +15,11 @@ let%expect_test "tests" =
     (fun () -> test Repl.empty_env) () ;
   [%expect {|
     base: any
-    base: v(any)
+    base: vec
     tuple1: tuple0
     tuple2: true
     norm1: any
-    norm2: v(lgl) | v(clx) | v(raw) | v(dbl) | v(chr) | v(int)
+    norm2: lgl | clx | raw | dbl | chr | int
     lst1: true
     lst2: true
     lst3: false
@@ -33,8 +33,8 @@ let%expect_test "tests" =
           ]
          [
            'A: 'A \ (chr | clx | dbl | lgl | raw) ;
-           'B: 'B & (v(lgl)) ;
-           'C: 'C & (v(int)) ;
+           'B: 'B & (lgl) ;
+           'C: 'C & (int) ;
            `R: { _npos : `R ; 0 : `R ; b : `R ; c : `R ; d : 'D | `R ;; empty? | `R }
          ]
          [

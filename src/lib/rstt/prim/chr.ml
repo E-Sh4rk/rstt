@@ -49,6 +49,7 @@ module P = struct
       | [elt] -> Format.fprintf fmt "%a" pp_string elt
       | strs ->
         let sym,_,_ as opinfo = varop_info Cup in
+        (* TODO: no paren if only one *)
         fprintf prec assoc opinfo fmt "%a" (print_seq pp_string sym) strs
     in
     if pos then

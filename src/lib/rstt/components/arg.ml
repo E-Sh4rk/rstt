@@ -128,6 +128,7 @@ let print prec assoc fmt t =
     Format.fprintf fmt "@( %a ; %a ; %a )" (print_seq print_field ", ")
       pos print_field_ty a.tl' (print_seq print_field ", ") named
   in
+  (* TODO: no paren if only one *)
   let sym,_,_ as opinfo = Prec.varop_info Cup in
   match t with
   | DefSite t -> Prec.fprintf prec assoc opinfo fmt "%a" (print_seq print_atom sym) t
