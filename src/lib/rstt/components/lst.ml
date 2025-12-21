@@ -56,7 +56,7 @@ let print prec assoc fmt t =
     let pos, named = List.map (fun t -> None, t) pos, List.map (fun (str,t) -> Some str, t) named in
     Format.fprintf fmt "{ %a ; %a }" (print_seq print_field ", ") (pos@named) print_field_ty tail
   in
-  Prec.print_non_empty_dnf ~any:"{ ..}" print_atom prec assoc fmt t
+  Prec.print_non_empty_dnf ~any:"list" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print

@@ -13,6 +13,7 @@ let parse_id_or_builtin str =
  let parse_builtin_prim str =
     match str with
     | "any" -> PAny
+    | "vec" -> PAny
     | "lgl" -> PLgl
     | "chr" -> PChr
     | "int" -> PInt
@@ -40,9 +41,10 @@ let parse_id_or_builtin str =
     pos, named
 %}
 
-%token<string> STRING
+%token<string> STRING, S, SBRACKET
 %token<Z.t> INT, VLEN
 %token<string> ID, VARID, RVARID
+%token<string*Z.t> SLEN
 %token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON DOUBLEPOINT
 %token V P T HAT ARROW
@@ -132,9 +134,12 @@ atomic_ty:
 | id=VARID { TVar (id) }
 | id=RVARID { TRowVar (id) }
 | V LPAREN p=prim RPAREN { TVec p }
+| s=S { TVec (parse_builtin_prim s) }
 | P LPAREN p=prim RPAREN { TPrim p }
 | V LBRACKET l=prim RBRACKET LPAREN p=prim RPAREN { TVecLen {len=l ; content=p} }
+| s=SBRACKET l=prim RBRACKET { TVecLen {len=l ; content=parse_builtin_prim s} }
 | i=VLEN LPAREN p=prim RPAREN { TVecCstLen (Z.to_int i, p) }
+| s=SLEN { let (s,i) = s in TVecCstLen (Z.to_int i, parse_builtin_prim s) }
 | LBRACE fs=separated_list(COMMA, ty_field) tail=optional_tail RBRACE
 { let pos,named = split_list_fields fs in TList (pos,named,tail) }
 | ALPAREN fs=separated_list(COMMA, ty_field) tl=optional_tail RPAREN
@@ -163,6 +168,7 @@ atomic_ty:
 
 prim:
 | id=ID { parse_builtin_prim id }
+| s=S { parse_builtin_prim s }
 | id=VARID { PVar (id) }
 | p1=prim TOR p2=prim { PCup (p1, p2) }
 | p1=prim TDIFF p2=prim { PDiff (p1, p2) }
