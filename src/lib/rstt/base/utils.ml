@@ -19,3 +19,13 @@ let prune_printer_descr ~any d =
       { Printer.op ; ty=d.ty }
     in
     aux d
+
+let prune_option_fop fop =
+  let rec aux = function
+  | Printer.FTy (ty,_) -> Printer.FTy (ty,false)
+  | FVarop (o,es) -> FVarop (o, List.map aux es)
+  | FBinop (o,e1,e2) -> FBinop (o, aux e1, aux e2)
+  | FUnop (o,e) -> FUnop (o, aux e)
+  | FRowVar v -> FRowVar v
+  in
+  aux fop

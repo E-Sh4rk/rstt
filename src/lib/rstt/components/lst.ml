@@ -10,10 +10,11 @@ type 'a atom = 'a list * (string * 'a) list * 'a
 type 'a line = 'a atom list * 'a atom list
 type 'a t = 'a line list
 
-let mk (pos, named, tail) = (* TODO: tail always optional *)
+let mk (pos, named, tail) =
   let pos = List.mapi (fun i ty -> Labels.pos i, ty) pos in
   let named = List.map (fun (str,ty) -> Labels.named str, ty) named in
   let bindings = LabelMap.of_list (pos@named) in
+  let tail = Ty.F.cup tail (Ty.F.mk_descr Ty.O.absent) in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let any_d = Records.any |> Descr.mk_records |> Ty.mk_descr
 let any = add_tag any_d
@@ -57,7 +58,7 @@ let print prec assoc fmt t =
       match f with
       | Printer.FTy ({ Printer.op=Builtin Empty ; _ }, true) -> ()
       | Printer.FTy ({ Printer.op=Builtin Any ; _ }, true) -> Format.fprintf fmt "... "
-      | f -> Format.fprintf fmt "; %a " print_field_ty f
+      | f -> Format.fprintf fmt "; %a " print_field_ty (Utils.prune_option_fop f)
     in
     let pos, named = List.map (fun t -> None, t) pos, List.map (fun (str,t) -> Some str, t) named in
     Format.fprintf fmt "{ %a %a}" (print_seq print_field ", ") (pos@named) print_tail tail

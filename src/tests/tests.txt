@@ -11,13 +11,13 @@
 "vec1" int1 | lgl2 | lgl['a] | v[42](raw) ;;
 "vec2" v(^any) = ^vec ;;
 
-"lst1" { ; v(int)? } <= { ...} ;;
-"lst2" { v(42), a:v(43) ; v(int)? } <= { ; v(int)?} ;;
-"lst3" { v(42), a:v(ff) ; v(int)? } <= { ; v(int)?} ;;
-"lst4" { v(42), a:v(ff) ; v(int)? } <= { a:v(ff) ; v(int)?} ;;
+"lst1" { ; v(int) } <= { ...} ;;
+"lst2" { v(42), a:v(43) ; v(int) } <= { ; v(int)} ;;
+"lst3" { v(42), a:v(ff) ; v(int) } <= { ; v(int)} ;;
+"lst4" { v(42), a:v(ff) ; v(int) } <= { a:v(ff) ; v(int)} ;;
 "lst5" { a:v1(^42) ...} ;;
 "lst6" { a:v1(^42) } ;;
-"lst7" { a:v1(^42) ; int? } ;;
+"lst7" { a:v1(^42) ; int } ;;
 
 "arg1" @(v(int), v(lgl)) <= (a:v(int), b:v(lgl)) ;;
 "arg2" @(v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
