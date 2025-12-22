@@ -33,7 +33,8 @@ let mk' ~allow_more_pos { pos' ; tl' ; named' } =
   let named = named' |> List.map (fun (str, fty) -> Labels.named str, fty) in
   let npos = if more_pos then npos_field' n else npos_field n in
   let bindings = npos::pos@named |> LabelMap.of_list in
-  { Records.Atom.bindings ; tail=tl' } |> Descr.mk_record |> Ty.mk_descr |> add_tag
+  let tail = Ty.F.cup tl' (Ty.F.mk_descr Ty.O.absent) in
+  { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk { pos ; pos_named ; tl ; named } =
   let n = List.length pos_named in
   let atoms' = List.init (n + 1) (fun i ->
@@ -47,14 +48,15 @@ let mk { pos ; pos_named ; tl ; named } =
   let model_pos_named = pos_named |> List.mapi (fun i (str,fty) -> Labels.pos_named (i,str), fty) in
   let model_named = named |> List.map (fun (str,fty) -> Labels.named str, fty) in
   let model_bindings = model_npos::(List.concat [model_pos ; model_pos_named ; model_named]) |> LabelMap.of_list in
-  let model = { Records.Atom.bindings=model_bindings ; tail=tl } |> Descr.mk_record |> Ty.mk_descr |> add_tag in
+  let tail = Ty.F.cup tl (Ty.F.mk_descr Ty.O.absent) in
+  let model = { Records.Atom.bindings=model_bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag in
   model::atoms' |> Ty.disj
 let mk' = mk' ~allow_more_pos:true
 let any_d =
   { Records.Atom.bindings=[npos_field' (Z.minus_one)] |> LabelMap.of_list ; tail=Ty.F.any }
   |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
-(* TODO: tail always optional *)
+
 let map_atom f { pos ; pos_named ; tl ; named } =
   let pos = List.map f pos in
   let pos_named = List.map (fun (str,t) -> str, f t) pos_named in
@@ -117,7 +119,7 @@ let print prec assoc fmt t =
     match f with
     | Printer.FTy ({ Printer.op=Builtin Empty ; _ }, true) -> ()
     | Printer.FTy ({ Printer.op=Builtin Any ; _ }, true) -> Format.fprintf fmt "... "
-    | f -> Format.fprintf fmt "; %a " print_field_ty f
+    | f -> Format.fprintf fmt "; %a " print_field_ty (Utils.prune_option_fop f)
   in
   let print_atom _prec _assoc fmt a =
     let pos, named, pos_named =
