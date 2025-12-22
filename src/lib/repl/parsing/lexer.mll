@@ -43,8 +43,8 @@ rule token = parse
 | newline  { Lexing.new_line lexbuf ; token lexbuf }
 | blank    { token lexbuf }
 | ";;" { BREAK } | ',' { COMMA } | ':' { COLON } | ';' { SEMICOLON } | '=' { EQUAL }
-| ".." { DOUBLEPOINT }
-| ".." { DPOINT } | "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW } | "!" { EXCL_MARK }
+| "..." { ELLIPSIS } | ".." { DPOINT }
+| "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW } | "!" { EXCL_MARK }
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE } | "@(" { ALPAREN }
 | "[" { LBRACKET } | "]" { RBRACKET }
 | "<=" { LEQ } | ">=" { GEQ }

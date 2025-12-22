@@ -46,9 +46,9 @@ let parse_id_or_builtin str =
 %token<string> ID, VARID, RVARID
 %token<string*Z.t> SLEN
 %token TYPE WHERE AND
-%token BREAK COMMA EQUAL COLON SEMICOLON DOUBLEPOINT
+%token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token V P T HAT ARROW
-%token DPOINT QUESTION_MARK EXCL_MARK
+%token QUESTION_MARK EXCL_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
 %token LEQ GEQ
 %token TOR TAND TNEG TDIFF
@@ -156,7 +156,7 @@ atomic_ty:
 
 %inline optional_tail:
 | SEMICOLON ty=ty { ty }
-| DOUBLEPOINT { TOption TAny }
+| ELLIPSIS { TOption TAny }
 | { TOption TEmpty }
 
 %inline optional_named:

@@ -26,7 +26,7 @@ let%expect_test "tests" =
     lst2: true
     lst3: false
     lst4: true
-    lst5: { a: v1(^42) ..}
+    lst5: { a: v1(^42) ...}
     lst6: { a: v1(^42) }
     lst7: { a: v1(^42) ; int? }
     arg1: true
