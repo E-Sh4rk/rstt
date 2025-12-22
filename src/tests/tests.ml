@@ -26,7 +26,7 @@ let%expect_test "tests" =
     lst2: true
     lst3: false
     lst4: true
-    lst5: { a: v1(^42) ...}
+    lst5: { a: v1(^42) ... }
     lst6: { a: v1(^42) }
     lst7: { a: v1(^42) ; int? }
     arg1: true
@@ -51,4 +51,8 @@ let%expect_test "tests" =
          [
            'D: empty
          ]
+    arg6: ( a: int, b: dbl ... )
+    arg7: @( int, b: dbl ... )
+    arg8: ( a: int, b: dbl ; int? ; named: raw)
+    arg9: @( int, b: dbl ; int? )
     |}]

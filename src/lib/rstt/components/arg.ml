@@ -54,7 +54,7 @@ let any_d =
   { Records.Atom.bindings=[npos_field' (Z.minus_one)] |> LabelMap.of_list ; tail=Ty.F.any }
   |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
-
+(* TODO: tail always optional *)
 let map_atom f { pos ; pos_named ; tl ; named } =
   let pos = List.map f pos in
   let pos_named = List.map (fun (str,t) -> str, f t) pos_named in
@@ -113,20 +113,27 @@ let print prec assoc fmt t =
       | None -> Format.fprintf fmt "%a" print_field_ty ty
       | Some str -> Format.fprintf fmt "%s: %a" str print_field_ty ty
   in
+  let print_tail fmt f =
+    match f with
+    | Printer.FTy ({ Printer.op=Builtin Empty ; _ }, true) -> ()
+    | Printer.FTy ({ Printer.op=Builtin Any ; _ }, true) -> Format.fprintf fmt "... "
+    | f -> Format.fprintf fmt "; %a " print_field_ty f
+  in
   let print_atom _prec _assoc fmt a =
     let pos, named, pos_named =
       List.map (fun t -> None, t) a.pos,
       List.map (fun (str,t) -> Some str, t) a.named,
       List.map (fun (str,t) -> Some str, t) a.pos_named in
-    Format.fprintf fmt "( %a ; %a ; %a )" (print_seq print_field ", ")
-      (pos@pos_named) print_field_ty a.tl (print_seq print_field ", ") named
+    Format.fprintf fmt "( %a %a%s%a)" (print_seq print_field ", ")
+      (pos@pos_named) print_tail a.tl (if named = [] then "" else "; ")
+      (print_seq print_field ", ") named
   in
   let print_atom' _prec _assoc fmt a =
     let pos, named =
       List.map (fun t -> None, t) a.pos',
       List.map (fun (str,t) -> Some str, t) a.named' in
-    Format.fprintf fmt "@( %a ; %a ; %a )" (print_seq print_field ", ")
-      pos print_field_ty a.tl' (print_seq print_field ", ") named
+    Format.fprintf fmt "@( %a %a)" (print_seq print_field ", ")
+      (pos@named) print_tail a.tl'
   in
   match t with
   | DefSite t -> Prec.print_cup print_atom prec assoc fmt t

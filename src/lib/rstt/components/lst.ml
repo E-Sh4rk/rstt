@@ -56,7 +56,7 @@ let print prec assoc fmt t =
     let print_tail fmt f =
       match f with
       | Printer.FTy ({ Printer.op=Builtin Empty ; _ }, true) -> ()
-      | Printer.FTy ({ Printer.op=Builtin Any ; _ }, true) -> Format.fprintf fmt "..."
+      | Printer.FTy ({ Printer.op=Builtin Any ; _ }, true) -> Format.fprintf fmt "... "
       | f -> Format.fprintf fmt "; %a " print_field_ty f
     in
     let pos, named = List.map (fun t -> None, t) pos, List.map (fun (str,t) -> Some str, t) named in
