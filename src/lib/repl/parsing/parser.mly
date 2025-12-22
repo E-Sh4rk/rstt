@@ -133,6 +133,7 @@ atomic_ty:
 | id=ID { parse_id_or_builtin id }
 | id=VARID { TVar (id) }
 | id=RVARID { TRowVar (id) }
+| LPAREN ty=ty RPAREN { ty }
 | P LPAREN p=prim RPAREN { TPrim p }
 (* Vectors *)
 | V LPAREN p=prim RPAREN { TVec p }
@@ -151,9 +152,7 @@ atomic_ty:
 { let pos',named' = split_list_fields fs in TArg' { tl'=tl ; pos' ; named' } }
 | LPAREN pos_named=separated_list(COMMA, ty_named_field) tl=optional_tail named=optional_named RPAREN
 { TArg { tl ; pos=[] ; pos_named ; named } }
-| LPAREN ty=ty RPAREN { ty }
-| T LPAREN lst=separated_list(COMMA, simple_ty) RPAREN
-{ TTuple lst }
+| T LPAREN lst=separated_list(COMMA, simple_ty) RPAREN { TTuple lst }
 
 %inline optional_tail:
 | SEMICOLON ty=ty { ty }
