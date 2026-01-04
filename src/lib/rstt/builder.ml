@@ -25,7 +25,17 @@ and ('v,'r,'i) t =
 | TArg of ('v,'r,'i) t Arg.atom
 | TArg' of ('v,'r,'i) t Arg.atom'
 | TOption of ('v,'r,'i) t
+| TAttr of (('v,'r,'i) t, 'v classes) Attr.atom
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
+
+and 'v classes =
+| CVar of 'v
+| CClass of string
+| CAny | CEmpty
+| CCup of 'v classes * 'v classes
+| CCap of 'v classes * 'v classes
+| CDiff of 'v classes * 'v classes
+| CNeg of 'v classes
 
 let map_prim f p =
   let rec aux p =
@@ -42,7 +52,20 @@ let map_prim f p =
   in
   aux p
 
-let map f fp t =
+let map_class f c =
+  let rec aux c =
+    let c = match c with
+    | CAny | CEmpty | CVar _ | CClass _ -> c
+    | CCup (p1, p2) -> CCup (aux p1, aux p2)
+    | CCap (p1, p2) -> CCap (aux p1, aux p2)
+    | CDiff (p1, p2) -> CDiff (aux p1, aux p2)
+    | CNeg p -> CNeg (aux p)
+    in
+    f c
+  in
+  aux c
+
+let map f fp fc t =
   let rec aux t =
     let t = match t with
     | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TNull -> t
@@ -60,6 +83,7 @@ let map f fp t =
     | TArg a -> TArg (Arg.map_atom aux a)
     | TArg' a -> TArg' (Arg.map_atom' aux a)
     | TOption t -> TOption (aux t)
+    | TAttr a -> TAttr (Attr.map_atom aux (map_class fc) a)
     | TWhere (t, lst) -> TWhere (aux t, lst |> List.map (fun (id, t) -> id, aux t))
     in
     f t
@@ -104,6 +128,26 @@ let rec build_prim t =
   | PChr' str -> Prim.Chr.str str |> Prim.mk
   | PLgl' b -> Prim.Lgl.bool b |> Prim.mk
 
+let rec build_class t =
+  match t with
+  | CAny -> Ty.any
+  | CEmpty -> Ty.empty
+  | CVar v -> Ty.mk_var v
+  | CClass id -> Class.mk id
+  | CCup (t1,t2) ->
+      let t1 = build_class t1 in
+      let t2 = build_class t2 in
+      Ty.cup t1 t2
+  | CCap (t1,t2) ->
+      let t1 = build_class t1 in
+      let t2 = build_class t2 in
+      Ty.cap t1 t2
+  | CDiff (t1,t2) ->
+      let t1 = build_class t1 in
+      let t2 = build_class t2 in
+      Ty.diff t1 t2
+  | CNeg t -> Ty.neg (build_class t)
+
 let rec build env t =
   match t with
   | TId i -> TIdMap.find i env
@@ -125,6 +169,7 @@ let rec build env t =
   | TArg a -> Arg.map_atom (build_field env) a |> Arg.mk
   | TArg' a -> Arg.map_atom' (build_field env) a |> Arg.mk'
   | TOption _ -> invalid_arg "Unexpected optional type"
+  | TAttr a -> Attr.map_atom (build env) build_class a |> Attr.mk
   | TWhere (t, eqs) ->
     let eqs = eqs |> List.map (fun (x,t) -> x,Var.mk "_",t) in
     let env = List.fold_left (fun env (x,v,_) -> TIdMap.add x (Ty.mk_var v) env) env eqs in
@@ -189,7 +234,6 @@ let tid env tids str =
   end
 
 let resolve_prim env t =
-  let env = ref env in
   let rec aux t =
     match t with
     | PAny -> PAny
@@ -204,10 +248,24 @@ let resolve_prim env t =
     | PNeg t -> PNeg (aux t)
     | PInt' (b1,b2) -> PInt' (b1,b2) | PChr' str -> PChr' str | PLgl' b -> PLgl' b
   in
-  !env, aux t
+  aux t
+
+let resolve_class env t =
+  let rec aux t =
+    match t with
+    | CAny -> CAny | CEmpty -> CEmpty
+    | CClass str -> CClass str
+    | CVar v ->
+      let env', v = tvar !env v in
+      env := env' ; CVar v
+    | CCup (t1, t2) -> CCup (aux t1, aux t2)
+    | CCap (t1, t2) -> CCap (aux t1, aux t2)
+    | CDiff (t1, t2) -> CDiff (aux t1, aux t2)
+    | CNeg t -> CNeg (aux t)
+  in
+  aux t
 
 let resolve env t =
-  let env = ref env in
   let rec aux tids t =
     match t with
     | TId str -> TId (tid !env tids str)
@@ -224,28 +282,34 @@ let resolve env t =
     | TDiff (t1,t2) -> TDiff (aux tids t1, aux tids t2)
     | TNeg t -> TNeg (aux tids t)
     | TTuple lst -> TTuple (List.map (aux tids) lst)
-    | TPrim p ->
-      let env', p = resolve_prim !env p in
-      env := env' ; TPrim p
+    | TPrim p -> TPrim (resolve_prim env p)
     | TArrow (t1,t2) -> TArrow (aux tids t1, aux tids t2)
-    | TVec p ->
-      let env', p = resolve_prim !env p in
-      env := env' ; TVec p
+    | TVec p -> TVec (resolve_prim env p)
     | TVecLen { len ; content } ->
-      let env', len = resolve_prim !env len in
-      let env', content = resolve_prim env' content in
-      env := env' ; TVecLen { len ; content }
-    | TVecCstLen (i, p) ->
-      let env', p = resolve_prim !env p in
-      env := env' ; TVecCstLen (i, p)
+      TVecLen { len=resolve_prim env len ; content=resolve_prim env content }
+    | TVecCstLen (i, p) -> TVecCstLen (i, resolve_prim env p)
     | TList a -> TList (Lst.map_atom (aux tids) a)
     | TArg a -> TArg (Arg.map_atom (aux tids) a)
     | TArg' a -> TArg' (Arg.map_atom' (aux tids) a)
     | TOption t -> TOption (aux tids t)
+    | TAttr a -> TAttr (Attr.map_atom (aux tids) (resolve_class env) a)
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in
       let tids = List.fold_left (fun tids (x,v,_) -> StrMap.add x v tids) tids eqs in
       let t, eqs = aux tids t, List.map (fun (_,v,t) -> v,aux tids t) eqs in
       TWhere (t, eqs)
   in
-  !env, aux StrMap.empty t
+  aux StrMap.empty t
+
+let resolve_prim env p =
+  let env = ref env in
+  let p = resolve_prim env p in
+  !env, p
+let resolve_class env p =
+  let env = ref env in
+  let p = resolve_class env p in
+  !env, p
+let resolve env p =
+  let env = ref env in
+  let p = resolve env p in
+  !env, p

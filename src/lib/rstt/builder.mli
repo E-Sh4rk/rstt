@@ -25,12 +25,25 @@ and ('v,'r,'i) t =
 | TArg of ('v,'r,'i) t Arg.atom
 | TArg' of ('v,'r,'i) t Arg.atom'
 | TOption of ('v,'r,'i) t
+| TAttr of (('v,'r,'i) t, 'v classes) Attr.atom
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
+
+and 'v classes =
+| CVar of 'v
+| CClass of string
+| CAny | CEmpty
+| CCup of 'v classes * 'v classes
+| CCap of 'v classes * 'v classes
+| CDiff of 'v classes * 'v classes
+| CNeg of 'v classes
 
 val map_prim : ('v prim -> 'v prim)
   -> 'v prim -> 'v prim
+val map_class : ('v classes -> 'v classes)
+  -> 'v classes -> 'v classes
 val map : (('v,'r,'i) t -> ('v,'r,'i) t)
   -> ('v prim -> 'v prim)
+  -> ('v classes -> 'v classes)
   -> ('v,'r,'i) t -> ('v,'r,'i) t
 
 module TId : sig
@@ -47,6 +60,7 @@ module TIdSet : Set.S with type elt=TId.t
 val build_prim : Var.t prim -> Ty.t
 val build : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.t
 val build_field : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.F.t
+val build_class : Var.t classes -> Ty.t
 
 module StrMap : Map.S with type key=string
 type env = {
@@ -59,4 +73,5 @@ val empty_env : env
 val tvar : env -> string -> env * Var.t
 val rvar : env -> string -> env * RowVar.t
 val resolve_prim : env -> string prim -> env * Var.t prim
+val resolve_class : env -> string classes -> env * Var.t classes
 val resolve : env -> (string,string,string) t -> env * (Var.t,RowVar.t,TId.t) t
