@@ -136,15 +136,15 @@ atomic_ty:
 | LPAREN ty=ty RPAREN { ty }
 | P LPAREN p=prim RPAREN { TPrim p }
 (* Vectors *)
-| V LPAREN p=prim RPAREN { TVec p }
-| s=S { TVec (parse_builtin_prim s) }
-| HAT s=S { TVec (PHat (parse_builtin_prim s)) }
-| V LBRACKET l=prim RBRACKET LPAREN p=prim RPAREN { TVecLen {len=l ; content=p} }
-| s=SBRACKET l=prim RBRACKET { TVecLen {len=l ; content=parse_builtin_prim s} }
-| HAT s=SBRACKET l=prim RBRACKET { TVecLen {len=l ; content=PHat (parse_builtin_prim s)} }
-| i=VLEN LPAREN p=prim RPAREN { TVecCstLen (Z.to_int i, p) }
-| s=SLEN { let (s,i) = s in TVecCstLen (Z.to_int i, parse_builtin_prim s) }
-| HAT s=SLEN { let (s,i) = s in TVecCstLen (Z.to_int i, PHat (parse_builtin_prim s)) }
+| V LPAREN p=prim RPAREN { TVec (AnyLength p) }
+| s=S { TVec (AnyLength (parse_builtin_prim s)) }
+| HAT s=S { TVec (AnyLength (PHat (parse_builtin_prim s))) }
+| V LBRACKET l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
+| s=SBRACKET l=prim RBRACKET {TVec (VarLength (l,parse_builtin_prim s)) }
+| HAT s=SBRACKET l=prim RBRACKET { TVec (VarLength (l,PHat (parse_builtin_prim s))) }
+| i=VLEN LPAREN p=prim RPAREN { TVec (CstLength (Z.to_int i, p)) }
+| s=SLEN { let (s,i) = s in TVec (CstLength (Z.to_int i, parse_builtin_prim s)) }
+| HAT s=SLEN { let (s,i) = s in TVec (CstLength (Z.to_int i, PHat (parse_builtin_prim s))) }
 (* Containers (lists, args, tuples) *)
 | LBRACE fs=separated_list(COMMA, ty_field) tail=optional_tail RBRACE
 { let pos,named = split_list_fields fs in TList (pos,named,tail) }

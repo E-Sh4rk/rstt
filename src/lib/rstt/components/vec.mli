@@ -1,9 +1,20 @@
 open Sstt
 
+type 'a atom =
+  | AnyLength of 'a
+  | CstLength of int * 'a
+  | VarLength of 'a (* subtype of Prim.Int.any *) * 'a
+type 'a line = 'a atom * 'a atom list
+type 'a t = 'a line list
+
 val tag : Tag.t
 val any : Ty.t
-val mk : ?len:Ty.t -> Ty.t -> Ty.t
-val mk_len : int -> Ty.t -> Ty.t
-val length : Ty.t -> Ty.t (* length component is a Prim.Int *)
-val content : Ty.t -> Ty.t (* content component is a Prim *)
+val mk : Ty.t atom -> Ty.t
 val partition : Ty.t list
+val length : Ty.t -> Ty.t (* subtype of Prim.Int.any *)
+val content : Ty.t -> Ty.t
+
+val destruct : Ty.t -> Ty.t t
+val map_atom : ('a -> 'b) -> 'a atom -> 'b atom
+val map_line : ('a -> 'b) -> 'a line -> 'b line
+val map : ('a -> 'b) -> 'a t -> 'b t

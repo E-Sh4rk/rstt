@@ -18,9 +18,7 @@ and ('v,'r,'i) t =
 | TTuple of ('v,'r,'i) t list
 | TPrim of 'v prim
 | TArrow of ('v,'r,'i) t * ('v,'r,'i) t
-| TVec of 'v prim
-| TVecLen of {len:'v prim ; content:'v prim}
-| TVecCstLen of int * 'v prim
+| TVec of 'v prim Vec.atom
 | TList of ('v,'r,'i) t Lst.atom
 | TArg of ('v,'r,'i) t Arg.atom
 | TArg' of ('v,'r,'i) t Arg.atom'
