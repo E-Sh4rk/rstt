@@ -113,18 +113,34 @@ let to_t _ comp =
 
 let destruct ty = proj_tag ty |> extract
 
-let print _prec _assoc _fmt _t = failwith "TODO"
-  (* let rec print_line prec assoc fmt (L (n, t)) =
-    let sym,prec',_ as opinfo = binop_info Diff in
+let print _prec _assoc fmt (pos,neg,tail) =
+  let open Sstt.Prec in
+  let print_tuple p fmt t =
+    match t with
+    | [] -> ()
+    | [e] -> p fmt e
+    | lst -> Format.fprintf fmt "(%a)" (Rstt_utils.print_seq p ", ") lst
+  in
+  let rec print_line fmt (L (str, t)) =
     if t = []
     then
-      Format.fprintf fmt "%s" (Node.name n)
+      Format.fprintf fmt "%s" str
     else
-      fprintf prec assoc opinfo fmt "%s%s%a"
-        (Node.name n) sym
-        (print_cup print_line prec' NoAssoc) t
+      Format.fprintf fmt "%s \ %a"
+        str (print_tuple print_line) t
   in
-  print_cup print_line prec assoc fmt t *)
+  let print_pos fmt t = print_tuple print_line fmt t in
+  let print_neg fmt t = if t <> [] then Format.fprintf fmt " ; %a" print_pos t in
+  let print_rv _prec _assoc fmt rv = RowVar.pp fmt rv in
+  let print_tail fmt t =
+    match t with
+    | Closed -> ()
+    | Open -> Format.fprintf fmt " .."
+    | RowVars dnf ->
+      Format.fprintf fmt " ; %a"
+        (Prec.print_non_empty_dnf ~any:"" print_rv Prec.min_prec NoAssoc) dnf
+  in
+  Format.fprintf fmt "<%a%a%a>" print_pos pos print_neg neg print_tail tail
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun _ x -> x) ~print:print
