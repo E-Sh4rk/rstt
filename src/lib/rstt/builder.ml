@@ -23,17 +23,12 @@ and ('v,'r,'i) t =
 | TArg of ('v,'r,'i) t Arg.atom
 | TArg' of ('v,'r,'i) t Arg.atom'
 | TOption of ('v,'r,'i) t
-| TAttr of (('v,'r,'i) t, 'v classes) Attr.atom
+| TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
-and 'v classes =
-| CVar of 'v
-| CClass of string
-| CAny | CEmpty
-| CCup of 'v classes * 'v classes
-| CCap of 'v classes * 'v classes
-| CDiff of 'v classes * 'v classes
-| CNeg of 'v classes
+and 'r classes =
+| CAny | CNoClass
+| CClasses of 'r Classes.atom
 
 let map_prim f p =
   let rec aux p =
@@ -50,14 +45,11 @@ let map_prim f p =
   in
   aux p
 
-let map_class f c =
-  let rec aux c =
+let map_classes f c =
+  let aux c =
     let c = match c with
-    | CAny | CEmpty | CVar _ | CClass _ -> c
-    | CCup (p1, p2) -> CCup (aux p1, aux p2)
-    | CCap (p1, p2) -> CCap (aux p1, aux p2)
-    | CDiff (p1, p2) -> CDiff (aux p1, aux p2)
-    | CNeg p -> CNeg (aux p)
+    | CAny | CNoClass -> c
+    | CClasses a -> CClasses a
     in
     f c
   in
@@ -79,7 +71,7 @@ let map f fp fc t =
     | TArg a -> TArg (Arg.map_atom aux a)
     | TArg' a -> TArg' (Arg.map_atom' aux a)
     | TOption t -> TOption (aux t)
-    | TAttr a -> TAttr (Attr.map_atom aux (map_class fc) a)
+    | TAttr a -> TAttr (Attr.map_atom aux (map_classes fc) a)
     | TWhere (t, lst) -> TWhere (aux t, lst |> List.map (fun (id, t) -> id, aux t))
     in
     f t
@@ -124,25 +116,11 @@ let rec build_prim t =
   | PChr' str -> Prim.Chr.str str |> Prim.mk
   | PLgl' b -> Prim.Lgl.bool b |> Prim.mk
 
-let rec build_class t =
+let build_classes t =
   match t with
-  | CAny -> Ty.any
-  | CEmpty -> Ty.empty
-  | CVar v -> Ty.mk_var v
-  | CClass id -> Class.mk id
-  | CCup (t1,t2) ->
-      let t1 = build_class t1 in
-      let t2 = build_class t2 in
-      Ty.cup t1 t2
-  | CCap (t1,t2) ->
-      let t1 = build_class t1 in
-      let t2 = build_class t2 in
-      Ty.cap t1 t2
-  | CDiff (t1,t2) ->
-      let t1 = build_class t1 in
-      let t2 = build_class t2 in
-      Ty.diff t1 t2
-  | CNeg t -> Ty.neg (build_class t)
+  | CAny -> Classes.any
+  | CNoClass -> Classes.noclass
+  | CClasses a -> Classes.mk a
 
 let rec build env t =
   match t with
@@ -163,7 +141,7 @@ let rec build env t =
   | TArg a -> Arg.map_atom (build_field env) a |> Arg.mk
   | TArg' a -> Arg.map_atom' (build_field env) a |> Arg.mk'
   | TOption _ -> invalid_arg "Unexpected optional type"
-  | TAttr a -> Attr.map_atom (build env) build_class a |> Attr.mk
+  | TAttr a -> Attr.map_atom (build env) build_classes a |> Attr.mk
   | TWhere (t, eqs) ->
     let eqs = eqs |> List.map (fun (x,t) -> x,Var.mk "_",t) in
     let env = List.fold_left (fun env (x,v,_) -> TIdMap.add x (Ty.mk_var v) env) env eqs in
@@ -244,18 +222,16 @@ let resolve_prim env t =
   in
   aux t
 
-let resolve_class env t =
-  let rec aux t =
+let resolve_classes env t =
+  let aux t =
     match t with
-    | CAny -> CAny | CEmpty -> CEmpty
-    | CClass str -> CClass str
-    | CVar v ->
-      let env', v = tvar !env v in
-      env := env' ; CVar v
-    | CCup (t1, t2) -> CCup (aux t1, aux t2)
-    | CCap (t1, t2) -> CCap (aux t1, aux t2)
-    | CDiff (t1, t2) -> CDiff (aux t1, aux t2)
-    | CNeg t -> CNeg (aux t)
+    | CAny -> CAny | CNoClass -> CNoClass
+    | CClasses a ->
+      let rvar v =
+        let env', v = rvar !env v in
+        env := env' ; v
+      in
+      CClasses (Classes.map_atom rvar a)
   in
   aux t
 
@@ -283,7 +259,7 @@ let resolve env t =
     | TArg a -> TArg (Arg.map_atom (aux tids) a)
     | TArg' a -> TArg' (Arg.map_atom' (aux tids) a)
     | TOption t -> TOption (aux tids t)
-    | TAttr a -> TAttr (Attr.map_atom (aux tids) (resolve_class env) a)
+    | TAttr a -> TAttr (Attr.map_atom (aux tids) (resolve_classes env) a)
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in
       let tids = List.fold_left (fun tids (x,v,_) -> StrMap.add x v tids) tids eqs in
@@ -296,9 +272,9 @@ let resolve_prim env p =
   let env = ref env in
   let p = resolve_prim env p in
   !env, p
-let resolve_class env p =
+let resolve_classes env p =
   let env = ref env in
-  let p = resolve_class env p in
+  let p = resolve_classes env p in
   !env, p
 let resolve env p =
   let env = ref env in
