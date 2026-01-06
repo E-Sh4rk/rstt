@@ -1,12 +1,10 @@
 open Sstt
 
-type ('a, 'c) atom = { content:'a ; classes:'c option }
+type ('a, 'c) atom = { content:'a ; classes:'c }
 type ('a, 'c) line = ('a, 'c) atom list * ('a, 'c) atom list
 type ('a, 'c) t = ('a, 'c) line list
 
 val mk : (Ty.t, Ty.t) atom -> Ty.t
-val mk_noclass : Ty.t -> Ty.t
-val mk_anyclass : Ty.t -> Ty.t
 val any : Ty.t
 val destruct : Ty.t -> (Ty.t, Ty.t) t
 

@@ -1,7 +1,7 @@
 open Sstt
 
 type 'r tail =
-| Closed | Open
+| Closed | Open (* TODO: Open is misleading... *)
 | RowVars of ('r list * 'r list) list
 type 'r atom = attrs * attrs * 'r tail
 and attrs = line list
@@ -73,6 +73,7 @@ let mk (pos,neg,tail) =
 
 let any = mk ([],[],RowVars [[],[]]) |> proj_tag
 let any_d = proj_tag any
+let noclass = mk ([],[],Closed)
 
 let extract_record ty =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid attr encoding." ; 
