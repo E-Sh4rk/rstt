@@ -114,7 +114,7 @@ ty_main:
 
 classes:
 | LT classes=separated_list(COMMA, ID) tl=classes_tail GT
-{ List.map (fun str -> Classes.L (str, [])) classes, [], tl }
+{ { pos=List.map (fun str -> Classes.L (str, [])) classes ; neg=[] ; unk=[] ; tail=tl } }
 
 %inline classes_tail:
 | { Classes.NoOther } | STAR { Classes.AllOthers } | QUESTION_MARK { Classes.Unknown }

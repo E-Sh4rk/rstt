@@ -3,7 +3,7 @@ open Sstt
 type 'r tail =
 | NoOther | AllOthers | Unknown
 | RowVars of ('r list * 'r list) list
-type 'r atom = attrs * attrs * 'r tail
+type 'r atom = { pos:attrs ; neg:attrs ; unk:attrs ; tail:'r tail }
 and attrs = line list
 and line = L of string * attrs
 
@@ -49,7 +49,7 @@ let map_tail f t =
   match t with
   | NoOther -> NoOther | AllOthers -> AllOthers | Unknown -> Unknown
   | RowVars lst -> RowVars (List.map (fun (ps,ns) -> List.map f ps, List.map f ns) lst)
-let map_atom f ((a1,a2,tail):'a atom) : 'b atom = (a1,a2,map_tail f tail)
+let map_atom f ({pos;neg;unk;tail}:'a atom) : 'b atom = {pos;neg;unk;tail=map_tail f tail}
 
 let rec labels_of_attrs lst =
   lst |> List.map (fun (L (str,l)) ->
@@ -62,11 +62,12 @@ let rec labels_of_attrs lst =
 let tt, ff = Enum.mk "tt", Enum.mk "ff"
 let tt, ff = Descr.mk_enum tt |> Ty.mk_descr, Descr.mk_enum ff |> Ty.mk_descr
 let bb = Ty.cup tt ff
-let mk (pos,neg,tail) =
-  let pos, neg = labels_of_attrs pos, labels_of_attrs neg in
+let mk {pos;neg;unk;tail} =
+  let pos, unk, neg = labels_of_attrs pos, labels_of_attrs unk, labels_of_attrs neg in
   let pbindings = pos |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.required tt)) in
+  let ubindings = unk |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.required bb)) in
   let nbindings = neg |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.required ff)) in
-  let bindings = LabelMap.of_list (pbindings@nbindings) in
+  let bindings = LabelMap.of_list (pbindings@nbindings@ubindings) in
   let tail = match tail with
   | RowVars dnf -> dnf |> List.map (fun (ps,ns) -> (ps,ns,Ty.O.required bb)) |> Ty.F.of_dnf
   | NoOther -> ff |> Ty.O.required |> Ty.F.mk_descr
@@ -75,9 +76,9 @@ let mk (pos,neg,tail) =
   in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 
-let any = mk ([],[],Unknown)
+let any = mk {pos=[];neg=[];unk=[];tail=Unknown}
 let any_d = proj_tag any
-let noclass = mk ([],[],NoOther)
+let noclass = mk {pos=[];neg=[];unk=[];tail=NoOther}
 
 let extract_record ty =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid attr encoding." ; 
@@ -96,12 +97,14 @@ let record_to_atom r =
   in
   let is_tt fty = let ty = ty_of_field fty in Ty.leq ty tt in
   let is_ff fty = let ty = ty_of_field fty in Ty.leq ty ff in
-  let pos = bindings |> List.filter_map (fun (lbl, fty) ->
-    if is_tt fty then Some lbl else None
-    ) |> LabelSet.of_list in
-  let neg = bindings |> List.filter_map (fun (lbl, fty) ->
-    if is_ff fty then Some lbl else None
-    ) |> LabelSet.of_list in
+  let pos, bindings = bindings |> List.partition_map (fun (lbl, fty) ->
+    if is_tt fty then Either.left lbl else Either.right (lbl,fty)
+    ) in
+  let neg, bindings = bindings |> List.partition_map (fun (lbl, fty) ->
+    if is_ff fty then Either.left lbl else Either.right (lbl, fty)
+    ) in
+  let unk = bindings |> List.map fst in
+  let pos, neg, unk = LabelSet.of_list pos, LabelSet.of_list neg, LabelSet.of_list unk in
   let rec aux labels pos lbl =
     let info = Hashtbl.find infos lbl in
     let sub = LabelSet.to_list info.sub in
@@ -111,6 +114,7 @@ let record_to_atom r =
   in
   let pos = !top_classes |> LabelSet.to_list |> List.concat_map (aux pos true) in
   let neg = !top_classes |> LabelSet.to_list |> List.concat_map (aux neg true) in
+  let unk = !top_classes |> LabelSet.to_list |> List.concat_map (aux unk true) in
   let tail =
     match is_tt r.tail, is_ff r.tail with
     | true, true -> RowVars (r.tail |> Ty.F.dnf |> List.map (fun (ps,ns,_) -> ps,ns))
@@ -118,7 +122,7 @@ let record_to_atom r =
     | false, true -> NoOther
     | false, false -> Unknown
   in
-  (pos, neg, tail)
+  {pos ; neg ; unk ; tail}
 
 let extract t : RowVar.t atom =
   extract_record t |> record_to_atom
@@ -129,7 +133,7 @@ let to_t _ comp =
 
 let destruct ty = proj_tag ty |> extract
 
-let print _prec _assoc fmt (pos,neg,tail) =
+let print _prec _assoc fmt {pos;neg;unk;tail} =
   let open Sstt.Prec in
   let print_tuple p fmt t =
     match t with
@@ -153,8 +157,19 @@ let print _prec _assoc fmt (pos,neg,tail) =
       Format.fprintf fmt "~(%s \ %a)"
         str (print_tuple print_pos_line) t
   in
-  let print_line fmt (pos,t) =
-    if pos then print_pos_line fmt t else print_neg_line fmt t
+  let print_unk_line fmt (L (str, t)) =
+    if t = []
+    then
+      Format.fprintf fmt "?%s" str
+    else
+      Format.fprintf fmt "?(%s \ %a)"
+        str (print_tuple print_pos_line) t
+  in
+  let print_line fmt (kind,t) =
+    match kind with
+    | `Pos -> print_pos_line fmt t
+    | `Neg -> print_neg_line fmt t
+    | `Unk -> print_unk_line fmt t
   in
   let print fmt t = print_tuple print_line fmt t in
   let print_rv _prec _assoc fmt rv = RowVar.pp fmt rv in
@@ -167,7 +182,11 @@ let print _prec _assoc fmt (pos,neg,tail) =
       Format.fprintf fmt " ; %a"
         (Prec.print_non_empty_dnf ~any:"any" print_rv Prec.min_prec NoAssoc) dnf
   in
-  let bindings = (pos |> List.map (fun p -> true,p))@(neg |> List.map (fun n -> false,n)) in
+  let bindings =
+    (pos |> List.map (fun p -> `Pos,p))@
+    (neg |> List.map (fun n -> `Neg,n))@
+    (unk |> List.map (fun n -> `Unk,n))
+  in
   Format.fprintf fmt "<%a%a>" print bindings print_tail tail
 
 let printer_builder =

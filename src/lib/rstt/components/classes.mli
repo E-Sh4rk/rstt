@@ -3,7 +3,7 @@ open Sstt
 type 'r tail =
 | NoOther | AllOthers | Unknown
 | RowVars of ('r list * 'r list) list
-type 'r atom = attrs * attrs * 'r tail
+type 'r atom = { pos:attrs ; neg:attrs ; unk:attrs ; tail:'r tail }
 and attrs = line list
 and line = L of string * attrs
 
