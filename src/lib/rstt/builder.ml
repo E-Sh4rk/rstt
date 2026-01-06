@@ -142,20 +142,22 @@ let rec build_struct env t =
   | TArg' a -> Arg.map_atom' (build_field env) a |> Arg.mk'
   | TOption _ -> invalid_arg "Unexpected optional type"
   | TAttr _ -> invalid_arg "Unexpected attributes"
+  | TWhere _ -> invalid_arg "Unexpected where clause"
+
+and build env t =
+  match t with
+  | TAttr a -> Attr.map_atom (build_struct env) build_classes a |> Attr.mk
+  | TVar v -> Ty.mk_var v
+  | TCup (t1,t2) -> Ty.cup (build env t1) (build env t2)
+  | TCap (t1,t2) -> Ty.cap (build env t1) (build env t2)
+  | TDiff (t1,t2) -> Ty.diff (build env t1) (build env t2)
+  | TNeg t -> Ty.neg (build env t)
   | TWhere (t, eqs) ->
     let eqs = eqs |> List.map (fun (x,t) -> x,Var.mk "_",t) in
     let env = List.fold_left (fun env (x,v,_) -> TIdMap.add x (Ty.mk_var v) env) env eqs in
     let t, eqs = build env t, List.map (fun (_,v,t) -> v,build env t) eqs in
     let s = Ty.of_eqs eqs |> Subst.of_list1 in
     Subst.apply s t
-
-and build env t =
-  match t with
-  | TAttr a -> Attr.map_atom (build_struct env) build_classes a |> Attr.mk
-  | TCup (t1,t2) -> Ty.cup (build env t1) (build env t2)
-  | TCap (t1,t2) -> Ty.cap (build env t1) (build env t2)
-  | TDiff (t1,t2) -> Ty.diff (build env t1) (build env t2)
-  | TNeg t -> Ty.neg (build env t)
   | t -> Attr.mk {content=build_struct env t ; classes=Classes.any}
 
 and build_field env t =
