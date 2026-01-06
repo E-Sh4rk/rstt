@@ -1,7 +1,7 @@
 open Sstt
 
 type 'r tail =
-| NoOther | AllOthers
+| NoOther | AllOthers | Unknown
 | RowVars of ('r list * 'r list) list
 type 'r atom = attrs * attrs * 'r tail
 and attrs = line list
@@ -47,7 +47,7 @@ let is_defined name = Hashtbl.mem labels name
 
 let map_tail f t =
   match t with
-  | NoOther -> NoOther | AllOthers -> AllOthers
+  | NoOther -> NoOther | AllOthers -> AllOthers | Unknown -> Unknown
   | RowVars lst -> RowVars (List.map (fun (ps,ns) -> List.map f ps, List.map f ns) lst)
 let map_atom f ((a1,a2,tail):'a atom) : 'b atom = (a1,a2,map_tail f tail)
 
@@ -71,10 +71,11 @@ let mk (pos,neg,tail) =
   | RowVars dnf -> dnf |> List.map (fun (ps,ns) -> (ps,ns,Ty.O.required bb)) |> Ty.F.of_dnf
   | NoOther -> ff |> Ty.O.required |> Ty.F.mk_descr
   | AllOthers -> tt |> Ty.O.required |> Ty.F.mk_descr
+  | Unknown -> bb |> Ty.O.required |> Ty.F.mk_descr
   in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 
-let any = mk ([],[],RowVars [[],[]])
+let any = mk ([],[],Unknown)
 let any_d = proj_tag any
 let noclass = mk ([],[],NoOther)
 
@@ -112,10 +113,10 @@ let record_to_atom r =
   let neg = !top_classes |> LabelSet.to_list |> List.concat_map (aux neg true) in
   let tail =
     match is_tt r.tail, is_ff r.tail with
-    | true, true | false, false ->
-      RowVars (r.tail |> Ty.F.dnf |> List.map (fun (ps,ns,_) -> ps,ns))
+    | true, true -> RowVars (r.tail |> Ty.F.dnf |> List.map (fun (ps,ns,_) -> ps,ns))
     | true, false -> AllOthers
     | false, true -> NoOther
+    | false, false -> Unknown
   in
   (pos, neg, tail)
 
@@ -161,6 +162,7 @@ let print _prec _assoc fmt (pos,neg,tail) =
     match t with
     | NoOther -> ()
     | AllOthers -> Format.fprintf fmt " *"
+    | Unknown -> Format.fprintf fmt " ?"
     | RowVars dnf ->
       Format.fprintf fmt " ; %a"
         (Prec.print_non_empty_dnf ~any:"any" print_rv Prec.min_prec NoAssoc) dnf

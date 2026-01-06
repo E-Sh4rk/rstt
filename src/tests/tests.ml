@@ -61,4 +61,5 @@ let%expect_test "tests" =
               `C: { class1 : `C ; class2 : tt | `C ;; ff | `C }
             ]
     class4: <(class1, class2)>
+    class5: <class1 ?>
     |}]

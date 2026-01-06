@@ -1,7 +1,7 @@
 open Sstt
 
 type 'r tail =
-| NoOther | AllOthers
+| NoOther | AllOthers | Unknown
 | RowVars of ('r list * 'r list) list
 type 'r atom = attrs * attrs * 'r tail
 and attrs = line list
