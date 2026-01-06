@@ -1,7 +1,7 @@
 open Sstt
 
 type 'r tail =
-| Closed | Open (* TODO: Open is misleading... *)
+| NoOther | AllOthers
 | RowVars of ('r list * 'r list) list
 type 'r atom = attrs * attrs * 'r tail
 and attrs = line list
@@ -45,7 +45,7 @@ let define_class ~name ~subclass =
 
 let map_tail f t =
   match t with
-  | Closed -> Closed | Open -> Open
+  | NoOther -> NoOther | AllOthers -> AllOthers
   | RowVars lst -> RowVars (List.map (fun (ps,ns) -> List.map f ps, List.map f ns) lst)
 let map_atom f ((a1,a2,tail):'a atom) : 'b atom = (a1,a2,map_tail f tail)
 
@@ -66,14 +66,14 @@ let mk (pos,neg,tail) =
   let bindings = LabelMap.of_list (pbindings@nbindings) in
   let tail = match tail with
   | RowVars dnf -> dnf |> List.map (fun (ps,ns) -> (ps,ns,Ty.O.required bb)) |> Ty.F.of_dnf
-  | Closed -> ff |> Ty.O.required |> Ty.F.mk_descr
-  | Open -> tt |> Ty.O.required |> Ty.F.mk_descr
+  | NoOther -> ff |> Ty.O.required |> Ty.F.mk_descr
+  | AllOthers -> tt |> Ty.O.required |> Ty.F.mk_descr
   in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 
 let any = mk ([],[],RowVars [[],[]]) |> proj_tag
 let any_d = proj_tag any
-let noclass = mk ([],[],Closed)
+let noclass = mk ([],[],NoOther)
 
 let extract_record ty =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid attr encoding." ; 
@@ -99,8 +99,8 @@ let record_to_atom r =
   let pos = !top_classes |> LabelSet.to_list |> List.concat_map (aux pos true) in
   let neg = !top_classes |> LabelSet.to_list |> List.concat_map (aux neg true) in
   let tail =
-    if is_tt r.tail then Open
-    else if is_ff r.tail then Closed
+    if is_tt r.tail then NoOther
+    else if is_ff r.tail then AllOthers
     else RowVars (r.tail |> Ty.F.dnf |> List.map (fun (ps,ns,_) -> ps,ns))
   in
   (pos, neg, tail)
@@ -122,26 +122,37 @@ let print _prec _assoc fmt (pos,neg,tail) =
     | [e] -> p fmt e
     | lst -> Format.fprintf fmt "(%a)" (Rstt_utils.print_seq p ", ") lst
   in
-  let rec print_line fmt (L (str, t)) =
+  let rec print_pos_line fmt (L (str, t)) =
     if t = []
     then
       Format.fprintf fmt "%s" str
     else
       Format.fprintf fmt "%s \ %a"
-        str (print_tuple print_line) t
+        str (print_tuple print_pos_line) t
   in
-  let print_pos fmt t = print_tuple print_line fmt t in
-  let print_neg fmt t = if t <> [] then Format.fprintf fmt " ; %a" print_pos t in
+  let print_neg_line fmt (L (str, t)) =
+    if t = []
+    then
+      Format.fprintf fmt "~%s" str
+    else
+      Format.fprintf fmt "~(%s \ %a)"
+        str (print_tuple print_pos_line) t
+  in
+  let print_line fmt (pos,t) =
+    if pos then print_pos_line fmt t else print_neg_line fmt t
+  in
+  let print fmt t = print_tuple print_line fmt t in
   let print_rv _prec _assoc fmt rv = RowVar.pp fmt rv in
   let print_tail fmt t =
     match t with
-    | Closed -> ()
-    | Open -> Format.fprintf fmt " .."
+    | NoOther -> ()
+    | AllOthers -> Format.fprintf fmt " *"
     | RowVars dnf ->
       Format.fprintf fmt " ; %a"
         (Prec.print_non_empty_dnf ~any:"" print_rv Prec.min_prec NoAssoc) dnf
   in
-  Format.fprintf fmt "<%a%a%a>" print_pos pos print_neg neg print_tail tail
+  let bindings = (pos |> List.map (fun p -> true,p))@(neg |> List.map (fun n -> false,n)) in
+  Format.fprintf fmt "<%a%a>" print bindings print_tail tail
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun _ x -> x) ~print:print
