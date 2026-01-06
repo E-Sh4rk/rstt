@@ -7,7 +7,8 @@ type 'r atom = attrs * attrs * 'r tail
 and attrs = line list
 and line = L of string * attrs
 
-val define_class : name:string -> subclass:(string list) -> unit
+val define_class : string -> subclass:(string list) -> unit
+val is_defined : string -> bool
 val mk : RowVar.t atom -> Ty.t
 val any : Ty.t
 val noclass : Ty.t

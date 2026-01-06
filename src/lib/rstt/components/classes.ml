@@ -39,9 +39,11 @@ let new_class ~name ~subclass =
   with Not_found -> invalid_arg "undefined sub-attributes"
 
 
-let define_class ~name ~subclass =
+let define_class name ~subclass =
   if Hashtbl.mem labels name then invalid_arg "Class already defined" ;
   new_class ~name ~subclass |> ignore
+
+let is_defined name = Hashtbl.mem labels name
 
 let map_tail f t =
   match t with
@@ -51,9 +53,10 @@ let map_atom f ((a1,a2,tail):'a atom) : 'b atom = (a1,a2,map_tail f tail)
 
 let rec labels_of_attrs lst =
   lst |> List.map (fun (L (str,l)) ->
-    let lbl = Hashtbl.find labels str in
-    let all = (Hashtbl.find infos lbl).trans in
-    LabelSet.diff all (labels_of_attrs l)
+      if is_defined str |> not then define_class str ~subclass:[] ;
+      let lbl = Hashtbl.find labels str in
+      let all = (Hashtbl.find infos lbl).trans in
+      LabelSet.diff all (labels_of_attrs l)
     ) |> List.fold_left LabelSet.union LabelSet.empty
 
 let tt, ff = Enum.mk "tt", Enum.mk "ff"
@@ -71,7 +74,7 @@ let mk (pos,neg,tail) =
   in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 
-let any = mk ([],[],RowVars [[],[]]) |> proj_tag
+let any = mk ([],[],RowVars [[],[]])
 let any_d = proj_tag any
 let noclass = mk ([],[],NoOther)
 
@@ -99,8 +102,8 @@ let record_to_atom r =
   let pos = !top_classes |> LabelSet.to_list |> List.concat_map (aux pos true) in
   let neg = !top_classes |> LabelSet.to_list |> List.concat_map (aux neg true) in
   let tail =
-    if is_tt r.tail then NoOther
-    else if is_ff r.tail then AllOthers
+    if is_tt r.tail then AllOthers
+    else if is_ff r.tail then NoOther
     else RowVars (r.tail |> Ty.F.dnf |> List.map (fun (ps,ns,_) -> ps,ns))
   in
   (pos, neg, tail)

@@ -125,6 +125,7 @@ ty:
 
 simple_ty:
 | ty=atomic_ty classes=classes { TAttr {content=ty;classes=CClasses classes} }
+| classes=classes { TAttr {content=TAny;classes= CClasses classes} }
 | ty=atomic_ty { ty }
 | ty1=simple_ty TOR ty2=simple_ty { TCup (ty1, ty2) }
 | ty1=simple_ty TDIFF ty2=simple_ty { TDiff (ty1, ty2) }

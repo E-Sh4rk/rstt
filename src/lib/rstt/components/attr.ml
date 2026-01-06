@@ -13,6 +13,7 @@ let content_label = Label.mk "_content"
 let class_label = Label.mk "_class"
 
 let mk { content ; classes } =
+  let classes = Ty.cap classes Classes.any in
   let bindings = LabelMap.of_list [
     content_label, Ty.F.mk_descr (Ty.O.required content) ;
     class_label, Ty.F.mk_descr (Ty.O.required classes) ] in
