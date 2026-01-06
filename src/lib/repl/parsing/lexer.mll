@@ -33,7 +33,7 @@ rule token = parse
 | "type" { TYPE }
 | int as i { INT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
-| "v"  { V } | s as str { S str } | "p"  { P } | "t" { T }
+| "v"  { V } | s as str { SHORT str } | "p"  { P } | "t" { T } | "s" { S } 
 | vlen as s { VLEN (String.sub s 1 ((String.length s) - 1) |> Z.of_string) }
 | slen as s { SLEN (String.sub s 0 3, String.sub s 3 ((String.length s) - 3) |> Z.of_string) }
 | sbracket as s { SBRACKET (String.sub s 0 ((String.length s) - 1)) }

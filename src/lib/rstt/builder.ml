@@ -24,6 +24,7 @@ and ('v,'r,'i) t =
 | TArg' of ('v,'r,'i) t Arg.atom'
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
+| TStruct of ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
 and 'r classes =
@@ -72,6 +73,7 @@ let map f fp fc t =
     | TArg' a -> TArg' (Arg.map_atom' aux a)
     | TOption t -> TOption (aux t)
     | TAttr a -> TAttr (Attr.map_atom aux (map_classes fc) a)
+    | TStruct t -> TStruct (aux t)
     | TWhere (t, lst) -> TWhere (aux t, lst |> List.map (fun (id, t) -> id, aux t))
     in
     f t
@@ -142,11 +144,13 @@ let rec build_struct env t =
   | TArg' a -> Arg.map_atom' (build_field env) a |> Arg.mk'
   | TOption _ -> invalid_arg "Unexpected optional type"
   | TAttr _ -> invalid_arg "Unexpected attributes"
+  | TStruct _ -> invalid_arg "Unexpected struct"
   | TWhere _ -> invalid_arg "Unexpected where clause"
 
 and build env t =
   match t with
   | TAttr a -> Attr.map_atom (build_struct env) build_classes a |> Attr.mk
+  | TStruct t -> build_struct env t
   | TVar v -> Ty.mk_var v
   | TCup (t1,t2) -> Ty.cup (build env t1) (build env t2)
   | TCap (t1,t2) -> Ty.cap (build env t1) (build env t2)
@@ -271,6 +275,7 @@ let resolve env t =
     | TArg' a -> TArg' (Arg.map_atom' (aux tids) a)
     | TOption t -> TOption (aux tids t)
     | TAttr a -> TAttr (Attr.map_atom (aux tids) (resolve_classes env) a)
+    | TStruct t -> TStruct (aux tids t)
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in
       let tids = List.fold_left (fun tids (x,v,_) -> StrMap.add x v tids) tids eqs in

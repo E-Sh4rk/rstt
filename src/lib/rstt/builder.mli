@@ -24,6 +24,7 @@ and ('v,'r,'i) t =
 | TArg' of ('v,'r,'i) t Arg.atom'
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
+| TStruct of ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
 and 'r classes =

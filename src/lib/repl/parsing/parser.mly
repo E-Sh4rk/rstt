@@ -42,13 +42,13 @@ let parse_id_or_builtin str =
     pos, named
 %}
 
-%token<string> STRING, S, SBRACKET
+%token<string> STRING, SHORT, SBRACKET
 %token<Z.t> INT, VLEN
 %token<string> ID, VARID, RVARID
 %token<string*Z.t> SLEN
 %token TYPE
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
-%token V P T HAT ARROW STAR
+%token V P T S HAT ARROW STAR
 %token QUESTION_MARK EXCL_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
 %token LEQ GEQ LT GT
@@ -139,10 +139,11 @@ atomic_ty:
 | id=RVARID { TRowVar (id) }
 | LPAREN ty=ty RPAREN { ty }
 | P LPAREN p=prim RPAREN { TPrim p }
+| S LPAREN s=ty RPAREN { TStruct s }
 (* Vectors *)
 | V LPAREN p=prim RPAREN { TVec (AnyLength p) }
-| s=S { TVec (AnyLength (parse_builtin_prim s)) }
-| HAT s=S { TVec (AnyLength (PHat (parse_builtin_prim s))) }
+| s=SHORT { TVec (AnyLength (parse_builtin_prim s)) }
+| HAT s=SHORT { TVec (AnyLength (PHat (parse_builtin_prim s))) }
 | V LBRACKET l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
 | s=SBRACKET l=prim RBRACKET {TVec (VarLength (l,parse_builtin_prim s)) }
 | HAT s=SBRACKET l=prim RBRACKET { TVec (VarLength (l,PHat (parse_builtin_prim s))) }
@@ -176,7 +177,7 @@ atomic_ty:
 
 prim:
 | id=ID { parse_builtin_prim id }
-| s=S { parse_builtin_prim s }
+| s=SHORT { parse_builtin_prim s }
 | id=VARID { PVar (id) }
 | p1=prim TOR p2=prim { PCup (p1, p2) }
 | p1=prim TDIFF p2=prim { PDiff (p1, p2) }
