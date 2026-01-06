@@ -118,7 +118,7 @@ classes:
 
 %inline classes_tail:
 | { Classes.NoOther } | STAR { Classes.AllOthers }
-| id=RVARID { Classes.RowVars ([[id],[]]) }
+| SEMICOLON id=RVARID { Classes.RowVars ([[id],[]]) }
 
 ty:
 | ty=simple_ty { ty }

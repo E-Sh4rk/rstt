@@ -84,8 +84,17 @@ let extract_record ty =
 let record_to_atom r =
   let open Op.Records'.Atom in
   let bindings = r.bindings |> LabelMap.to_list in
-  let is_tt fty = let ty = Ty.F.get_descr fty |> Ty.O.get in Ty.leq ty tt in
-  let is_ff fty = let ty = Ty.F.get_descr fty |> Ty.O.get in Ty.leq ty ff in
+  let ty_of_field fty =
+    let dnf = Ty.F.dnf fty in
+    let aux (ps,ns,leaf) =
+      match ps, ns with
+      | [], [] -> Ty.O.get leaf
+      | _, _ -> Ty.empty
+      in
+    List.map aux dnf |> Ty.disj
+  in
+  let is_tt fty = let ty = ty_of_field fty in Ty.leq ty tt in
+  let is_ff fty = let ty = ty_of_field fty in Ty.leq ty ff in
   let pos = bindings |> List.filter_map (fun (lbl, fty) ->
     if is_tt fty then Some lbl else None
     ) |> LabelSet.of_list in
@@ -102,9 +111,11 @@ let record_to_atom r =
   let pos = !top_classes |> LabelSet.to_list |> List.concat_map (aux pos true) in
   let neg = !top_classes |> LabelSet.to_list |> List.concat_map (aux neg true) in
   let tail =
-    if is_tt r.tail then AllOthers
-    else if is_ff r.tail then NoOther
-    else RowVars (r.tail |> Ty.F.dnf |> List.map (fun (ps,ns,_) -> ps,ns))
+    match is_tt r.tail, is_ff r.tail with
+    | true, true | false, false ->
+      RowVars (r.tail |> Ty.F.dnf |> List.map (fun (ps,ns,_) -> ps,ns))
+    | true, false -> AllOthers
+    | false, true -> NoOther
   in
   (pos, neg, tail)
 
@@ -152,7 +163,7 @@ let print _prec _assoc fmt (pos,neg,tail) =
     | AllOthers -> Format.fprintf fmt " *"
     | RowVars dnf ->
       Format.fprintf fmt " ; %a"
-        (Prec.print_non_empty_dnf ~any:"" print_rv Prec.min_prec NoAssoc) dnf
+        (Prec.print_non_empty_dnf ~any:"any" print_rv Prec.min_prec NoAssoc) dnf
   in
   let bindings = (pos |> List.map (fun p -> true,p))@(neg |> List.map (fun n -> false,n)) in
   Format.fprintf fmt "<%a%a>" print bindings print_tail tail

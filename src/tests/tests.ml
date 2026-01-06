@@ -56,4 +56,9 @@ let%expect_test "tests" =
     arg8: ( a: int, b: dbl ; int ; named: raw)
     arg9: @( int, b: dbl ; int )
     class1: <class1>
+    class2: <class1 ; `c>
+    class3: [
+              `C: { class1 : `C ; class2 : tt | `C ;; ff | `C }
+            ]
+    class4: <(class1, class2)>
     |}]

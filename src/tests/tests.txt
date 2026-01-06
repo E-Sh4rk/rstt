@@ -30,3 +30,6 @@
 "arg9" @( int, b:dbl ; int ) ;;
 
 "class1" <class1> ;;
+"class2" <class1 ; `c> ;;
+"class3" [ <class1,class2> <= <class1;`C> ];;
+"class4" <class1;`C> [ <class1,class2> <= <class1;`C> ];;
