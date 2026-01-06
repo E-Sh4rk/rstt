@@ -122,17 +122,17 @@ let build_classes t =
   | CNoClass -> Classes.noclass
   | CClasses a -> Classes.mk a
 
-let rec build env t =
+let rec build_struct env t =
   match t with
   | TId i -> TIdMap.find i env
   | TTy ty -> ty
   | TVar v -> Ty.mk_var v
   | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TAny -> Ty.any | TEmpty -> Ty.empty | TNull -> Null.any
-  | TCup (t1,t2) -> Ty.cup (build env t1) (build env t2)
-  | TCap (t1,t2) -> Ty.cap (build env t1) (build env t2)
-  | TDiff (t1,t2) -> Ty.diff (build env t1) (build env t2)
-  | TNeg t -> Ty.neg (build env t)
+  | TCup (t1,t2) -> Ty.cup (build_struct env t1) (build_struct env t2)
+  | TCap (t1,t2) -> Ty.cap (build_struct env t1) (build_struct env t2)
+  | TDiff (t1,t2) -> Ty.diff (build_struct env t1) (build_struct env t2)
+  | TNeg t -> Ty.neg (build_struct env t)
   | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
   | TPrim p -> build_prim p
   | TArrow (t1,t2) -> Descr.mk_arrow (build env t1, build env t2) |> Ty.mk_descr
@@ -141,13 +141,22 @@ let rec build env t =
   | TArg a -> Arg.map_atom (build_field env) a |> Arg.mk
   | TArg' a -> Arg.map_atom' (build_field env) a |> Arg.mk'
   | TOption _ -> invalid_arg "Unexpected optional type"
-  | TAttr a -> Attr.map_atom (build env) build_classes a |> Attr.mk
+  | TAttr _ -> invalid_arg "Unexpected attributes"
   | TWhere (t, eqs) ->
     let eqs = eqs |> List.map (fun (x,t) -> x,Var.mk "_",t) in
     let env = List.fold_left (fun env (x,v,_) -> TIdMap.add x (Ty.mk_var v) env) env eqs in
     let t, eqs = build env t, List.map (fun (_,v,t) -> v,build env t) eqs in
     let s = Ty.of_eqs eqs |> Subst.of_list1 in
     Subst.apply s t
+
+and build env t =
+  match t with
+  | TAttr a -> Attr.map_atom (build_struct env) build_classes a |> Attr.mk
+  | TCup (t1,t2) -> Ty.cup (build env t1) (build env t2)
+  | TCap (t1,t2) -> Ty.cap (build env t1) (build env t2)
+  | TDiff (t1,t2) -> Ty.diff (build env t1) (build env t2)
+  | TNeg t -> Ty.neg (build env t)
+  | t -> Attr.mk {content=build_struct env t ; classes=Classes.any}
 
 and build_field env t =
   match t with

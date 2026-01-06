@@ -117,8 +117,8 @@ let print prec assoc fmt t =
   in
   let print_tail fmt f =
     match f with
-    | Printer.FTy ({ Printer.op=Builtin Empty ; _ }, true) -> ()
-    | Printer.FTy ({ Printer.op=Builtin Any ; _ }, true) -> Format.fprintf fmt "... "
+    | Printer.FTy (t, true) when Ty.leq t.Printer.ty Ty.empty -> ()
+    | Printer.FTy (t, true) when Ty.leq Attr.any t.ty -> Format.fprintf fmt "... "
     | f -> Format.fprintf fmt "; %a " print_field_ty (Utils.prune_option_fop f)
   in
   let print_atom _prec _assoc fmt a =

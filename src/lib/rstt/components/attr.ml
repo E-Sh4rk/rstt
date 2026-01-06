@@ -55,7 +55,7 @@ let print prec assoc fmt t =
     else
       Format.fprintf fmt "%a%a" print_opt_content content Printer.print_descr classes
   in
-  Prec.print_non_empty_dnf ~any:"list" print_atom prec assoc fmt t
+  Prec.print_non_empty_dnf ~any:"any" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map f f) ~print:print

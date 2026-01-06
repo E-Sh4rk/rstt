@@ -52,6 +52,7 @@ module TIdSet : Set.S with type elt=TId.t
 
 val build_prim : Var.t prim -> Ty.t
 val build : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.t
+val build_struct : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.t
 val build_field : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.F.t
 val build_classes : RowVar.t classes -> Ty.t
 

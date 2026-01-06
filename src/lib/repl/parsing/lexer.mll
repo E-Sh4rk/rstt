@@ -30,7 +30,7 @@ let slen = s ['0'-'9']+
 let sbracket = s '['
 
 rule token = parse
-| "type" { TYPE } | "where" { WHERE } | "and" { AND }
+| "type" { TYPE }
 | int as i { INT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
 | "v"  { V } | s as str { S str } | "p"  { P } | "t" { T }
@@ -43,11 +43,11 @@ rule token = parse
 | newline  { Lexing.new_line lexbuf ; token lexbuf }
 | blank    { token lexbuf }
 | ";;" { BREAK } | ',' { COMMA } | ':' { COLON } | ';' { SEMICOLON } | '=' { EQUAL }
-| "..." { ELLIPSIS } | ".." { DPOINT }
+| "..." { ELLIPSIS } | ".." { DPOINT } | '*' { STAR }
 | "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW } | "!" { EXCL_MARK }
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE } | "@(" { ALPAREN }
 | "[" { LBRACKET } | "]" { RBRACKET }
-| "<=" { LEQ } | ">=" { GEQ }
+| "<=" { LEQ } | ">=" { GEQ } | "<" { LT } | ">" { GT }
 | '|' { TOR } | '&' { TAND } | '~' { TNEG } | '\\' { TDIFF }
 | eof { EOF }
 | _ { raise (Errors.E_Lexer ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }

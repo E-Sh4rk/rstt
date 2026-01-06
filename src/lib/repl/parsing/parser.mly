@@ -1,6 +1,7 @@
 %{
 open Ast
 open Rstt.Builder
+open Rstt
 
 let parse_id_or_builtin str =
     match str with
@@ -45,12 +46,12 @@ let parse_id_or_builtin str =
 %token<Z.t> INT, VLEN
 %token<string> ID, VARID, RVARID
 %token<string*Z.t> SLEN
-%token TYPE WHERE AND
+%token TYPE
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
-%token V P T HAT ARROW
+%token V P T HAT ARROW STAR
 %token QUESTION_MARK EXCL_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
-%token LEQ GEQ
+%token LEQ GEQ LT GT
 %token TOR TAND TNEG TDIFF
 %token EOF
 
@@ -111,16 +112,19 @@ tally:
 ty_main:
 | ty=ty EOF { ty }
 
+classes:
+| LT classes=separated_list(COMMA, ID) tl=classes_tail GT
+{ List.map (fun str -> Classes.L (str, [])) classes, [], tl }
+
+%inline classes_tail:
+| { Classes.NoOther } | STAR { Classes.AllOthers }
+| id=RVARID { Classes.RowVars ([[id],[]]) }
+
 ty:
-| ty=ty_norec { ty }
-| ty=ty_norec WHERE defs=separated_nonempty_list(AND, ty_def) { TWhere (ty, defs) }
-
-%inline ty_def: name=ID EQUAL ty=ty_norec { (name, ty) }
-
-ty_norec:
 | ty=simple_ty { ty }
 
 simple_ty:
+| ty=atomic_ty classes=classes { TAttr {content=ty;classes=CClasses classes} }
 | ty=atomic_ty { ty }
 | ty1=simple_ty TOR ty2=simple_ty { TCup (ty1, ty2) }
 | ty1=simple_ty TDIFF ty2=simple_ty { TDiff (ty1, ty2) }
@@ -155,7 +159,7 @@ atomic_ty:
 | T LPAREN lst=separated_list(COMMA, simple_ty) RPAREN { TTuple lst }
 
 %inline optional_tail:
-| SEMICOLON ty=ty { ty }
+| SEMICOLON ty=simple_ty { ty }
 | ELLIPSIS { TOption TAny }
 | { TOption TEmpty }
 
