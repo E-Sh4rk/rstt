@@ -62,4 +62,5 @@ let%expect_test "tests" =
             ]
     class4: <(class1, class2)>
     class5: <class1 ?>
+    class6: int<class1 ?>
     |}]

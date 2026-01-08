@@ -34,3 +34,4 @@
 "class3" [ <class1,class2> <= <class1;`C> ];;
 "class4" <class1;`C> [ <class1,class2> <= <class1;`C> ];;
 "class5" <class1 ?> ;;
+"class6" int<class1;`C> [ int <= int<;`C> ];;
