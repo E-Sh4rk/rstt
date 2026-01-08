@@ -2,10 +2,10 @@ open Sstt
 open Printer
 
 module Hat : sig
-    val sym : string
+    val sym : unit -> ('a, 'b, 'c, 'd, 'd, 'a) format6
     val prec : int
     val assoc : Prec.assoc
-    val opinfo : string * int * Prec.assoc
+    val opinfo : unit -> (('a, 'b, 'c, 'd, 'd, 'a) format6 * int * Prec.assoc)
 end
 module type PrimComp = sig
     val tag_name : string

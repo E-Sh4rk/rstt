@@ -41,7 +41,7 @@ let map f = function TAny -> TAny | TAny' -> TAny' | TComp d -> TComp (f d)
 let print prec assoc fmt t =
   match t with
   | TAny -> Format.fprintf fmt "prim"
-  | TAny' -> Format.fprintf fmt "%sprim" Na.Hat.sym
+  | TAny' -> Format.fprintf fmt "%(%)prim" (Na.Hat.sym ())
   | TComp d -> Format.fprintf fmt "%a" (Printer.print_descr_ctx prec assoc) d
 
 let printer_builder = Printer.builder ~to_t ~map ~print

@@ -99,7 +99,7 @@ let print_res env fmt res =
     let print_bool fmt b = Format.fprintf fmt "%b" b in
     Format.fprintf fmt "%a" (print_seq_space print_bool) bs
   | RTy tys ->
-    Format.fprintf fmt "%a"
+    Format.fprintf fmt "@[%a@]"
       (print_seq_cut (Pp.ty' (aliases env))) tys
   | RSubst ss ->
     Format.fprintf fmt "%a"

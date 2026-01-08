@@ -5,10 +5,10 @@ let na = Enum.mk "na"
 let na_ty = Descr.mk_enum na |> Ty.mk_descr
 
 module Hat = struct
-  let sym = "^"
+  let sym () = format_of_string "^"
   let prec = 5
   let assoc = Prec.NoAssoc
-  let opinfo = (sym, prec, assoc)
+  let opinfo () = (sym (), prec, assoc)
 end
 
 module type PrimComp = sig
@@ -54,7 +54,7 @@ module MakeCompWithNa(P:PrimComp) = struct
 
   let print prec assoc fmt t =
     let print_without_na prec assoc fmt t =
-      Prec.fprintf prec assoc Hat.opinfo fmt "%s%a" Hat.sym
+      Prec.fprintf prec assoc (Hat.opinfo ()) fmt "%(%)%a" (Hat.sym ())
         (P.print Hat.prec NoAssoc) t
     in
     match t with
@@ -62,7 +62,7 @@ module MakeCompWithNa(P:PrimComp) = struct
     | WithoutNa t -> print_without_na prec assoc fmt t
     | Na ->
       let sym,prec',_ as opinfo = Prec.binop_info Diff in
-      Prec.fprintf prec assoc opinfo fmt "%a%s%a"
+      Prec.fprintf prec assoc opinfo fmt "%a%(%)%a"
         (P.print prec' Left) P.any_t
         sym
         (print_without_na prec' Right) P.any_t

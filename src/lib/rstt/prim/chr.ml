@@ -49,7 +49,7 @@ module P = struct
       Format.fprintf fmt "chr"
     else
       let sym,prec',_ as opinfo = binop_info Diff in
-      fprintf prec assoc opinfo fmt "chr%s%a" sym (aux prec' Right) strs
+      fprintf prec assoc opinfo fmt "chr%(%)%a" sym (aux prec' Right) strs
 end
 
 include Na.MakeCompWithNa(P)

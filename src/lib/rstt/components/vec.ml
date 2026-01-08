@@ -74,7 +74,7 @@ let print prec assoc fmt t =
     if Ty.leq Prim.any v.Printer.ty then
       Format.fprintf fmt "vec%s" len
     else if Ty.equiv Prim.any' v.ty then
-      Format.fprintf fmt "%svec%s" Na.Hat.sym len
+      Format.fprintf fmt "%(%)vec%s" (Na.Hat.sym ()) len
     else if Prim.is_simple v.ty then
       Format.fprintf fmt "%a%s" Printer.print_descr v len
     else
