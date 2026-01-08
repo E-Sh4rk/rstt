@@ -36,21 +36,21 @@ let%expect_test "tests" =
     arg5: [
             'A: 'A \ prim
           ]
-         [
-           'A: 'A \ (chr | clx | dbl | lgl | raw) ;
-           'B: 'B & lgl ;
-           'C: 'C & int ;
-           `R: { d : 'D | `R ;; `R }
-         ]
-         [
-           'B: empty
-         ]
-         [
-           'C: empty
-         ]
-         [
-           'D: empty
-         ]
+          [
+            'A: 'A \ (chr | clx | dbl | lgl | raw) ;
+            'B: 'B & lgl ;
+            'C: 'C & int ;
+            `R: { d : 'D | `R ;; `R }
+          ]
+          [
+            'B: empty
+          ]
+          [
+            'C: empty
+          ]
+          [
+            'D: empty
+          ]
     arg6: ( a: int, b: dbl ... )
     arg7: @( int, b: dbl ... )
     arg8: ( a: int, b: dbl ; int ; named: raw)
