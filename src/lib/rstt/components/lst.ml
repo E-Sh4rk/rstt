@@ -31,7 +31,6 @@ let record_to_atom { Records.Atom.bindings ; tail } =
     match Labels.info lbl with
     | Pos i -> Either.left (i,ty)
     | Named str -> Either.right (str,ty)
-    | PosNamed _ -> invalid_arg "Invalid list encoding."
     ) in
   let pos = List.sort (fun t1 t2 -> Stdlib.compare (fst t1) (fst t2)) pos in
   let pos = List.map snd pos in
