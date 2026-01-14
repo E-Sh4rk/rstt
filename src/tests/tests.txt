@@ -28,6 +28,8 @@
 "arg7" @( int, b:dbl ... ) ;;
 "arg8" ( a:int, b:dbl ; int ; named:raw ) ;;
 "arg9" @( int, b:dbl ; int ) ;;
+"arg10" @(a:<class1>) <= (a:<class1>) ;;
+"arg11" @(a:<class1>) & (a:<class1>) ;;
 
 "class1" <class1> ;;
 "class2" <class1 ; `c> ;;

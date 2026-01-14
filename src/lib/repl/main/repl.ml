@@ -47,12 +47,6 @@ let rec compute_expr env e =
     let r1, env = compute_expr env e1 in
     let r2, env = compute_expr env e2 in
     let r = match r1, r2 with
-    | RTy tys1, RTy tys2 ->
-      let apply (ty1, ty2) =
-        let arrow = Ty.get_descr ty1 |> Descr.get_arrows in
-        Op.Arrows.apply arrow ty2
-      in
-      RTy (cartesian_product tys1 tys2 |> List.map apply)
     | RSubst s1, RSubst s2 ->
       RSubst (cartesian_product s1 s2 |> List.map (fun (s1, s2) -> Subst.compose s2 s1))
     | RTy ty, RSubst s ->
