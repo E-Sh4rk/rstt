@@ -180,6 +180,7 @@ prim:
 | id=ID { parse_builtin_prim id }
 | s=SHORT { parse_builtin_prim s }
 | id=VARID { PVar (id) }
+| LPAREN p=prim RPAREN { p }
 | p1=prim TOR p2=prim { PCup (p1, p2) }
 | p1=prim TDIFF p2=prim { PDiff (p1, p2) }
 | p1=prim TAND p2=prim { PCap (p1, p2) }
