@@ -20,6 +20,8 @@ let mk { content ; classes } =
   { Records.Atom.bindings ; tail=Ty.F.mk_descr Ty.O.absent } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk_anyclass content =
   mk { content ; classes=Classes.any }
+let mk_noclass content =
+  mk { content ; classes=Classes.noclass }
 let any_d =
   let bindings = LabelMap.of_list [
     content_label, Ty.F.mk_descr (Ty.O.required Ty.any) ;
