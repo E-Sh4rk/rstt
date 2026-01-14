@@ -50,6 +50,11 @@ let to_t ctx comp =
 
 let destruct ty = proj_tag ty |> extract
 
+let proj_content ty =
+  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj content_label |> Ty.O.get
+let proj_classes ty =
+  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj class_label |> Ty.O.get
+
 let print prec assoc fmt t =
   let print_atom prec assoc fmt { content ; classes } =
     let print_opt_content fmt t =

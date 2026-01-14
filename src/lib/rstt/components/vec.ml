@@ -56,12 +56,6 @@ let to_t ctx comp =
 
 let destruct ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> TagComp.dnf |> extract_pairs
-let length ty =
-  let l ((_,l),_) = l in
-  destruct ty |> List.map l |> Ty.disj
-let content ty =
-  let v ((v,_),_) = v in
-  destruct ty |> List.map v |> Ty.disj
 let destruct ty = destruct ty
   |> List.map (fun (p, ns) -> pair_to_atom p, List.map pair_to_atom ns)
 

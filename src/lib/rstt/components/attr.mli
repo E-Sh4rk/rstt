@@ -9,6 +9,8 @@ val mk_anyclass : Ty.t -> Ty.t
 val mk_noclass : Ty.t -> Ty.t
 val any : Ty.t
 val destruct : Ty.t -> (Ty.t, Ty.t) t
+val proj_content : Ty.t -> Ty.t
+val proj_classes : Ty.t -> Ty.t
 
 val map_atom : ('a -> 'b) -> ('c -> 'd) -> ('a, 'c) atom -> ('b, 'd) atom
 val map_line : ('a -> 'b) -> ('c -> 'd) -> ('a, 'c) line -> ('b, 'd) line

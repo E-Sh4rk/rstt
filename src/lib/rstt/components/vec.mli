@@ -11,8 +11,6 @@ val tag : Tag.t
 val any : Ty.t
 val mk : Ty.t atom -> Ty.t
 val partition : Ty.t list
-val length : Ty.t -> Ty.t (* subtype of Prim.Int.any *)
-val content : Ty.t -> Ty.t
 
 val destruct : Ty.t -> Ty.t t
 val map_atom : ('a -> 'b) -> 'a atom -> 'b atom
