@@ -4,6 +4,7 @@ module Builder = Builder
 module Prim = Prim
 module Vec = Vec
 module Lst = Lst
+module Arg = Arg
 module Null = Null
 module Classes = Classes
 module Attr = Attr
