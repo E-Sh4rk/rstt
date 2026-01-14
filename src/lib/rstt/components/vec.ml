@@ -56,7 +56,6 @@ let to_t ctx comp =
 
 let destruct ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> TagComp.dnf |> extract_pairs
-let destruct ty = destruct ty
   |> List.map (fun (p, ns) -> pair_to_atom p, List.map pair_to_atom ns)
 
 let partition =
