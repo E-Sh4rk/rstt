@@ -10,6 +10,7 @@
 
 "vec1" int1 | lgl2 | lgl['a] | v[42](raw) ;;
 "vec2" v(^any) = ^vec ;;
+"vec3" v['a]('b) ;;
 
 "lst1" { ; v(int) } <= { ...} ;;
 "lst2" { v(42), a:v(43) ; v(int) } <= { ; v(int)} ;;

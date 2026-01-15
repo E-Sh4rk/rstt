@@ -22,6 +22,7 @@ let%expect_test "tests" =
     norm2: lgl | clx | raw | dbl | chr | int
     vec1: lgl['a] | raw42 | lgl2 | int1
     vec2: true
+    vec3: v['a]('b)
     lst1: true
     lst2: true
     lst3: false

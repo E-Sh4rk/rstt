@@ -63,7 +63,6 @@ let partition =
 
 let print prec assoc fmt t =
   let print_v ~len fmt v =
-    let len = match len with None -> "" | Some n -> Format.asprintf "%i" n in
     if Ty.leq Prim.any v.Printer.ty then
       Format.fprintf fmt "vec%s" len
     else if Ty.equiv Prim.any' v.ty then
@@ -77,11 +76,13 @@ let print prec assoc fmt t =
   let print_atom _prec _assoc fmt = function
     | VarLength (l,v) ->
       let l = Utils.prune_printer_descr ~any:prim_int l in
-      Format.fprintf fmt "%a[%a]" (print_v ~len:None) v Printer.print_descr l
+      let len = Format.asprintf "@[<h>[%a]@]" Printer.print_descr l in
+      Format.fprintf fmt "%a" (print_v ~len) v
     | AnyLength v ->
-      Format.fprintf fmt "%a" (print_v ~len:None) v
+      Format.fprintf fmt "%a" (print_v ~len:"") v
     | CstLength (n,v) ->
-      Format.fprintf fmt "%a" (print_v ~len:(Some n)) v
+      let len = Format.asprintf "%i" n in
+      Format.fprintf fmt "%a" (print_v ~len) v
   in
   let t = t |> List.map (fun (p,ns) -> [p],ns) in
   Prec.print_non_empty_dnf ~any:"" print_atom prec assoc fmt t
