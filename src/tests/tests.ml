@@ -66,4 +66,9 @@ let%expect_test "tests" =
     class4: <(class1, class2)>
     class5: <class1 ?>
     class6: int<class1 ?>
+    c1: c_string | c_na | c(42)
+    c2: c_true
+    c3: c_int
+    c4: ~c_na
+    c5: *c_int
     |}]

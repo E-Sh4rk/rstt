@@ -38,3 +38,9 @@
 "class4" <class1;`C> [ <class1,class2> <= <class1;`C> ];;
 "class5" <class1 ?> ;;
 "class6" int<class1;`C> [ int <= int<;`C> ];;
+
+"c1" c_string | c(42) | c_na ;;
+"c2" c_bool & c_true ;;
+"c3" c_int_na \ c_na ;;
+"c4" ~c_na ;;
+"c5" *c_int ;;
