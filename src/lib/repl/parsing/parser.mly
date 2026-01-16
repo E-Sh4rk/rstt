@@ -9,6 +9,17 @@ let parse_id_or_builtin str =
     | "any" -> TAny
     | "null" -> TNull
     | "list" -> TList([],[],TOption TAny)
+    (* C stuff  *)
+    | "c_double" -> TCConst CDouble
+    | "c_string" -> TCConst CString
+    | "c_char" -> TCConst CChar
+    | "c_void" -> TCConst CVoid
+    | "c_int_na" -> TCConst CIntNa
+    | "c_int" -> TCConst CInt
+    | "c_na" -> TCConst CNa
+    | "c_bool" -> TCConst CBool
+    | "c_true" -> TCConst CTrue
+    | "c_false" -> TCConst CFalse
     | str -> TId str
 
  let parse_builtin_prim str =
@@ -48,7 +59,7 @@ let parse_id_or_builtin str =
 %token<string*Z.t> SLEN
 %token TYPE
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
-%token V P T S HAT ARROW STAR
+%token C VP VB P T S HAT ARROW STAR
 %token QUESTION_MARK EXCL_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
 %token LEQ GEQ LT GT
@@ -139,13 +150,13 @@ atomic_ty:
 | id=VARID { TVar (id) }
 | id=RVARID { TRowVar (id) }
 | LPAREN ty=ty RPAREN { ty }
-| P LPAREN p=prim RPAREN { TPrim p }
-| S LPAREN s=ty RPAREN { TStruct s }
+| P p=prim RPAREN { TPrim p }
+| S s=ty RPAREN { TStruct s }
 (* Vectors *)
-| V LPAREN p=prim RPAREN { TVec (AnyLength p) }
+| VP p=prim RPAREN { TVec (AnyLength p) }
 | s=SHORT { TVec (AnyLength (parse_builtin_prim s)) }
 | HAT s=SHORT { TVec (AnyLength (PHat (parse_builtin_prim s))) }
-| V LBRACKET l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
+| VB l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
 | s=SBRACKET l=prim RBRACKET {TVec (VarLength (l,parse_builtin_prim s)) }
 | HAT s=SBRACKET l=prim RBRACKET { TVec (VarLength (l,PHat (parse_builtin_prim s))) }
 | i=VLEN LPAREN p=prim RPAREN { TVec (CstLength (Z.to_int i, p)) }
@@ -158,7 +169,14 @@ atomic_ty:
 { let pos',named' = split_list_fields fs in TArg' { tl'=tl ; pos' ; named' } }
 | LPAREN pos_named=separated_list(COMMA, ty_named_field) tl=optional_tail named=optional_named RPAREN
 { TArg { tl ; pos=[] ; pos_named ; named } }
-| T LPAREN lst=separated_list(COMMA, simple_ty) RPAREN { TTuple lst }
+| T lst=separated_list(COMMA, simple_ty) RPAREN { TTuple lst }
+(* C stuff *)
+| STAR t=atomic_ty { TCPtr t }
+| C i=cint RPAREN { TCConst i }
+
+cint:
+| i=INT { CIntSingl (Z.to_int i) }
+| i1=INT DPOINT i2=INT { CIntInterval (Z.to_int i1, Z.to_int i2) }
 
 %inline optional_tail:
 | SEMICOLON ty=simple_ty { ty }
@@ -169,12 +187,16 @@ atomic_ty:
 | SEMICOLON named=separated_list(COMMA, ty_named_field) { named }
 | { [] }
 
+label:
+| id=ID { id }
+| s=SHORT { s }
+
 %inline ty_field:
-| id=ID COLON t=simple_ty { Named (id, t) }
+| lbl=label COLON t=simple_ty { Named (lbl, t) }
 | t=simple_ty { Pos t }
 
 %inline ty_named_field:
-| id=ID COLON t=simple_ty { (id, t) }
+| lbl=label COLON t=simple_ty { (lbl, t) }
 
 prim:
 | id=ID { parse_builtin_prim id }

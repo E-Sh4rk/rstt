@@ -1,5 +1,9 @@
 open Sstt
 
+type cconst =
+| CDouble | CString | CChar | CVoid
+| CBool | CTrue | CFalse | CNa | CInt | CIntNa | CIntSingl of int | CIntInterval of int * int
+
 type 'v prim =
 | PInt' of int option * int option | PChr' of string | PLgl' of bool
 | PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny | PHat of 'v prim | PVar of 'v
@@ -25,6 +29,8 @@ and ('v,'r,'i) t =
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t
+| TCConst of cconst
+| TCPtr of ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
 and 'r classes =
@@ -51,6 +57,7 @@ end
 module TIdMap : Map.S with type key=TId.t
 module TIdSet : Set.S with type elt=TId.t
 
+val build_cconst : cconst -> Ty.t
 val build_prim : Var.t prim -> Ty.t
 val build : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.t
 val build_struct : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.t

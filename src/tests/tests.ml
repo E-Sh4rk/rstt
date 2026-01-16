@@ -20,7 +20,7 @@ let%expect_test "tests" =
     tuple2: true
     norm1: any
     norm2: lgl | clx | raw | dbl | chr | int
-    vec1: lgl['a] | raw42 | lgl2 | int1
+    vec1: lgl2 | lgl['a] | raw42 | int1
     vec2: true
     vec3: v['a]('b)
     lst1: true

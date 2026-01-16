@@ -52,14 +52,14 @@ let map _f v = v
 let print prec assoc fmt ints =
   let pp_interval _prec _assoc fmt i =
     match i with
-    | AnyNa -> Format.fprintf fmt "c_int?"
+    | AnyNa -> Format.fprintf fmt "c_int_na"
     | Any -> Format.fprintf fmt "c_int"
     | Na -> Format.fprintf fmt "c_na"
     | Bool -> Format.fprintf fmt "c_bool"
     | Tt -> Format.fprintf fmt "c_true"
     | Ff -> Format.fprintf fmt "c_false"
-    | Singl i -> Format.fprintf fmt "c_int(%a)" Z.pp_print i
-    | Interval (i1,i2) -> Format.fprintf fmt "c_int(%a-%a)" Z.pp_print i1 Z.pp_print i2
+    | Singl i -> Format.fprintf fmt "c(%a)" Z.pp_print i
+    | Interval (i1,i2) -> Format.fprintf fmt "c(%a-%a)" Z.pp_print i1 Z.pp_print i2
   in
   Prec.print_cup pp_interval prec assoc fmt ints
 

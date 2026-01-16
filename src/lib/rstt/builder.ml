@@ -1,5 +1,9 @@
 open Sstt
 
+type cconst =
+| CDouble | CString | CChar | CVoid
+| CBool | CTrue | CFalse | CNa | CInt | CIntNa | CIntSingl of int | CIntInterval of int * int
+
 type 'v prim =
 | PInt' of int option * int option | PChr' of string | PLgl' of bool
 | PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny | PHat of 'v prim | PVar of 'v
@@ -24,7 +28,9 @@ and ('v,'r,'i) t =
 | TArg' of ('v,'r,'i) t Arg.atom'
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
-| TStruct of ('v,'r,'i) t
+| TStruct of ('v,'r,'i) t (* Means that the parameter should not be packed in an Attr container *)
+| TCConst of cconst
+| TCPtr of ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
 and 'r classes =
@@ -74,6 +80,8 @@ let map f fp fc t =
     | TOption t -> TOption (aux t)
     | TAttr a -> TAttr (Attr.map_atom aux (map_classes fc) a)
     | TStruct t -> TStruct (aux t)
+    | TCConst c -> TCConst c
+    | TCPtr t -> TCPtr (aux t)
     | TWhere (t, lst) -> TWhere (aux t, lst |> List.map (fun (id, t) -> id, aux t))
     in
     f t
@@ -98,6 +106,21 @@ module TIdMap = Map.Make(TId)
 module TIdSet = Set.Make(TId)
 
 (* === Construction of types === *)
+
+let build_cconst t =
+  match t with
+  | CDouble -> Cenums.double
+  | CString -> Cenums.str
+  | CChar -> Cenums.char
+  | CVoid -> Cenums.void
+  | CBool -> Cint.bool
+  | CTrue -> Cint.tt
+  | CFalse -> Cint.ff
+  | CNa -> Cint.na
+  | CInt -> Cint.any
+  | CIntNa -> Cint.any_na
+  | CIntSingl i -> Cint.singl i
+  | CIntInterval (i1,i2) -> Cint.interval (i1,i2)
 
 let rec build_prim t =
   match t with
@@ -142,6 +165,8 @@ let rec build_struct env t =
   | TList a -> Lst.map_atom (build_field env) a |> Lst.mk
   | TArg a -> Arg.map_atom (build_field env) a |> Arg.mk
   | TArg' a -> Arg.map_atom' (build_field env) a |> Arg.mk'
+  | TCConst c -> build_cconst c
+  | TCPtr t -> Cptr.mk (build env t)
   | TOption _ -> invalid_arg "Unexpected optional type"
   | TAttr _ -> invalid_arg "Unexpected attributes"
   | TStruct _ -> invalid_arg "Unexpected struct"
@@ -276,6 +301,8 @@ let resolve env t =
     | TOption t -> TOption (aux tids t)
     | TAttr a -> TAttr (Attr.map_atom (aux tids) (resolve_classes env) a)
     | TStruct t -> TStruct (aux tids t)
+    | TCConst c -> TCConst c
+    | TCPtr t -> TCPtr (aux tids t)
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in
       let tids = List.fold_left (fun tids (x,v,_) -> StrMap.add x v tids) tids eqs in
