@@ -1,0 +1,68 @@
+open Sstt
+
+let tag = Tag.mk "cint"
+
+let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
+
+let two = Z.of_int 2
+let min_int = Z.neg (Z.pow two 31)
+let max_int = Z.pred (Z.pow two 31)
+let interval (i1, i2) =
+  if i1 > i2 then Ty.empty
+  else
+    let i1, i2 = Z.of_int i1, Z.of_int i2 in
+    let i1, i2 = Z.max i1 min_int, Z.min i2 max_int in
+    Intervals.Atom.mk_bounded i1 i2 |> Descr.mk_interval |> Ty.mk_descr |> add_tag
+let singl i = interval (i,i)
+let na = Intervals.Atom.mk_singl min_int |> Descr.mk_interval |> Ty.mk_descr |> add_tag
+let tt, ff = singl 1, singl 0
+let bool = Ty.cup tt ff
+let any_p =
+  let lb, ub = min_int, max_int in
+  Intervals.Atom.mk_bounded lb ub
+  |> Descr.mk_interval |> Ty.mk_descr
+let any_na = add_tag any_p
+let any = Ty.diff any_na na
+
+type elt = AnyNa | Any | Na | Bool | Tt | Ff | Interval of (Z.t * Z.t) | Singl of Z.t
+
+let to_t _ comp =
+  let (_, pty) = Op.TagComp.as_atom comp in
+  if Ty.leq pty any_p && Ty.vars_toplevel pty |> VarSet.is_empty
+  then
+    let aux (i1,i2) =
+      let ty = Intervals.Atom.mk_bounded i1 i2 |> Descr.mk_interval |> Ty.mk_descr |> add_tag in
+      if Ty.equiv ty tt then Tt
+      else if Ty.equiv ty ff then Ff
+      else if Ty.equiv ty bool then Bool
+      else if Ty.equiv ty na then Na
+      else if Ty.equiv ty any then Any
+      else if Ty.equiv ty any_na then AnyNa
+      else if Z.equal i1 i2 then Singl i1
+      else Interval (i1,i2)
+    in
+    let ints = pty |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct
+          |> List.map (fun a-> match Intervals.Atom.get a with
+                Some z1, Some z2 -> aux (z1, z2)
+              | _ -> assert false) in
+    Some ints
+  else None
+
+let map _f v = v
+let print prec assoc fmt ints =
+  let pp_interval _prec _assoc fmt i =
+    match i with
+    | AnyNa -> Format.fprintf fmt "c_int?"
+    | Any -> Format.fprintf fmt "c_int"
+    | Na -> Format.fprintf fmt "c_na"
+    | Bool -> Format.fprintf fmt "c_bool"
+    | Tt -> Format.fprintf fmt "c_true"
+    | Ff -> Format.fprintf fmt "c_false"
+    | Singl i -> Format.fprintf fmt "c_int(%a)" Z.pp_print i
+    | Interval (i1,i2) -> Format.fprintf fmt "c_int(%a-%a)" Z.pp_print i1 Z.pp_print i2
+  in
+  Prec.print_cup pp_interval prec assoc fmt ints
+
+let printer_builder = Printer.builder ~to_t ~map ~print
+let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}
+let () = Pp.add_printer_param printer_params
