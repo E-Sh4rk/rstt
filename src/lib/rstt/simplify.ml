@@ -1,10 +1,10 @@
 open Sstt
 
 let partition_vecs tc =
-  if Tag.equal (TagComp.tag tc) Vec.tag then
+  if Tag.equal (TagComp.tag tc) Attr.tag then
     let ty = Descr.mk_tagcomp tc |> Ty.mk_descr in
-    let ty = Vec.partition |> List.map (Ty.cap ty) |> Ty.disj in
-    Ty.get_descr ty |> Descr.get_tags |> Tags.get Vec.tag
+    let ty = Attr.partition |> List.map (Ty.cap ty) |> Ty.disj in
+    Ty.get_descr ty |> Descr.get_tags |> Tags.get Attr.tag
   else tc
 let partition_vecs tags =
   let b,tags = Tags.destruct tags in

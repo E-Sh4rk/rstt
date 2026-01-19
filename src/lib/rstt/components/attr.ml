@@ -28,6 +28,7 @@ let any_d =
     class_label, Ty.F.mk_descr (Ty.O.required Classes.any) ] in
   { Records.Atom.bindings ; tail=Ty.F.mk_descr Ty.O.absent } |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
+let partition = (mk_anyclass (Ty.neg Vec.any))::(Vec.partition |> List.map mk_anyclass)
 
 let map_atom f fc { content ; classes } = { content=f content ; classes=fc classes }
 let map_line f fc (ps,ns) = (List.map (map_atom f fc) ps, List.map (map_atom f fc) ns)

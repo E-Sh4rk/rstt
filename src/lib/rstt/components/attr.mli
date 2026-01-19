@@ -4,10 +4,13 @@ type ('a, 'c) atom = { content:'a ; classes:'c }
 type ('a, 'c) line = ('a, 'c) atom list * ('a, 'c) atom list
 type ('a, 'c) t = ('a, 'c) line list
 
+val tag : Tag.t
 val mk : (Ty.t, Ty.t) atom -> Ty.t
 val mk_anyclass : Ty.t -> Ty.t
 val mk_noclass : Ty.t -> Ty.t
 val any : Ty.t
+val partition : Ty.t list
+
 val destruct : Ty.t -> (Ty.t, Ty.t) t
 val proj_content : Ty.t -> Ty.t
 val proj_classes : Ty.t -> Ty.t

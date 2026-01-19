@@ -19,8 +19,8 @@ let%expect_test "tests" =
     tuple1: tuple0
     tuple2: true
     norm1: any
-    norm2: lgl | clx | raw | dbl | chr | int
-    vec1: lgl2 | lgl['a] | int1 | raw42
+    norm2: clx | raw | dbl | int | chr | lgl
+    vec1: int1 | raw42 | lgl2 | lgl['a]
     vec2: true
     vec3: v['a]('b)
     lst1: true
@@ -66,7 +66,7 @@ let%expect_test "tests" =
     class4: <(class1, class2)>
     class5: <class1 ?>
     class6: int<class1 ?>
-    c1: c_string | c_na | c(42)
+    c1: c(42) | c_string | c_na
     c2: c_true
     c3: c_int
     c4: ~c_na
