@@ -6,7 +6,8 @@
 "tuple2" t(p(42),p(73)) <= t(p(int),p(int)) ;;
 
 "norm1" ![ any ] ;;
-"norm2" ![ v(any) ] ;;
+"norm2" ![ vec ] ;;
+"norm3" ![ vec \ int ] ;;
 
 "vec1" int1 | lgl2 | lgl['a] | v[42](raw) ;;
 "vec2" v(^any) = ^vec ;;

@@ -15,15 +15,18 @@ let partition_vecs d =
 let partition_vecs vd =
   VDescr.map partition_vecs vd
 let partition_vecs ty =
-  let has_vec = ref false in
-  let _ = ty |> Ty.nodes |> List.map (fun ty ->
-    Ty.def ty |> VDescr.map (fun d ->
-      let (tags,_) = Descr.get_tags d |> Tags.components in
-      if List.exists (fun tc -> TagComp.tag tc |> Tag.equal Vec.tag) tags
-      then has_vec := true ;
-      d
-    )) in
-  if !has_vec then Transform.transform partition_vecs ty else ty
+  try
+    let _ = ty |> Ty.nodes |> List.map (fun ty ->
+      Ty.def ty |> VDescr.map (fun d ->
+        let (tags,_) = Descr.get_tags d |> Tags.components in
+        List.map (fun tc ->
+          if TagComp.tag tc |> Tag.equal Vec.tag
+          then TagComp.map (fun _ -> raise Exit) tc |> ignore ;
+          tc) tags |> ignore ;
+        d
+      )) in
+    ty
+  with Exit -> Transform.transform partition_vecs ty
 
 let leq_partition ty1 ty2 = Ty.diff ty1 ty2 |> partition_vecs |> Ty.is_empty
 
