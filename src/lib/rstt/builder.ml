@@ -149,7 +149,8 @@ let build_classes t =
 
 let rec build_struct env t =
   match t with
-  | TId i -> TIdMap.find i env
+  | TId i -> (try TIdMap.find i env with Not_found ->
+    invalid_arg ("type of "^(string_of_int i)^" not found in the environment"))
   | TTy ty -> ty
   | TVar v -> Ty.mk_var v
   | TRowVar _ -> invalid_arg "Unexpected row variable"
@@ -242,7 +243,8 @@ let rvar env str =
 let tid env tids str =
   begin match StrMap.find_opt str tids with
     | Some v -> v
-    | None -> StrMap.find str env.tids
+    | None -> (try StrMap.find str env.tids with Not_found ->
+      invalid_arg ("type of "^str^" not found in the environment"))  
   end
 
 let resolve_prim env t =
