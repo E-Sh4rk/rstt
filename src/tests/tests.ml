@@ -19,11 +19,13 @@ let%expect_test "tests" =
     tuple1: tuple0
     tuple2: true
     norm1: any
-    norm2: clx | lgl | int | chr | raw | dbl
-    norm3: chr | raw | dbl | clx | lgl
-    vec1: lgl2 | lgl['a] | int1 | raw42
+    norm2: clx | raw | dbl | chr | int | lgl
+    norm3: dbl | clx | chr | lgl | raw
+    vec1: raw42 | int1 | lgl['a] | lgl2
     vec2: true
     vec3: v['a]('b)
+    vec4: v(int(na | i('a & int)))
+    vec5: v(chr(na | s('a & enum)))
     lst1: true
     lst2: true
     lst3: false
@@ -72,4 +74,5 @@ let%expect_test "tests" =
     c3: c_int
     c4: ~c_na
     c5: *c_int
+    c6: cint('a & (-2147483648..2147483647))
     |}]

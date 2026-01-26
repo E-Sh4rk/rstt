@@ -12,6 +12,8 @@
 "vec1" int1 | lgl2 | lgl['a] | v[42](raw) ;;
 "vec2" v(^any) = ^vec ;;
 "vec3" v['a]('b) ;;
+"vec4" v(int('a)) ;;
+"vec5" v(chr('a)) ;;
 
 "lst1" { ; v(int) } <= { ...} ;;
 "lst2" { v(42), a:v(43) ; v(int) } <= { ; v(int)} ;;
@@ -45,3 +47,4 @@
 "c3" c_int_na \ c_na ;;
 "c4" ~c_na ;;
 "c5" *c_int ;;
+"c6" c_int('a) ;;

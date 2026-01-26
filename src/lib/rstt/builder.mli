@@ -1,11 +1,13 @@
 open Sstt
 
-type cconst =
+type 'v cconst =
 | CDouble | CString | CChar | CVoid
-| CBool | CTrue | CFalse | CNa | CInt | CIntNa | CIntSingl of int | CIntInterval of int * int
+| CBool | CTrue | CFalse | CNa | CInt | CIntNa
+| CIntSingl of int | CIntInterval of int * int | CIntVar of 'v
 
 type 'v prim =
 | PInt' of int option * int option | PChr' of string | PLgl' of bool
+| PIntVar of 'v | PChrVar of 'v
 | PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny | PHat of 'v prim | PVar of 'v
 | PCup of 'v prim * 'v prim | PCap of 'v prim * 'v prim | PDiff of 'v prim * 'v prim | PNeg of 'v prim
 
@@ -29,7 +31,7 @@ and ('v,'r,'i) t =
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t
-| TCConst of cconst
+| TCConst of 'v cconst
 | TCPtr of ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
@@ -57,7 +59,7 @@ end
 module TIdMap : Map.S with type key=TId.t
 module TIdSet : Set.S with type elt=TId.t
 
-val build_cconst : cconst -> Ty.t
+val build_cconst : Var.t cconst -> Ty.t
 val build_prim : Var.t prim -> Ty.t
 val build : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.t
 val build_struct : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.t
@@ -75,5 +77,6 @@ val empty_env : env
 val tvar : env -> string -> env * Var.t
 val rvar : env -> string -> env * RowVar.t
 val resolve_prim : env -> string prim -> env * Var.t prim
+val resolve_cconst : env -> string cconst -> env * Var.t cconst
 val resolve_classes : env -> string classes -> env * RowVar.t classes
 val resolve : env -> (string,string,string) t -> env * (Var.t,RowVar.t,TId.t) t

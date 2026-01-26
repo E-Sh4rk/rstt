@@ -1,11 +1,13 @@
 open Sstt
 
-type cconst =
+type 'v cconst =
 | CDouble | CString | CChar | CVoid
-| CBool | CTrue | CFalse | CNa | CInt | CIntNa | CIntSingl of int | CIntInterval of int * int
+| CBool | CTrue | CFalse | CNa | CInt | CIntNa
+| CIntSingl of int | CIntInterval of int * int | CIntVar of 'v
 
 type 'v prim =
 | PInt' of int option * int option | PChr' of string | PLgl' of bool
+| PIntVar of 'v | PChrVar of 'v
 | PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny | PHat of 'v prim | PVar of 'v
 | PCup of 'v prim * 'v prim | PCap of 'v prim * 'v prim | PDiff of 'v prim * 'v prim | PNeg of 'v prim
 
@@ -29,7 +31,7 @@ and ('v,'r,'i) t =
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t (* Means that the parameter should not be packed in an Attr container *)
-| TCConst of cconst
+| TCConst of 'v cconst
 | TCPtr of ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
@@ -41,7 +43,8 @@ let map_prim f p =
   let rec aux p =
     let p = match p with
     | PInt' _ | PChr' _ | PLgl' _
-    | PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny | PVar _ -> p
+    | PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny
+    | PVar _ | PIntVar _ | PChrVar _ -> p
     | PHat p -> PHat (aux p)
     | PCup (p1, p2) -> PCup (aux p1, aux p2)
     | PCap (p1, p2) -> PCap (aux p1, aux p2)
@@ -121,6 +124,7 @@ let build_cconst t =
   | CIntNa -> Cint.any_na
   | CIntSingl i -> Cint.singl i
   | CIntInterval (i1,i2) -> Cint.interval (i1,i2)
+  | CIntVar v -> Cint.var v
 
 let rec build_prim t =
   match t with
@@ -140,6 +144,8 @@ let rec build_prim t =
   | PInt' (b1,b2) -> Prim.Int.interval (b1,b2) |> Prim.mk
   | PChr' str -> Prim.Chr.str str |> Prim.mk
   | PLgl' b -> Prim.Lgl.bool b |> Prim.mk
+  | PIntVar v -> Prim.Int.var v |> Prim.mk
+  | PChrVar v -> Prim.Chr.var v |> Prim.mk
 
 let build_classes t =
   match t with
@@ -262,6 +268,15 @@ let tid env tids str =
       invalid_arg ("type of "^str^" not found in the environment"))  
   end
 
+let resolve_cconst env t =
+  match t with
+  | CIntVar v ->
+    let env', v = tvar !env v in
+    env := env' ; CIntVar v
+  | CDouble -> CDouble | CString -> CString | CChar -> CChar | CVoid -> CVoid
+  | CBool -> CBool | CTrue -> CTrue | CFalse -> CFalse | CNa -> CNa
+  | CInt -> CInt | CIntNa -> CIntNa | CIntSingl i -> CIntSingl i
+  | CIntInterval (i1,i2) -> CIntInterval (i1,i2)
 let resolve_prim env t =
   let rec aux t =
     match t with
@@ -269,6 +284,12 @@ let resolve_prim env t =
     | PVar v ->
       let env', v = tvar !env v in
       env := env' ; PVar v
+    | PIntVar v ->
+      let env', v = tvar !env v in
+      env := env' ; PIntVar v
+    | PChrVar v ->
+      let env', v = tvar !env v in
+      env := env' ; PChrVar v
     | PLgl -> PLgl | PChr -> PChr | PInt -> PInt | PDbl -> PDbl | PClx -> PClx | PRaw -> PRaw
     | PHat t -> PHat (aux t)
     | PCup (t1, t2) -> PCup (aux t1, aux t2)
@@ -319,7 +340,7 @@ let resolve env t =
     | TOption t -> TOption (aux tids t)
     | TAttr a -> TAttr (Attr.map_atom (aux tids) (resolve_classes env) a)
     | TStruct t -> TStruct (aux tids t)
-    | TCConst c -> TCConst c
+    | TCConst c -> TCConst (resolve_cconst env c)
     | TCPtr t -> TCPtr (aux tids t)
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in
@@ -329,6 +350,10 @@ let resolve env t =
   in
   aux StrMap.empty t
 
+let resolve_cconst env p =
+  let env = ref env in
+  let p = resolve_cconst env p in
+  !env, p
 let resolve_prim env p =
   let env = ref env in
   let p = resolve_prim env p in

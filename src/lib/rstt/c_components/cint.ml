@@ -21,7 +21,9 @@ let any_p =
   let lb, ub = min_int, max_int in
   Intervals.Atom.mk_bounded lb ub
   |> Descr.mk_interval |> Ty.mk_descr
+(* TODO: make na a separate atom, and remove bounds *)
 let any_na = add_tag any_p
+let var v = Ty.mk_var v |> Ty.cap any_p |> add_tag
 let any = Ty.diff any_na na
 
 type elt = AnyNa | Any | Na | Bool | Tt | Ff | Interval of (Z.t * Z.t) | Singl of Z.t

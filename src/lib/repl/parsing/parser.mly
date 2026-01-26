@@ -63,6 +63,7 @@ let parse_id_or_builtin str =
 %token TYPE
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP VB P T S HAT ARROW STAR
+%token PI PC PCI
 %token QUESTION_MARK EXCL_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
 %token LEQ GEQ LT GT
@@ -176,6 +177,7 @@ atomic_ty:
 (* C stuff *)
 | STAR t=atomic_ty { TCPtr t }
 | C i=cint RPAREN { TCConst i }
+| PCI id=VARID RPAREN { TCConst (CIntVar id) }
 
 cint:
 | i=INT { CIntSingl (Z.to_int i) }
@@ -212,6 +214,8 @@ prim:
 | TNEG p=prim { PNeg p }
 | HAT p=prim { PHat p }
 | str=STRING { PChr' str }
+| PC id=VARID RPAREN { PChrVar id }
 | i=INT { let i = Z.to_int i in PInt' (Some i, Some i) }
 | LPAREN i1=INT? DPOINT i2=INT? RPAREN
 { let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in PInt' (i1,i2) }
+| PI id=VARID RPAREN { PIntVar id }

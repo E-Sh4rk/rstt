@@ -1,27 +1,16 @@
 open Sstt
 
 module P = struct
-  let tag = Tag.mk "str"
+  let tag = Tag.mk "s"
   let tag_name = "chr"
 
   let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
   let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
                   |> Op.TagComp.as_atom |> snd
 
-  let enums = Hashtbl.create 256
-  let strings = Hashtbl.create 256
-  let is_alphanum = function 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' -> true | _ -> false
-  let slugify = String.map (fun c -> if is_alphanum c then c else '_')
-  let str str =
-    match Hashtbl.find_opt enums str with
-    | Some atom -> atom |> Descr.mk_enum |> Ty.mk_descr |> add_tag
-    | None ->
-      let atom = Enum.mk ("_"^(slugify str)) in
-      Hashtbl.add enums str atom ;
-      Hashtbl.add strings atom str ;
-      atom |> Descr.mk_enum |> Ty.mk_descr |> add_tag
-
+  let str str = Strings.enum str |> Descr.mk_enum |> Ty.mk_descr |> add_tag
   let any_p = Enums.any |> Descr.mk_enums |> Ty.mk_descr
+  let var v = Ty.mk_var v |> Ty.cap any_p |> add_tag
   let any = add_tag any_p
 
   type t = bool * string list
@@ -31,11 +20,11 @@ module P = struct
       let pty = proj_tag ty in
       if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty) then
         let (pos, enums) = pty |> Ty.get_descr |> Descr.get_enums |> Enums.destruct in
-        let strs = enums |> List.map (Hashtbl.find strings) in
+        let strs = enums |> List.map Strings.string in
         Some (pos, strs)
       else
         None
-      with Not_found -> None
+    with Not_found -> None
   let map _ v = v
 
   open Prec
@@ -60,3 +49,4 @@ let () = Pp.add_printer_param printer_params
 
 let str str = mk (P.str str)
 let str' str = mk' (P.str str)
+let var v = mk (P.var v)
