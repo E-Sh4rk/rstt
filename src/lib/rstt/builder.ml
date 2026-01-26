@@ -154,12 +154,12 @@ let rec build_struct env t =
   | TTy ty -> ty
   | TVar v -> Ty.mk_var v
   | TRowVar _ -> invalid_arg "Unexpected row variable"
-  | TAny -> Ty.any | TEmpty -> Ty.empty | TNull -> Null.any | TEnv -> Env.any
-  | TSym -> Sym.any | TLang -> Lang.any
+  | TAny -> Ty.any | TEmpty -> Ty.empty
   | TCup (t1,t2) -> Ty.cup (build_struct env t1) (build_struct env t2)
   | TCap (t1,t2) -> Ty.cap (build_struct env t1) (build_struct env t2)
   | TDiff (t1,t2) -> Ty.diff (build_struct env t1) (build_struct env t2)
   | TNeg t -> Ty.neg (build_struct env t)
+  | TNull -> Null.any | TEnv -> Env.any | TSym -> Sym.any | TLang -> Lang.any
   | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
   | TPrim p -> build_prim p
   | TArrow (t1,t2) -> Descr.mk_arrow (build env t1, build env t2) |> Ty.mk_descr
@@ -176,9 +176,12 @@ let rec build_struct env t =
 
 and build env t =
   match t with
-  | TAttr a -> Attr.map_atom (build_struct env) build_classes a |> Attr.mk
-  | TStruct t -> build_struct env t
+  | TId i -> (try TIdMap.find i env with Not_found ->
+    invalid_arg ("type of "^(string_of_int i)^" not found in the environment"))
+  | TTy ty -> ty
+  | TAny -> Ty.any | TEmpty -> Ty.empty
   | TVar v -> Ty.mk_var v
+  | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TCup (t1,t2) -> Ty.cup (build env t1) (build env t2)
   | TCap (t1,t2) -> Ty.cap (build env t1) (build env t2)
   | TDiff (t1,t2) -> Ty.diff (build env t1) (build env t2)
@@ -189,6 +192,17 @@ and build env t =
     let t, eqs = build env t, List.map (fun (_,v,t) -> v,build env t) eqs in
     let s = Ty.of_eqs eqs |> Subst.of_list1 in
     Subst.apply s t
+  (* Explicit attr *)
+  | TAttr a -> Attr.map_atom (build_struct env) build_classes a |> Attr.mk
+  | TStruct t -> build_struct env t
+  (* We don't need attributes for C values, primitive types, tuples, and args *)
+  | TPrim p -> build_prim p
+  | TCConst c -> build_cconst c
+  | TCPtr t -> Cptr.mk (build env t)
+  | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
+  | TArg a -> Arg.map_atom (build_field env) a |> Arg.mk
+  | TArg' a -> Arg.map_atom' (build_field env) a |> Arg.mk'
+  (* R types *)
   | t -> Attr.mk {content=build_struct env t ; classes=Classes.any}
 
 and build_field env t =
