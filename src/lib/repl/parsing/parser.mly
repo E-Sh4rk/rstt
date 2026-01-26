@@ -9,6 +9,8 @@ let parse_id_or_builtin str =
     | "any" -> TAny
     | "null" -> TNull
     | "env" -> TEnv
+    | "sym" -> TSym
+    | "lang" -> TLang
     | "list" -> TList([],[],TOption TAny)
     (* C stuff  *)
     | "c_double" -> TCConst CDouble

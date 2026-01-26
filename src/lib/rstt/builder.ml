@@ -14,7 +14,7 @@ and ('v,'r,'i) t =
 | TTy of Ty.t
 | TVar of 'v
 | TRowVar of 'r
-| TAny | TEmpty | TNull | TEnv
+| TAny | TEmpty | TNull | TEnv | TSym | TLang
 | TCup of ('v,'r,'i) t * ('v,'r,'i) t
 | TCap of ('v,'r,'i) t * ('v,'r,'i) t
 | TDiff of ('v,'r,'i) t * ('v,'r,'i) t
@@ -65,7 +65,7 @@ let map_classes f c =
 let map f fp fc t =
   let rec aux t =
     let t = match t with
-    | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TNull | TEnv -> t
+    | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TNull | TEnv | TSym | TLang -> t
     | TCup (t1, t2) -> TCup (aux t1, aux t2)
     | TCap (t1, t2) -> TCap (aux t1, aux t2)
     | TDiff (t1, t2) -> TDiff (aux t1, aux t2)
@@ -155,6 +155,7 @@ let rec build_struct env t =
   | TVar v -> Ty.mk_var v
   | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TAny -> Ty.any | TEmpty -> Ty.empty | TNull -> Null.any | TEnv -> Env.any
+  | TSym -> Sym.any | TLang -> Lang.any
   | TCup (t1,t2) -> Ty.cup (build_struct env t1) (build_struct env t2)
   | TCap (t1,t2) -> Ty.cap (build_struct env t1) (build_struct env t2)
   | TDiff (t1,t2) -> Ty.diff (build_struct env t1) (build_struct env t2)
@@ -289,6 +290,7 @@ let resolve env t =
       let env', v = rvar !env v in
       env := env' ; TRowVar v
     | TAny -> TAny | TEmpty -> TEmpty | TNull -> TNull | TEnv -> TEnv
+    | TSym -> TSym | TLang -> TLang
     | TCup (t1,t2) -> TCup (aux tids t1, aux tids t2)
     | TCap (t1,t2) -> TCap (aux tids t1, aux tids t2)
     | TDiff (t1,t2) -> TDiff (aux tids t1, aux tids t2)
