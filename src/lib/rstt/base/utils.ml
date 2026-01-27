@@ -29,3 +29,17 @@ let prune_option_fop fop =
   | FRowVar v -> FRowVar v
   in
   aux fop
+
+type interval = int option * int option
+let print_interval any _prec _assoc fmt (lb,ub) =
+  match lb, ub with
+  | None, None -> Format.fprintf fmt "%s" any
+  | Some lb, Some ub when Stdlib.Int.equal lb ub ->
+    Format.fprintf fmt "%i" lb
+  | Some lb, Some ub ->
+    Format.fprintf fmt "(%i..%i)" lb ub
+  | None, Some ub ->
+    Format.fprintf fmt "(..%i)" ub
+  | Some lb, None ->
+    Format.fprintf fmt "(%i..)" lb
+

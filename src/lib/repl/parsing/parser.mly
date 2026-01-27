@@ -181,7 +181,8 @@ atomic_ty:
 
 cint:
 | i=INT { CIntSingl (Z.to_int i) }
-| i1=INT DPOINT i2=INT { CIntInterval (Z.to_int i1, Z.to_int i2) }
+| i1=INT? DPOINT i2=INT?
+{ let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in CIntInterval (i1, i2) }
 
 %inline optional_tail:
 | SEMICOLON ty=simple_ty { ty }

@@ -3,10 +3,10 @@ open Sstt
 type 'v cconst =
 | CDouble | CString | CChar | CVoid
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa
-| CIntSingl of int | CIntInterval of int * int | CIntVar of 'v
+| CIntSingl of int | CIntInterval of Utils.interval | CIntVar of 'v
 
 type 'v prim =
-| PInt' of int option * int option | PChr' of string | PLgl' of bool
+| PInt' of Utils.interval | PChr' of string | PLgl' of bool
 | PIntVar of 'v | PChrVar of 'v
 | PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny | PHat of 'v prim | PVar of 'v
 | PCup of 'v prim * 'v prim | PCap of 'v prim * 'v prim | PDiff of 'v prim * 'v prim | PNeg of 'v prim

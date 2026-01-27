@@ -8,8 +8,6 @@ module P = struct
   let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
                   |> Op.TagComp.as_atom |> snd
 
-  type interval = int option * int option
-
   let int i =
     i |> Z.of_int |> Intervals.Atom.mk_singl
     |> Descr.mk_interval |> Ty.mk_descr |> add_tag
@@ -43,19 +41,8 @@ module P = struct
 
   open Prec
   let map _f v = v
-  let print_interval _prec _assoc fmt (lb,ub) =
-    match lb, ub with
-    | None, None -> Format.fprintf fmt "int"
-    | Some lb, Some ub when Stdlib.Int.equal lb ub ->
-      Format.fprintf fmt "%i" lb
-    | Some lb, Some ub ->
-      Format.fprintf fmt "(%i..%i)" lb ub
-    | None, Some ub ->
-      Format.fprintf fmt "(..%i)" ub
-    | Some lb, None ->
-      Format.fprintf fmt "(%i..)" lb
   let print prec assoc fmt ints =
-    print_cup print_interval prec assoc fmt ints
+    print_cup (Utils.print_interval "int") prec assoc fmt ints
 end
 
 include Na.MakeCompWithNa(P)
@@ -64,10 +51,9 @@ let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params
 
-type interval = P.interval
 let int i = mk (P.int i)
 let int' i = mk' (P.int i)
-let var v = mk (P.var v)
+let var v = mk' (P.var v)
 let interval i = mk (P.interval i)
 let interval' i = mk' (P.interval i)
 let bounded i = mk (P.bounded i)

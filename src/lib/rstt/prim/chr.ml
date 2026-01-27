@@ -49,4 +49,4 @@ let () = Pp.add_printer_param printer_params
 
 let str str = mk (P.str str)
 let str' str = mk' (P.str str)
-let var v = mk (P.var v)
+let var v = mk' (P.var v)
