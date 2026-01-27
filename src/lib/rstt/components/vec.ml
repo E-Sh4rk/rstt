@@ -7,6 +7,7 @@ type 'a atom =
 type 'a line = 'a atom * 'a atom list
 type 'a t = 'a line list
 
+(* TODO: length should be outside of the covariant opaque type, so that v[1]|v[~1]=vec *)
 let tag = Tag.mk' "v" (Tag.Monotonic {preserves_cap=true; preserves_cup=false ; preserves_extremum=true})
 let prim_int = Prim.mk Prim.Int.any'
 let mk a =
