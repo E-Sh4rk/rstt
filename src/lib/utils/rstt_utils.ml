@@ -33,12 +33,12 @@ let cartesian_product l1 l2 =
   in
   loop l1 [] |> List.rev
 
-(* let rec cartesian_products lst =
+let rec cartesian_products lst =
   match lst with
   | [] -> [[]]
   | e::lst ->
     cartesian_products lst |> cartesian_product e
-    |> List.map (fun (e1, e2) -> e1::e2) *)
+    |> List.map (fun (e1, e2) -> e1::e2)
 
 let fold_acc_rem f lst =
   let rec aux acc rem =

@@ -14,6 +14,7 @@
 "vec3" v['a]('b) ;;
 "vec4" v(int('a)) ;;
 "vec5" v(chr('a)) ;;
+"vec6" ((int1) -> c_true) & ((int) -> c_bool) & ((int[^((..0) | (2..))]) | (vec & ~int) -> c_false) ;;
 
 "lst1" { ; v(int) } <= { ...} ;;
 "lst2" { v(42), a:v(43) ; v(int) } <= { ; v(int)} ;;

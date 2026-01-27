@@ -7,8 +7,12 @@ type 'a atom =
 type 'a line = 'a atom * 'a atom list
 type 'a t = 'a line list
 
-(* TODO: length should be outside of the covariant opaque type, so that v[1]|v[~1]=vec *)
-let tag = Tag.mk' "v" (Tag.Monotonic {preserves_cap=true; preserves_cup=false ; preserves_extremum=true})
+let tag = Tag.mk "v"
+let ctag = Tag.mk' "c" (Tag.Monotonic {preserves_cap=true; preserves_cup=false ; preserves_extremum=true})
+let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
+let proj_tag ty =
+  ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
+
 let prim_int = Prim.mk Prim.Int.any'
 let mk a =
   let len, v =
@@ -17,8 +21,9 @@ let mk a =
     | CstLength (n, c) -> Prim.Int.int' n |> Prim.mk, c
     | VarLength (l, c) -> l, c
   in
-  let ty = Descr.mk_tuple [Ty.cap v Prim.any ; Ty.cap len prim_int] |> Ty.mk_descr in
-  TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
+  let len, v = Ty.cap len prim_int, Ty.cap v Prim.any in
+  let v = TagComp.mk (ctag, v) |> Descr.mk_tagcomp |> Ty.mk_descr in
+  Descr.mk_tuple [v ; len] |> Ty.mk_descr |> add_tag
 let any = mk (AnyLength Ty.any)
 
 let map_atom f = function
@@ -28,16 +33,18 @@ let map_atom f = function
 let map_line f (p,ns) = (map_atom f p, List.map (map_atom f) ns)
 let map f (l : 'a t) = l |> List.map (map_line f)
 
-let extract_pair (_,ty) =
+let extract_pairs (a,b) =
+  a |> Ty.get_descr |> Descr.get_tags |> Tags.get ctag |> Op.TagComp.as_union
+  |> List.map (fun (_,a) -> (a,b))
+let extract_pairs ty =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid vector encoding." ; 
   Ty.get_descr ty |> Descr.get_tuples |> Tuples.get 2 |>
-  Op.TupleComp.approx |> (function [a;b] -> a,b | _ -> assert false)
-let extract_pairs dnf =
-  dnf |> List.map (fun (ps, ns) ->
-    let vs,ls = ps |> List.map extract_pair |> List.split in
-    let p = (Ty.conj vs, Ty.conj ls) in
-    let ns = ns |> List.map extract_pair in
-    p, ns
+    TupleComp.dnf |> List.concat_map (fun (ps,ns) ->
+      let a,b = ps |> List.map (function [a;b] -> a,b | _ -> assert false) |> List.split in
+      let p = Ty.conj a, Ty.conj b in
+      let ns = ns |> List.map (function [a;b] -> a,b | _ -> assert false) in
+      let ps, nss = extract_pairs p, List.map extract_pairs ns |> Rstt_utils.cartesian_products in
+      Rstt_utils.cartesian_product ps nss
   )
 let pair_to_atom (v,l) =
   if Ty.leq prim_int l
@@ -46,17 +53,17 @@ let pair_to_atom (v,l) =
     match Prim.destruct l |> Prim.Int.destruct with
     | false, [(Some n1, Some n2)] when Stdlib.Int.equal n1 n2 -> CstLength (n1, v)
     | _ -> VarLength (l, v)
-let extract dnf =
-  dnf |> extract_pairs |> List.map (fun (p, ns) -> pair_to_atom p, List.map pair_to_atom ns)
 
 let to_t ctx comp =
-  let dnf = TagComp.dnf comp in
+  let pty = Op.TagComp.as_atom comp |> snd in
   let ty = Descr.mk_tagcomp comp |> Ty.mk_descr in
-  if Ty.leq ty any then Some (extract dnf |> map ctx.Printer.build)
+  if Ty.leq ty any then
+    Some (extract_pairs pty |> List.map (fun (p, ns) -> pair_to_atom p, List.map pair_to_atom ns)
+      |> map ctx.Printer.build)
   else None
 
 let destruct ty =
-  ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> TagComp.dnf |> extract_pairs
+  ty |> proj_tag |> extract_pairs
   |> List.map (fun (p, ns) -> pair_to_atom p, List.map pair_to_atom ns)
 
 let partition =
