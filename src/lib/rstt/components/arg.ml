@@ -67,7 +67,7 @@ let mk' ~allow_more_pos ~id { pos' ; tl' ; named' } =
   let named = named' |> List.map (fun (str, fty) -> Labels.named str, fty) in
   let npos = if more_pos then npos_field' n else npos_field n in
   let bindings = (id_label, id)::npos::pos@named |> LabelMap.of_list in
-  let tail = Ty.F.cup tl' (Ty.F.mk_descr Ty.O.absent) in
+  let tail = Utils.add_option tl' in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk { pos ; pos_named ; tl ; named } =
   let id = fresh_id () in

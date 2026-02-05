@@ -30,6 +30,9 @@ let prune_option_fop fop =
   in
   aux fop
 
+let add_option fty =
+  Ty.F.map (fun tyo -> Ty.O.get tyo |> Ty.O.optional) fty
+
 type interval = int option * int option
 let print_interval any _prec _assoc fmt (lb,ub) =
   match lb, ub with
