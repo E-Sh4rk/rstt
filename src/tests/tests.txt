@@ -23,6 +23,7 @@
 "lst5" { a:v1(^42) ...} ;;
 "lst6" { a:v1(^42) } ;;
 "lst7" { a:v1(^42) ; int } ;;
+"lst8" { ; `r } -> { a:v1(^42) ; `r } ;;
 
 "arg1" @(v(int), v(lgl)) <= (a:v(int), b:v(lgl)) ;;
 "arg2" @(v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;

@@ -22,7 +22,8 @@ let prune_printer_descr ~any d =
 
 let prune_option_fop fop =
   let rec aux = function
-  | Printer.FTy (ty,_) -> Printer.FTy (ty,false)
+  | Printer.FTy (ty,_) when ty.Printer.ty |> Ty.is_empty |> not -> Printer.FTy (ty,false)
+  | Printer.FTy (ty,o) -> Printer.FTy (ty,o)
   | FVarop (o,es) -> FVarop (o, List.map aux es)
   | FBinop (o,e1,e2) -> FBinop (o, aux e1, aux e2)
   | FUnop (o,e) -> FUnop (o, aux e)
@@ -31,7 +32,9 @@ let prune_option_fop fop =
   aux fop
 
 let add_option fty =
-  Ty.F.map (fun tyo -> Ty.O.get tyo |> Ty.O.optional) fty
+  fty |> Ty.F.map (fun tyo ->
+    let ty = Ty.O.get tyo in
+    if Ty.is_empty ty then tyo else Ty.O.get tyo |> Ty.O.optional)
 
 type interval = int option * int option
 let print_interval any _prec _assoc fmt (lb,ub) =

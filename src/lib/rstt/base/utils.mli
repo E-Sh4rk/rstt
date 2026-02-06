@@ -1,7 +1,7 @@
 open Sstt
 
 val prune_printer_descr : any:Ty.t -> Printer.descr -> Printer.descr
-val prune_option_fop : 'a Printer.fop -> 'a Printer.fop
+val prune_option_fop : Printer.descr Printer.fop -> Printer.descr Printer.fop
 val add_option : Ty.F.t -> Ty.F.t
 
 type interval = int option * int option
