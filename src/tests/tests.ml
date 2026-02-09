@@ -19,14 +19,14 @@ let%expect_test "tests" =
     tuple1: tuple0
     tuple2: true
     norm1: any
-    norm2: raw | lgl | int | chr | clx | dbl
-    norm3: dbl | lgl | clx | chr | raw
-    vec1: raw42 | lgl2 | lgl['a] | int1
+    norm2: chr | raw | clx | lgl | dbl | int
+    norm3: chr | dbl | clx | raw | lgl
+    vec1: raw42 | lgl2 | int1 | lgl['a]
     vec2: true
     vec3: v['a]('b)
     vec4: v(int(i('a & int)))
     vec5: v(chr(s('a & enum)))
-    vec6: (vec & ~int | int[^((..0) | (2..))] -> c_false) & (int1 -> c_true)
+    vec6: (int[^((..0) | (2..))] | vec & ~int -> c_false) & (int1 -> c_true)
     lst1: true
     lst2: true
     lst3: false
@@ -72,10 +72,11 @@ let%expect_test "tests" =
     class4: <(class1, class2)>
     class5: <class1 ?>
     class6: int<class1 ?>
-    c1: c_string | (c(42) | c_na)
+    c1: (c(42) | c_na) | c_string
     c2: c_true
     c3: c_int
     c4: ~c_na
     c5: *c_int
     c6: cint('a & int)
+    c7: cstring('a & enum)
     |}]

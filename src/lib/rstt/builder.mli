@@ -4,6 +4,7 @@ type 'v cconst =
 | CDouble | CString | CChar | CVoid
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa
 | CIntSingl of int | CIntInterval of Utils.interval | CIntVar of 'v
+| CStrSingl of string | CStrVar of 'v
 
 type 'v prim =
 | PInt' of Utils.interval | PChr' of string | PLgl' of bool

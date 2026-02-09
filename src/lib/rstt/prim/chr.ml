@@ -18,7 +18,7 @@ module P = struct
   let to_t _ ty =
     try
       let pty = proj_tag ty in
-      if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty) then
+      if Ty.leq pty any_p && Ty.vars_toplevel pty |> VarSet.is_empty then
         let (pos, enums) = pty |> Ty.get_descr |> Descr.get_enums |> Enums.destruct in
         let strs = enums |> List.map Strings.string in
         Some (pos, strs)

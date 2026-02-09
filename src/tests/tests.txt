@@ -50,3 +50,4 @@
 "c4" ~c_na ;;
 "c5" *c_int ;;
 "c6" c_int('a) ;;
+"c7" c_string('a) ;;

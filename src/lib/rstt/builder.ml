@@ -4,6 +4,7 @@ type 'v cconst =
 | CDouble | CString | CChar | CVoid
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa
 | CIntSingl of int | CIntInterval of Utils.interval | CIntVar of 'v
+| CStrSingl of string | CStrVar of 'v
 
 type 'v prim =
 | PInt' of Utils.interval | PChr' of string | PLgl' of bool
@@ -113,7 +114,9 @@ module TIdSet = Set.Make(TId)
 let build_cconst t =
   match t with
   | CDouble -> Cenums.double
-  | CString -> Cenums.str
+  | CString -> Cstring.any
+  | CStrSingl str -> Cstring.singl str
+  | CStrVar v -> Cstring.var v
   | CChar -> Cenums.char
   | CVoid -> Cenums.void
   | CBool -> Cint.bool
@@ -273,7 +276,11 @@ let resolve_cconst env t =
   | CIntVar v ->
     let env', v = tvar !env v in
     env := env' ; CIntVar v
-  | CDouble -> CDouble | CString -> CString | CChar -> CChar | CVoid -> CVoid
+  | CStrVar v ->
+    let env', v = tvar !env v in
+    env := env' ; CStrVar v
+  | CString -> CString | CStrSingl str -> CStrSingl str
+  | CDouble -> CDouble | CChar -> CChar | CVoid -> CVoid
   | CBool -> CBool | CTrue -> CTrue | CFalse -> CFalse | CNa -> CNa
   | CInt -> CInt | CIntNa -> CIntNa | CIntSingl i -> CIntSingl i
   | CIntInterval (i1,i2) -> CIntInterval (i1,i2)
