@@ -19,3 +19,4 @@ module Pp = Pp
 module Cenums = Cenums
 module Cint = Cint
 module Cptr = Cptr
+module Cstring = Cstring
