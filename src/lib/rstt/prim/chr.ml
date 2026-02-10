@@ -14,7 +14,7 @@ module P = struct
   let any = add_tag any_p
 
   type t = bool * string list
-  let any_t = true, []
+  let any_t = false, []
   let to_t _ ty =
     try
       let pty = proj_tag ty in
