@@ -19,7 +19,8 @@ let any_na = add_tag any_na_p
 let any = add_tag any_p
 let var v = Ty.mk_var v |> Ty.cap any_p |> add_tag
 
-type elt = AnyNa | Any | Na | Bool | Tt | Ff | Interval of Utils.interval | Singl of Z.t
+type elt = AnyNa | Any | Na | Bool | Tt | Ff | Interval of Utils.interval | Singl of int
+type t = Pos of elt list | NegNa of elt list | Neg of elt list
 
 let to_t _ comp =
   let (_, pty) = Op.TagComp.as_atom comp in
@@ -34,19 +35,24 @@ let to_t _ comp =
       else
         match i1, i2 with
         | None, None -> assert false
-        | Some i1, Some i2 when Z.equal i1 i2 -> Singl i1
+        | Some i1, Some i2 when Z.equal i1 i2 -> Singl (Z.to_int i1)
         | _ -> Interval (Option.map Z.to_int i1, Option.map Z.to_int i2)
     in
-    if Ty.equiv pty any_na_p then Some [AnyNa]
+    if Ty.equiv pty any_na_p then Some (Pos [AnyNa])
     else
       let na = if Ty.leq na_p pty then [Na] else [] in
       let ints = pty |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct
-            |> List.map (fun a-> Intervals.Atom.get a |> aux) in
-      Some (ints@na)
+        |> List.map (fun a-> Intervals.Atom.get a |> aux) in
+      let ints' = pty |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct_neg
+        |> List.map (fun a-> Intervals.Atom.get a |> aux) in
+      if List.length ints' < List.length ints 
+      then (if na <> [] then Some (NegNa (ints')) else Some (Neg (ints')))
+      else Some (Pos (ints@na))
   else None
 
 let map _f v = v
-let print prec assoc fmt ints =
+let print prec assoc fmt t =
+  let open Prec in
   let pp_interval _prec _assoc fmt i =
     match i with
     | AnyNa -> Format.fprintf fmt "c_int_na"
@@ -55,10 +61,20 @@ let print prec assoc fmt ints =
     | Bool -> Format.fprintf fmt "c_bool"
     | Tt -> Format.fprintf fmt "c_true"
     | Ff -> Format.fprintf fmt "c_false"
-    | Singl i -> Format.fprintf fmt "c(%a)" Z.pp_print i
+    | Singl i -> Format.fprintf fmt "c(%i)" i
     | Interval (i1,i2) -> Format.fprintf fmt "c%a" (Utils.print_interval "(..)" prec assoc) (i1,i2)
   in
-  Prec.print_cup pp_interval prec assoc fmt ints
+  let aux = print_cup pp_interval in
+  match t with
+  | Pos ints -> aux prec assoc fmt ints
+  | NegNa ints when ints = [] -> Format.fprintf fmt "c_int_na"
+  | Neg ints when ints = [] -> Format.fprintf fmt "c_int"
+  | NegNa ints ->
+    let sym,prec',_ as opinfo = binop_info Diff in
+    fprintf prec assoc opinfo fmt "c_int_na%(%)%a" sym (aux prec' Right) ints
+  | Neg ints ->
+    let sym,prec',_ as opinfo = binop_info Diff in
+    fprintf prec assoc opinfo fmt "c_int%(%)%a" sym (aux prec' Right) ints
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}

@@ -23,26 +23,39 @@ module P = struct
   let var v = Ty.mk_var v |> Ty.cap any_p |> add_tag
   let any = any_p |> add_tag
 
-  let extract ty =
-    Ty.get_descr ty |> Descr.get_intervals |> Intervals.destruct
-    |> List.map (fun a ->
+  let conv_intervals intervals =
+    intervals |> List.map (fun a ->
               let i1, i2 = Intervals.Atom.get a in
               i1 |> Option.map Z.to_int, i2 |> Option.map Z.to_int)
+  let extract ty =
+    let intervals = Ty.get_descr ty |> Descr.get_intervals |> Intervals.destruct in
+    let intervals' = Ty.get_descr ty |> Descr.get_intervals |> Intervals.destruct_neg in
+    if List.length intervals' < List.length intervals
+    then false, conv_intervals intervals'
+    else true, conv_intervals intervals
 
-  type t = (int option * int option) list
-  let any_t = [None,None]
+  type t = bool * (int option * int option) list
+  let any_t = false, []
 
   let to_t _ ty =
     let pty = proj_tag ty in
     if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty)
     then Some (extract pty)
     else None
-  let destruct ty = proj_tag ty |> extract
+  let destruct ty = proj_tag ty
+    |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct |> conv_intervals
 
   open Prec
   let map _f v = v
-  let print prec assoc fmt ints =
-    print_cup (Utils.print_interval "int") prec assoc fmt ints
+  let print prec assoc fmt (pos,ints) =
+    let aux = print_cup (Utils.print_interval "int") in
+    if pos then
+      aux prec assoc fmt ints
+    else if not pos && ints = [] then
+      Format.fprintf fmt "int"
+    else
+      let sym,prec',_ as opinfo = binop_info Diff in
+      fprintf prec assoc opinfo fmt "int%(%)%a" sym (aux prec' Right) ints
 end
 
 include Na.MakeCompWithNa(P)

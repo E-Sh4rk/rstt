@@ -26,7 +26,7 @@ let%expect_test "tests" =
     vec3: v['a]('b)
     vec4: v(int(i('a & int)))
     vec5: v(chr(s('a & enum)))
-    vec6: (int[^((..0) | (2..))] | vec & ~int -> c_false) & (int1 -> c_true)
+    vec6: (int[^(int \ 1)] | vec & ~int -> c_false) & (int1 -> c_true)
     lst1: true
     lst2: true
     lst3: false
@@ -72,11 +72,13 @@ let%expect_test "tests" =
     class4: <(class1, class2)>
     class5: <class1 ?>
     class6: int<class1 ?>
-    c1: (c(42) | c_na) | c_string
+    c1: (c(42) | c_na) | c_string \ c("abc")
     c2: c_true
     c3: c_int
     c4: ~c_na
     c5: *c_int
     c6: cint('a & int)
     c7: cstring('a & enum)
+    c8: c_int_na \ c(42)
+    c9: c_int \ c(42)
     |}]
