@@ -20,9 +20,8 @@ let partition_vecs ty =
       Ty.def ty |> VDescr.map (fun d ->
         let (tags,_) = Descr.get_tags d |> Tags.components in
         List.map (fun tc ->
-          if TagComp.tag tc |> Tag.equal Vec.tag
-          then TagComp.map (fun _ -> raise Exit) tc |> ignore ;
-          tc) tags |> ignore ;
+          if TagComp.tag tc |> Tag.equal Attr.tag
+          then raise Exit ; tc) tags |> ignore ;
         d
       )) in
     ty
