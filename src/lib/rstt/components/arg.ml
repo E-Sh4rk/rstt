@@ -82,9 +82,10 @@ let mk { pos ; pos_named ; tl ; named } =
   ) in
   atoms' |> Ty.disj
 let mk' = mk' ~allow_more_pos:true ~id:None
+let any_id = Enums.any |> Descr.mk_enums |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr
 let any_d =
   { Records.Atom.bindings=[
-      id_label, Enums.any |> Descr.mk_enums |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr ;
+      id_label, any_id ;
       npos_field' (Z.minus_one)] |> LabelMap.of_list ;
     tail=Ty.F.any }
   |> Descr.mk_record |> Ty.mk_descr
@@ -148,6 +149,18 @@ let to_t ctx comp =
 
 let destruct ty =
   proj_tag ty |> extract
+
+let anonymize ty =
+  let aux { Records.Atom.bindings ; tail } =
+    let bindings = LabelMap.add id_label any_id bindings in
+    { Records.Atom.bindings ; tail }
+  in
+  let ty = proj_tag ty in
+  let ty = Ty.get_descr ty |> Descr.get_records |> Records.dnf
+    |> List.map (fun (ps, _) -> (List.map aux ps, []))
+    |> Records.of_dnf |> Descr.mk_records |> Ty.mk_descr
+  in
+  add_tag ty
 
 let print prec assoc fmt t =
   let print_field_ty = Printer.print_field_ctx Prec.min_prec Prec.NoAssoc in

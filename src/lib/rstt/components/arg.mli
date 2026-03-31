@@ -12,6 +12,7 @@ val any : Ty.t
 val mk : Ty.F.t atom -> Ty.t
 val mk' : Ty.F.t atom' -> Ty.t
 val destruct : Ty.t -> Ty.F.t t
+val anonymize : Ty.t -> Ty.t
 val map_atom : ('a -> 'b) -> 'a atom -> 'b atom
 val map_atom' : ('a -> 'b) -> 'a atom' -> 'b atom'
 val map : ('a -> 'b) -> 'a t -> 'b t
