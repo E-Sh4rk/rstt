@@ -150,9 +150,11 @@ let to_t ctx comp =
 let destruct ty =
   proj_tag ty |> extract
 
-let anonymize ty =
+let reidentify ~id ty =
+  let id = Ty.cup id (Descr.mk_enum dummy_id |> Ty.mk_descr) |> Ty.O.required |> Ty.F.mk_descr
+  |> Ty.F.cap any_id in
   let aux { Records.Atom.bindings ; tail } =
-    let bindings = LabelMap.add id_label any_id bindings in
+    let bindings = LabelMap.add id_label id bindings in
     { Records.Atom.bindings ; tail }
   in
   let ty = proj_tag ty in
@@ -161,6 +163,10 @@ let anonymize ty =
     |> Records.of_dnf |> Descr.mk_records |> Ty.mk_descr
   in
   add_tag ty
+
+let ids_of ty =
+  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Records.dnf'
+  |> List.map extract_id |> List.filter_map Fun.id
 
 let print prec assoc fmt t =
   let print_field_ty = Printer.print_field_ctx Prec.min_prec Prec.NoAssoc in
