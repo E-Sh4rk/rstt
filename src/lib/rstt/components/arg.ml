@@ -2,16 +2,14 @@ open Sstt
 open Rstt_utils
 
 let tag = Tag.mk "arg"
-let id_label = Label.mk "_id"
 let dummy_id = Enum.mk "dummy"
-let npos_label = Label.mk "_npos"
 
 let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
 let proj_tag ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
-let npos_field n = npos_label, Intervals.Atom.mk_singl n |> Descr.mk_interval |> Ty.mk_descr
+let npos_field n = Labels.npos, Intervals.Atom.mk_singl n |> Descr.mk_interval |> Ty.mk_descr
   |> Ty.O.required |> Ty.F.mk_descr
-let npos_field' n = npos_label, Intervals.Atom.mk (Some n) None |> Descr.mk_interval |> Ty.mk_descr
+let npos_field' n = Labels.npos, Intervals.Atom.mk (Some n) None |> Descr.mk_interval |> Ty.mk_descr
   |> Ty.O.required |> Ty.F.mk_descr
 
 type 'a atom = { pos : 'a list ; pos_named : (string * 'a) list ; tl : 'a ; named : (string * 'a) list }
@@ -66,7 +64,7 @@ let mk' ~allow_more_pos ~id { pos' ; tl' ; named' } =
   let pos = pos' |> List.mapi (fun i fty -> Labels.pos i, fty) in
   let named = named' |> List.map (fun (str, fty) -> Labels.named str, fty) in
   let npos = if more_pos then npos_field' n else npos_field n in
-  let bindings = (id_label, id)::npos::pos@named |> LabelMap.of_list in
+  let bindings = (Labels.id, id)::npos::pos@named |> LabelMap.of_list in
   let tail = Utils.add_option tl' in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk { pos ; pos_named ; tl ; named } =
@@ -85,14 +83,14 @@ let mk' = mk' ~allow_more_pos:true ~id:None
 let any_id = Enums.any |> Descr.mk_enums |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr
 let any_d =
   { Records.Atom.bindings=[
-      id_label, any_id ;
+      Labels.id, any_id ;
       npos_field' (Z.minus_one)] |> LabelMap.of_list ;
     tail=Ty.F.any }
   |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
 
 let extract_id (a:Records.Atom'.t) =
-  let enums = Records.Atom'.find id_label a |> Ty.F.get_descr |> Ty.O.get
+  let enums = Records.Atom'.find Labels.id a |> Ty.F.get_descr |> Ty.O.get
   |> Ty.get_descr |> Descr.get_enums in
   match Enums.destruct enums with
   | true, lst ->
@@ -135,7 +133,7 @@ let extract ty : Ty.F.t t =
   let extract a =
     match extract_id a with
     | Some id ->
-      if Ty.cap (Records.Atom'.find npos_label a |> Ty.F.get_descr |> Ty.O.get) npos_zero
+      if Ty.cap (Records.Atom'.find Labels.npos a |> Ty.F.get_descr |> Ty.O.get) npos_zero
         |> Ty.is_empty then None
       else Some (DefSite (extract_defsite id a))
     | None -> Some (CallSite (extract_callsite a))
@@ -154,7 +152,7 @@ let reidentify ~id ty =
   let id = Ty.cup id (Descr.mk_enum dummy_id |> Ty.mk_descr) |> Ty.O.required |> Ty.F.mk_descr
   |> Ty.F.cap any_id in
   let aux { Records.Atom.bindings ; tail } =
-    let bindings = LabelMap.add id_label id bindings in
+    let bindings = LabelMap.add Labels.id id bindings in
     { Records.Atom.bindings ; tail }
   in
   let ty = proj_tag ty in

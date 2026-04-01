@@ -19,3 +19,6 @@ let pos i = get (Pos i)
 let named str = get (Named str)
 let info lbl =
   try Hashtbl.find info lbl with Not_found -> invalid_arg "Label is not a R label."
+
+let id = Label.mk "_id"
+let npos = Label.mk "_npos"

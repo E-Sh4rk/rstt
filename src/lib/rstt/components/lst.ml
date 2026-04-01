@@ -10,14 +10,16 @@ type 'a atom = 'a list * (string * 'a) list * 'a
 type 'a line = 'a atom list * 'a atom list
 type 'a t = 'a line list
 
+let reserved_labels = [Labels.id ; Labels.npos]
+let reserved_bindings = reserved_labels |> List.map (fun lbl -> lbl, Ty.O.absent |> Ty.F.mk_descr)
 let mk (pos, named, tail) =
   let pos = List.mapi (fun i ty -> Labels.pos i, ty) pos in
   let named = List.map (fun (str,ty) -> Labels.named str, ty) named in
-  let bindings = LabelMap.of_list (pos@named) in
+  let bindings = LabelMap.of_list (reserved_bindings@pos@named) in
   let tail = Utils.add_option tail in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
-let any_d = Records.any |> Descr.mk_records |> Ty.mk_descr
-let any = add_tag any_d
+let any = mk ([], [], Ty.F.any)
+let any_d = proj_tag any
 
 let map_atom f (pos,named,tl) = List.map f pos, List.map (fun (str,t) -> str, f t) named, f tl
 let map_line f (ps,ns) = (List.map (map_atom f) ps, List.map (map_atom f) ns)
@@ -27,7 +29,9 @@ let extract_records ty =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid list encoding." ; 
   Ty.get_descr ty |> Descr.get_records |> Records.dnf
 let record_to_atom { Records.Atom.bindings ; tail } =
-  let pos, named = bindings |> LabelMap.bindings |> List.partition_map (fun (lbl,ty) ->
+  let pos, named = bindings |> LabelMap.bindings
+  |> List.filter (fun (lbl,_) -> reserved_labels |> List.exists (Label.equal lbl) |> not)
+  |> List.partition_map (fun (lbl,ty) ->
     match Labels.info lbl with
     | Pos i -> Either.left (i,ty)
     | Named str -> Either.right (str,ty)
