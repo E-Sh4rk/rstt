@@ -27,6 +27,11 @@ let partition = comps
 let is_simple ty =
   comps |> List.exists (Ty.equiv ty) ||
   comps' |> List.exists (Ty.equiv ty)
+let is_singleton ty =
+  comps |> List.exists (Ty.leq ty) &&
+  let ty = proj_tag ty in
+  (Int.is_singleton ty || Chr.is_singleton ty || Dbl.is_singleton ty ||
+   Raw.is_singleton ty || Clx.is_singleton ty || Lgl.is_singleton ty)
 
 type t = | TAny | TAny' | TComp of Printer.descr
 let to_t ctx comp =

@@ -10,6 +10,8 @@ module P = struct
   type t = { t : bool ; f : bool }
   let any_t = { t=true; f=true }
 
+  let is_singleton ty = Ty.equiv ty tt || Ty.equiv ty ff
+
   let to_t _ ty =
     if Ty.leq ty any then
       let t = Ty.leq tt ty in

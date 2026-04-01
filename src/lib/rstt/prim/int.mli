@@ -11,3 +11,4 @@ val bounded' : int * int -> Ty.t
 val any : Ty.t
 val any' : Ty.t
 val destruct : Ty.t -> bool * Utils.interval list
+val is_singleton : Ty.t -> bool

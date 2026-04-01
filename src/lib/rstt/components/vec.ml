@@ -72,6 +72,15 @@ let partition =
   Prim.partition |> List.map (fun ty -> mk (AnyLength ty))
 
 let print prec assoc fmt t =
+  let shortcut_v v =
+    let str = Format.asprintf "%a" Printer.print_descr v in
+    let prefix = Format.asprintf "%(%)" (Na.Hat.sym ()) in
+    if String.starts_with ~prefix str
+    then
+      let n = String.length prefix in
+      String.sub str n (String.length str - n)
+    else str
+  in
   let print_v ~len fmt v =
     if Ty.leq Prim.any v.Printer.ty then
       Format.fprintf fmt "vec%s" len
@@ -91,8 +100,11 @@ let print prec assoc fmt t =
     | AnyLength v ->
       Format.fprintf fmt "%a" (print_v ~len:"") v
     | CstLength (n,v) ->
-      let len = Format.asprintf "%i" n in
-      Format.fprintf fmt "%a" (print_v ~len) v
+      if n=1 && Prim.is_singleton v.Printer.ty then
+        Format.fprintf fmt "%s" (shortcut_v v)
+      else
+        let len = Format.asprintf "%i" n in
+        Format.fprintf fmt "%a" (print_v ~len) v
   in
   let t = t |> List.map (fun (p,ns) -> [p],ns) in
   Prec.print_non_empty_dnf ~any:"" print_atom prec assoc fmt t

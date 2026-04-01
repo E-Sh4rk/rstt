@@ -8,6 +8,7 @@ module P = struct
   let any_t = ()
   let to_t _ ty =
     if Ty.leq ty any then Some () else None
+  let is_singleton _ = false
 
   let map _f v = v
   let print _ _ fmt () = Format.fprintf fmt "clx"

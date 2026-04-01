@@ -9,3 +9,4 @@ val bool : bool -> Ty.t
 val bool' : bool -> Ty.t
 val any : Ty.t
 val any' : Ty.t
+val is_singleton : Ty.t -> bool

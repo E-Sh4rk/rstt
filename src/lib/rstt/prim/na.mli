@@ -15,6 +15,7 @@ module type PrimComp = sig
     val to_t : build_ctx -> Ty.t -> t option
     val map : (descr -> descr) -> t -> t
     val print : (int -> Prec.assoc -> Format.formatter -> t -> unit)
+    val is_singleton : Ty.t -> bool
 end
 module MakeCompWithNa(P:PrimComp) : sig
     val tag : Tag.t
@@ -27,4 +28,5 @@ module MakeCompWithNa(P:PrimComp) : sig
     val to_t : build_ctx -> TagComp.t -> P.t t option
     val map : (descr -> descr) -> P.t t -> P.t t
     val print : (int -> Prec.assoc -> Format.formatter -> P.t t -> unit)
+    val is_singleton : Ty.t -> bool
 end

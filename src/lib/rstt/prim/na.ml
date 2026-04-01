@@ -19,6 +19,7 @@ module type PrimComp = sig
     val to_t : build_ctx -> Ty.t -> t option
     val map : (descr -> descr) -> t -> t
     val print : (int -> Prec.assoc -> Format.formatter -> t -> unit)
+    val is_singleton : Ty.t -> bool
 end
 module MakeCompWithNa(P:PrimComp) = struct
   type 'a t = WithNa of 'a | WithoutNa of 'a | Na
@@ -40,6 +41,11 @@ module MakeCompWithNa(P:PrimComp) = struct
     if Ty.is_empty ty then Na
     else if na then WithNa ty
     else WithoutNa ty
+
+  let is_singleton ty =
+    match destruct ty with
+    | WithNa _ | Na -> false
+    | WithoutNa ty -> P.is_singleton ty
 
   let map f = function Na -> Na | WithNa t -> WithNa (P.map f t) | WithoutNa t -> WithoutNa (P.map f t)
   let to_t ctx comp =

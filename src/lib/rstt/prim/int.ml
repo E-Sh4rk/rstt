@@ -44,6 +44,10 @@ module P = struct
     else None
   let destruct ty = proj_tag ty
     |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct |> conv_intervals
+  let is_singleton ty =
+    match destruct ty with
+    | [(Some i1, Some i2)] -> Stdlib.Int.equal i1 i2
+    | _ -> false
 
   open Prec
   let map _f v = v
