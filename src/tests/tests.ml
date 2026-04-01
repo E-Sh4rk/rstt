@@ -14,8 +14,8 @@ let%expect_test "tests" =
   Output.with_basic_output Format.std_formatter
     (fun () -> test Repl.empty_env) () ;
   [%expect {|
-    base: any
-    base: vec
+    base1: any
+    base2: vec
     tuple1: tuple0
     tuple2: true
     norm1: any
@@ -27,14 +27,15 @@ let%expect_test "tests" =
     vec4: v(int(i('a & int)))
     vec5: v(chr(s('a & enum)))
     vec6: (int[^(int \ 1)] | vec & ~int -> c_false) & (int1 -> c_true)
+    vec7: true
     lst1: true
     lst2: true
     lst3: false
     lst4: true
-    lst5: { a: v1(^42) ... }
-    lst6: { a: v1(^42) }
-    lst7: { a: v1(^42) ; int }
-    lst8: {  ; `r } -> { a: v1(^42) ; `r }
+    lst5: { a: 42 ... }
+    lst6: { a: ff }
+    lst7: { a: "brrr" ; int }
+    lst8: {  ; `r } -> { a: 42 ; `r }
     arg1: true
     arg2: true
     arg3: true

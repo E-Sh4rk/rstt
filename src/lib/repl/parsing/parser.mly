@@ -35,8 +35,6 @@ let parse_id_or_builtin str =
     | "dbl" -> PDbl
     | "clx" -> PClx
     | "raw" -> PRaw
-    | "tt" -> PLgl' true
-    | "ff" -> PLgl' false
     | str -> raise (Errors.E_Parser ("Unknown primitive builtin "^str))
 
  type field = Pos of ty | Named of string * ty
@@ -64,6 +62,7 @@ let parse_id_or_builtin str =
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP VB P T S HAT ARROW STAR
 %token PI PC PCI PCS
+%token TT FF
 %token QUESTION_MARK EXCL_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
 %token LEQ GEQ LT GT
@@ -91,7 +90,11 @@ command:
 
 elt:
 | TYPE ids=separated_nonempty_list(SEMICOLON, ID) EQUAL e=expr_nocmp BREAK { DefineAlias (ids, e) }
-| str=STRING? e=expr BREAK { Expr (str, e) }
+| str=name e=expr BREAK { Expr (str, e) }
+
+%inline name:
+| { None }
+| str=STRING COLON { Some str }
 
 expr:
 | e=expr_nocmp { e }
@@ -166,6 +169,7 @@ atomic_ty:
 | i=VLEN LPAREN p=prim RPAREN { TVec (CstLength (Z.to_int i, p)) }
 | s=SLEN { let (s,i) = s in TVec (CstLength (Z.to_int i, parse_builtin_prim s)) }
 | HAT s=SLEN { let (s,i) = s in TVec (CstLength (Z.to_int i, PHat (parse_builtin_prim s))) }
+| s=prim_singl { TVec (CstLength (1, PHat s)) }
 (* Containers (lists, args, tuples) *)
 | LBRACE fs=separated_list(COMMA, ty_field) tail=optional_tail RBRACE
 { let pos,named = split_list_fields fs in TList (pos,named,tail) }
@@ -210,18 +214,23 @@ label:
 | lbl=label COLON t=simple_ty { (lbl, t) }
 
 prim:
+| LPAREN p=prim RPAREN { p }
+| id=VARID { PVar (id) }
 | id=ID { parse_builtin_prim id }
 | s=SHORT { parse_builtin_prim s }
-| id=VARID { PVar (id) }
-| LPAREN p=prim RPAREN { p }
+| s=prim_singl { s }
 | p1=prim TOR p2=prim { PCup (p1, p2) }
 | p1=prim TDIFF p2=prim { PDiff (p1, p2) }
 | p1=prim TAND p2=prim { PCap (p1, p2) }
 | TNEG p=prim { PNeg p }
 | HAT p=prim { PHat p }
-| str=STRING { PChr' str }
 | PC id=VARID RPAREN { PChrVar id }
-| i=INT { let i = Z.to_int i in PInt' (Some i, Some i) }
 | LPAREN i1=INT? DPOINT i2=INT? RPAREN
 { let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in PInt' (i1,i2) }
 | PI id=VARID RPAREN { PIntVar id }
+
+prim_singl:
+| TT { PLgl' true }
+| FF { PLgl' false }
+| str=STRING { PChr' str }
+| i=INT { let i = Z.to_int i in PInt' (Some i, Some i) }
