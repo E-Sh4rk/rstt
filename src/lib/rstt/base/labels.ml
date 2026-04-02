@@ -10,7 +10,7 @@ let name t =
   match t with
   | Pos i -> Format.asprintf "%i" i
   | Named str -> str
-  | Sym str -> "#"^str
+  | Sym str -> str
 let get t =
   match Hashtbl.find_opt labels t with
   | Some lbl -> lbl
