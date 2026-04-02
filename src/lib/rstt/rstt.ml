@@ -2,6 +2,7 @@
 include Sstt
 module Builder = Builder
 module Simplify = Simplify
+module Labels = Labels
 
 (* R components *)
 module Prim = Prim

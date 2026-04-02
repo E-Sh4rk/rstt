@@ -31,10 +31,12 @@ let extract_records ty =
 let record_to_atom { Records.Atom.bindings ; tail } =
   let pos, named = bindings |> LabelMap.bindings
   |> List.filter (fun (lbl,_) -> reserved_labels |> List.exists (Label.equal lbl) |> not)
+  |> List.filter (fun (lbl,_) -> Labels.is_sym lbl |> not)
   |> List.partition_map (fun (lbl,ty) ->
     match Labels.info lbl with
     | Pos i -> Either.left (i,ty)
     | Named str -> Either.right (str,ty)
+    | Sym _ -> assert false
     ) in
   let pos = List.sort (fun t1 t2 -> Stdlib.compare (fst t1) (fst t2)) pos in
   let pos = List.map snd pos in
