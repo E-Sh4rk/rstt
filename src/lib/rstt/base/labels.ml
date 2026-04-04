@@ -52,9 +52,10 @@ let substitute str lbl ty =
   let aux r =
     r |> Records.map (fun ra ->
         let dom = Records.Atom.dom ra in
-        if LabelSet.mem to_lbl dom then raise Exit ;
         let bindings = ra.Records.Atom.bindings |> LabelMap.to_list |> List.map (fun (lbl,fty) ->
-          if Label.equal lbl from_lbl then (to_lbl, fty) else (lbl, fty)
+          if Label.equal lbl from_lbl then
+            if LabelSet.mem to_lbl dom then raise Exit else (to_lbl, fty)
+          else (lbl, fty)
           ) |> LabelMap.of_list in
         { Records.Atom.bindings ; tail=ra.Records.Atom.tail }      
       )
