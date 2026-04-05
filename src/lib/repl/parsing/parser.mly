@@ -136,7 +136,7 @@ classes:
 { { pos=List.map (fun str -> Classes.L (str, [])) classes ; neg=[] ; unk=[] ; tail=tl } }
 
 %inline classes_tail:
-| { Classes.NoOther } | STAR { Classes.AllOthers } | QUESTION_MARK { Classes.Unknown }
+| { Classes.NoOther } | STAR { Classes.AllOthers } | ELLIPSIS { Classes.Unknown }
 | SEMICOLON id=RVARID { Classes.RowVars ([[id],[]]) }
 
 ty:

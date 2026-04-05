@@ -71,8 +71,8 @@ let%expect_test "tests" =
               `C: { class1 : `C ; class2 : tt | `C ;; ff | `C }
             ]
     class4: <(class1, class2)>
-    class5: <class1 ?>
-    class6: int<class1 ?>
+    class5: <class1 ...>
+    class6: int<class1 ...>
     c1: (c(42) | c_na) | c_string \ c("abc")
     c2: c_true
     c3: c_int

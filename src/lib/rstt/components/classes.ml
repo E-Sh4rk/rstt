@@ -177,7 +177,7 @@ let print _prec _assoc fmt {pos;neg;unk;tail} =
     match t with
     | NoOther -> ()
     | AllOthers -> Format.fprintf fmt " *"
-    | Unknown -> Format.fprintf fmt " ?"
+    | Unknown -> Format.fprintf fmt " ..."
     | RowVars dnf ->
       Format.fprintf fmt " ; %a"
         (Prec.print_non_empty_dnf ~any:"any" print_rv Prec.min_prec NoAssoc) dnf
