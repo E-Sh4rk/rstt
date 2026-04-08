@@ -52,23 +52,28 @@ let labels_of_ty t =
 let sym_of_ty ty =
   labels_of_ty ty |> LabelSet.elements |> List.filter_map to_sym
 
-let substitute ~sym:from ~target ty =
-  let from_lbl = sym from in
-  let to_lbl = get target in
-  let aux r =
-    r |> Records.map (fun ra ->
-        let dom = Records.Atom.dom ra in
-        let bindings = ra.Records.Atom.bindings |> LabelMap.to_list |> List.map (fun (lbl,fty) ->
-          if Label.equal lbl from_lbl && not (LabelSet.mem to_lbl dom)
-          then (to_lbl, fty) else (lbl, fty)
-          ) |> LabelMap.of_list in
-        { Records.Atom.bindings ; tail=ra.Records.Atom.tail }      
-      )
-  in
-  let aux d =
-    Descr.set_component d (Descr.Records (Descr.get_records d |> aux))
-  in
-  let aux vd =
-    VDescr.map aux vd
-  in
-  Transform.transform aux ty
+type sym_subst = { sym:t ; target:t }
+let substitute lst ty =
+  let lst = lst |> List.map (fun {sym=from;target} -> (sym from, get target)) in
+  let dom = lst |> List.map fst |> LabelSet.of_list in
+  if LabelSet.inter dom (labels_of_ty ty) |> LabelSet.is_empty |> not then
+    let aux r =
+      r |> Records.map (fun ra ->
+          let dom = Records.Atom.dom ra in
+          let bindings = ra.Records.Atom.bindings |> LabelMap.to_list |> List.map (fun (lbl,fty) ->
+            match List.find_opt (fun (k,_) -> Label.equal k lbl) lst with
+            | None -> (lbl, fty)
+            | Some (_, target) when LabelSet.mem target dom -> (lbl, fty)
+            | Some (_, target) -> (target, fty)
+            ) |> LabelMap.of_list in
+          { Records.Atom.bindings ; tail=ra.Records.Atom.tail }      
+        )
+    in
+    let aux d =
+      Descr.set_component d (Descr.Records (Descr.get_records d |> aux))
+    in
+    let aux vd =
+      VDescr.map aux vd
+    in
+    Transform.transform aux ty
+  else ty

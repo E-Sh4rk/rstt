@@ -19,4 +19,5 @@ val npos : Label.t
     positional parameters an argument type expects. *)
 
 val sym_of_ty : Ty.t -> t list
-val substitute : sym:t -> target:t -> Ty.t -> Ty.t
+type sym_subst = { sym:t ; target:t }
+val substitute : sym_subst list -> Ty.t -> Ty.t
