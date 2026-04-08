@@ -1,6 +1,6 @@
 open Sstt
 
-type t = Pos of int | Named of string | Sym of t
+type t = Pos of int | Named of string | Sym of t (* TODO: allow sym to refer to several labels *)
 
 val name : t -> string
 val of_name : string -> t

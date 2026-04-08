@@ -72,17 +72,12 @@ let mk { pos ; pos_named ; tl ; named } =
   let fsig = map_atom (fun _ -> ()) { pos ; pos_named ; tl ; named } in
   Hashtbl.add sigs id fsig ;
   let n = List.length pos_named in
-  let k = List.length pos in
+  (* let k = List.length pos in *)
   let atoms' = List.init (n + 1) (fun i ->
     let pos', named' = split_at_index pos_named i in
-    let subst1 = pos' |> List.mapi (fun j (name, _) ->
-      { Labels.sym=Labels.Named name ; target=Labels.Sym (Labels.Pos (k+j)) }) in
-    let subst2 = named' |> List.mapi (fun j (name, _) ->
-      { Labels.sym=Labels.Pos (k+i+j) ; target=Labels.Sym (Labels.Named name) }) in
     let pos' = pos@(pos' |> List.map (fun (_,fty) -> fty)) in
     let named' = named'@named in
-    let ty = mk' ~allow_more_pos:(i=n) ~id:(Some id) { pos' ; named' ; tl'=tl } in
-    Labels.substitute (subst1@subst2) ty (* Substitute symbolic labels in the result *)
+    mk' ~allow_more_pos:(i=n) ~id:(Some id) { pos' ; named' ; tl'=tl }
   ) in
   atoms' |> Ty.disj
 let mk' = mk' ~allow_more_pos:true ~id:None
