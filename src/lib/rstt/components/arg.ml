@@ -101,6 +101,7 @@ let extract_id (a:Records.Atom'.t) =
     end
   | _, _ -> None
 
+let params_of_id id = Hashtbl.find sigs id
 let extract ty : Ty.F.t t =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid arg encoding." ;
   let extract_defsite id a =

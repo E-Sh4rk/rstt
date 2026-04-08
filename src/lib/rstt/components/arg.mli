@@ -14,6 +14,7 @@ val mk' : Ty.F.t atom' -> Ty.t
 val destruct : Ty.t -> Ty.F.t t
 val reidentify : id:Ty.t -> Ty.t -> Ty.t
 val ids_of : Ty.t -> Enum.t list
+val params_of_id : Enum.t -> unit atom
 val map_atom : ('a -> 'b) -> 'a atom -> 'b atom
 val map_atom' : ('a -> 'b) -> 'a atom' -> 'b atom'
 val map : ('a -> 'b) -> 'a t -> 'b t
