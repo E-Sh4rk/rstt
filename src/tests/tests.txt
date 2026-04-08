@@ -57,3 +57,4 @@
 
 "sym1": ( a: { #2 : 'a }, b: chr1|null ) -> 'a ;;
 "sym2": ( a: { #b : 'a }, b: chr1|null ) -> 'a ;;
+"sym3": ( a: { #(b,2) : 'a }, b: chr1|null ) -> 'a ;;

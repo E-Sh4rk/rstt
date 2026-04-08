@@ -1,13 +1,13 @@
 open Sstt
 
-type t = Pos of int | Named of string | Sym of t (* TODO: allow sym to refer to several labels *)
+type t = Pos of int | Named of string | Sym of t list
 
 val name : t -> string
 val of_name : string -> t
 val get : t -> Label.t
 val pos : int -> Label.t
 val named : string -> Label.t
-val sym : t -> Label.t
+val sym : t list -> Label.t
 val info : Label.t -> t
 val is_sym : Label.t -> bool
 
