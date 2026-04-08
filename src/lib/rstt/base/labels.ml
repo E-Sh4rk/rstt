@@ -13,7 +13,7 @@ let rec name t =
   match t with
   | Pos i -> Format.asprintf "%i" (i+1)
   | Named str -> str
-  | Sym [] -> "#"
+  | Sym [] -> invalid_arg "Invalid symbolic label."
   | Sym [t] -> let str = name t in "#"^str
   | Sym lst ->
     let strs = List.map name lst in
@@ -21,7 +21,7 @@ let rec name t =
 let rec of_name str =
   if String.starts_with ~prefix:"#" str then
     let str = String.sub str 1 (String.length str - 1) in
-    if String.equal str "" then Sym []
+    if String.equal str "" then invalid_arg "Invalid symbolic label."
     else if String.starts_with ~prefix:"(" str
     then
       let str = String.sub str 1 (String.length str - 2) in
@@ -42,7 +42,6 @@ let named str = get (Named str)
 let sym sym = get (Sym sym)
 let info lbl =
   try Hashtbl.find info lbl with Not_found -> invalid_arg "Label is not a R label."
-let is_sym lbl = match info lbl with Sym _ -> true | Named _ | Pos _ -> false
 
 let id = Label.mk "_id"
 let npos = Label.mk "_npos"

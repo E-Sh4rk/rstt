@@ -9,7 +9,6 @@ val pos : int -> Label.t
 val named : string -> Label.t
 val sym : t list -> Label.t
 val info : Label.t -> t
-val is_sym : Label.t -> bool
 val equal : t -> t -> bool
 val compare : t -> t -> int
 
