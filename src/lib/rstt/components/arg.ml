@@ -68,15 +68,20 @@ let mk' ~allow_more_pos ~id { pos' ; tl' ; named' } =
   let tail = Utils.add_option tl' in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk { pos ; pos_named ; tl ; named } =
+  let subst ty (sym, target) = Labels.substitute ~sym ~target ty in
   let id = fresh_id () in
   let fsig = map_atom (fun _ -> ()) { pos ; pos_named ; tl ; named } in
   Hashtbl.add sigs id fsig ;
   let n = List.length pos_named in
+  let k = List.length pos in
   let atoms' = List.init (n + 1) (fun i ->
     let pos', named' = split_at_index pos_named i in
+    let subst1 = pos' |> List.mapi (fun j (name, _) -> Labels.Named name, Labels.Sym (Labels.Pos (k+j))) in
+    let subst2 = named' |> List.mapi (fun j (name, _) -> Labels.Pos (k+i+j), Labels.Sym (Labels.Named name)) in
     let pos' = pos@(pos' |> List.map (fun (_,fty) -> fty)) in
-    let named' = named@named' in
-    mk' ~allow_more_pos:(i=n) ~id:(Some id) { pos' ; named' ; tl'=tl }
+    let named' = named'@named in
+    let ty = mk' ~allow_more_pos:(i=n) ~id:(Some id) { pos' ; named' ; tl'=tl } in
+    List.fold_left subst ty (subst1@subst2) (* Substitute symbolic labels in the result *)
   ) in
   atoms' |> Ty.disj
 let mk' = mk' ~allow_more_pos:true ~id:None

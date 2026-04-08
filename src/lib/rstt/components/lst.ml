@@ -6,7 +6,7 @@ let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
 let proj_tag ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
 
-type 'a atom = { pos:'a list ; named:(string * 'a) list ; sym:(string * 'a) list ; tl:'a }
+type 'a atom = { pos:'a list ; named:(string * 'a) list ; sym:(Labels.t * 'a) list ; tl:'a }
 type 'a line = 'a atom list * 'a atom list
 type 'a t = 'a line list
 
@@ -81,7 +81,7 @@ let print prec assoc fmt t =
     let pos, named, sym =
       List.map (fun t -> None, t) pos,
       List.map (fun (str,t) -> Some str, t) named,
-      List.map (fun (str,t) -> Some str, t) sym
+      List.map (fun (str,t) -> Some (Labels.name (Sym str)), t) sym
     in
     Format.fprintf fmt "{ %a %a}" (print_seq print_field ", ") (pos@named@sym) print_tail tl
   in

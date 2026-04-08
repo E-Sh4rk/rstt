@@ -54,3 +54,6 @@
 "c7": c_string('a) ;;
 "c8": c_int_na \ c(42) ;;
 "c9": c_int \ c(42) ;;
+
+"sym1": ( a: { #2 : 'a }, b: chr1|null ) -> 'a ;;
+"sym2": ( a: { #b : 'a }, b: chr1|null ) -> 'a ;;

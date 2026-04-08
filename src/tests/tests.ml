@@ -47,7 +47,7 @@ let%expect_test "tests" =
             'A: 'A \ (chr | clx | dbl | lgl | raw) ;
             'B: 'B & lgl ;
             'C: 'C & int ;
-            `R: { _id : `R ; _npos : `R ; 0 : `R ; b : `R ; c : `R ; d : 'D | `R
+            `R: { _id : `R ; _npos : `R ; 1 : `R ; b : `R ; c : `R ; d : 'D | `R
             ;; empty? | `R }
           ]
           [
@@ -82,4 +82,6 @@ let%expect_test "tests" =
     c7: cstring('a & enum)
     c8: c_int_na \ c(42)
     c9: c_int \ c(42)
+    sym1: ( a: { #b: 'a }, b: null | chr1 ) -> 'a
+    sym2: ( a: { #b: 'a }, b: null | chr1 ) -> 'a
     |}]
