@@ -113,27 +113,27 @@ module TIdSet = Set.Make(TId)
 
 (* === Construction of types === *)
 
-let sym_ctx t =
+let build_sym_ctx t =
   let ctx = Hashtbl.create 7 in
-  let add_if_sym v t =
+  let add_if_sym vs t =
     match t with
-    | TSymLabel str -> Hashtbl.add ctx str v
-    | _ -> ()
+    | TSymLabel str -> List.iter (fun v -> Hashtbl.add ctx str v) vs ; TOption TAny
+    | tye -> tye
   in
   let aux t =
     match t with
     | TArg args ->
-      args.pos |> List.iteri (fun i -> add_if_sym (Labels.Pos i)) ;
+      let pos = args.pos |> List.mapi (fun i -> add_if_sym [Labels.Pos i]) in
       let k = List.length args.pos in
-      args.pos_named |> List.iteri (fun i (str,t) ->
-        add_if_sym (Labels.Pos (k+i)) t ;
-        add_if_sym (Labels.Named str) t
-        ) ;
-      args.named |> List.iter (fun (str, t) -> add_if_sym (Labels.Named str) t) ;
-      TArg args
+      let pos_named = args.pos_named |> List.mapi (fun i (str,t) ->
+        str, (add_if_sym [Labels.Pos (k+i) ; Labels.Named str] t)) in
+      let named = args.named |> List.map (fun (str, t) ->
+        str, add_if_sym [Labels.Named str] t) in
+      let tl = args.tl in
+      TArg { pos ; pos_named ; named ; tl }
     | t -> t
   in
-  map aux Fun.id Fun.id t |> ignore ; ctx
+  let t = map aux Fun.id Fun.id t in ctx, t
 
 let build_cconst t =
   match t with
@@ -249,7 +249,6 @@ and build sctx env t =
 
 and build_field sctx env t =
   match t with
-  | TSymLabel _ -> Ty.F.any
   | TOption t -> Ty.F.mk_descr (build sctx env t |> Ty.O.optional)
   | TRowVar v -> Ty.F.mk_var v
   | TCup (t1,t2) ->
@@ -267,9 +266,15 @@ and build_field sctx env t =
   | TNeg t -> Ty.F.neg (build_field sctx env t)
   | t -> Ty.F.mk_descr (build sctx env t |> Ty.O.required)
 
-let build_field env t = build_field (sym_ctx t) env t
-let build_struct env t = build_struct (sym_ctx t) env t
-let build env t = build (sym_ctx t) env t
+let build_field env t =
+  let ctx, t = build_sym_ctx t in
+  build_field ctx env t
+let build_struct env t =
+  let ctx, t = build_sym_ctx t in
+  build_struct ctx env t
+let build env t =
+  let ctx, t = build_sym_ctx t in
+  build ctx env t
 
 (* === Resolution of identifiers === *)
 

@@ -157,7 +157,6 @@ atomic_ty:
 | id=ID { parse_id_or_builtin id }
 | id=VARID { TVar (id) }
 | id=RVARID { TRowVar (id) }
-| id=SYMID { TSymLabel (id) }
 | LPAREN ty=ty RPAREN { ty }
 | P p=prim RPAREN { TPrim p }
 | S s=ty RPAREN { TStruct s }
@@ -218,6 +217,7 @@ label:
 
 %inline ty_named_field:
 | lbl=label COLON t=simple_ty { (lbl, t) }
+| lbl=label EQUAL id=SYMID { (lbl, TSymLabel (id)) }
 
 prim:
 | LPAREN p=prim RPAREN { p }
