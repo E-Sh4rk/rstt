@@ -36,6 +36,7 @@ let%expect_test "tests" =
     lst6: { a: ff }
     lst7: { a: "brrr" ; int }
     lst8: {  ; `r } -> { a: 42 ; `r }
+    lst9: { int?, lgl ; int }
     arg1: true
     arg2: true
     arg3: true
@@ -66,6 +67,7 @@ let%expect_test "tests" =
     arg10: true
     arg11: @( a: <class1> )
     arg12: @( int?, lgl ; int )
+    arg13: @( lgl, int? ; int )
     class1: <class1>
     class2: <class1 ; `c>
     class3: [

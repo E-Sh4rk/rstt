@@ -52,7 +52,13 @@ let record_to_atom { Records.Atom.bindings ; tail } =
   |> List.filter (fun (lbl,_) -> reserved_labels |> List.exists (Label.equal lbl) |> not)
   |> partition
   in
-  let pos = List.sort (fun t1 t2 -> Stdlib.compare (fst t1) (fst t2)) pos |> List.map snd in
+  let rec fill_holes i lst =
+    match lst with
+    | [] -> []
+    | (j,e)::lst when j=i -> e::(fill_holes (i+1) lst)
+    | lst -> tail::(fill_holes (i+1) lst)
+  in
+  let pos = List.sort (fun t1 t2 -> Stdlib.compare (fst t1) (fst t2)) pos |> fill_holes 0 in
   { pos ; named ; sym ; tl=tail }
 let extract t : Ty.F.t t =
   extract_records t |> List.map

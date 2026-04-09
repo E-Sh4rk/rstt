@@ -123,27 +123,29 @@ let extract ty : Ty.F.t t =
     in
     { pos ; pos_named ; tl ; named }
   in
+  let extract_npos a = Records.Atom'.find Labels.npos a |> Ty.F.get_descr |> Ty.O.get in
   let extract_callsite a =
-    let bindings = a.Records.Atom'.bindings |> LabelMap.bindings |>
-      List.filter_map (fun (lbl,ty) -> try Some (Labels.info lbl, ty) with Invalid_argument _ -> None) in
-    let pos' = bindings |> List.filter_map (fun (i,ty) -> match i with Labels.Pos i -> Some (i,ty) | _ -> None) in
-    let named' = bindings |> List.filter_map (fun (i,ty) -> match i with Labels.Named str -> Some (str,ty) | _ -> None) in
+    let npos = extract_npos a |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct |> List.hd
+    |> Intervals.Atom.get |> fst |> Option.get |> Z.to_int in
+    let pos' = List.init npos Fun.id |> List.map (fun i ->
+        let lbl = Labels.pos i in
+        Records.Atom'.find lbl a
+      ) in      
+    let named' = a.Records.Atom'.bindings |> LabelMap.bindings |>
+      List.filter_map (fun (lbl,ty) ->
+        match Labels.info lbl with
+        | Labels.Named str -> Some (str,ty)
+        | Labels.Pos _ | Labels.Sym _ -> None
+        | exception Invalid_argument _ -> None
+        ) in
     let tl' = a.Records.Atom'.tail in
-    let rec fill_holes i lst =
-      match lst with
-      | [] -> []
-      | (j,e)::lst when j=i -> e::(fill_holes (i+1) lst)
-      | lst -> tl'::(fill_holes (i+1) lst)
-    in
-    let pos' = List.sort (fun (i1,_) (i2,_) -> Stdlib.Int.compare i1 i2) pos' |> fill_holes 0 in
     { pos' ; tl' ; named' }
   in
   let npos_zero = Intervals.Atom.mk_singl Z.zero |> Descr.mk_interval |> Ty.mk_descr in
   let extract a =
     match extract_id a with
     | Some id ->
-      if Ty.cap (Records.Atom'.find Labels.npos a |> Ty.F.get_descr |> Ty.O.get) npos_zero
-        |> Ty.is_empty then None
+      if Ty.cap (extract_npos a) npos_zero |> Ty.is_empty then None
       else Some (DefSite (extract_defsite id a))
     | None -> Some (CallSite (extract_callsite a))
   in
