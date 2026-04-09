@@ -128,8 +128,15 @@ let extract ty : Ty.F.t t =
       List.filter_map (fun (lbl,ty) -> try Some (Labels.info lbl, ty) with Invalid_argument _ -> None) in
     let pos' = bindings |> List.filter_map (fun (i,ty) -> match i with Labels.Pos i -> Some (i,ty) | _ -> None) in
     let named' = bindings |> List.filter_map (fun (i,ty) -> match i with Labels.Named str -> Some (str,ty) | _ -> None) in
-    let pos' = List.sort (fun (i1,_) (i2,_) -> Stdlib.Int.compare i1 i2) pos' |> List.map snd in
-    { pos' ; tl'=a.Records.Atom'.tail ; named' }
+    let tl' = a.Records.Atom'.tail in
+    let rec fill_holes i lst =
+      match lst with
+      | [] -> []
+      | (j,e)::lst when j=i -> e::(fill_holes (i+1) lst)
+      | lst -> tl'::(fill_holes (i+1) lst)
+    in
+    let pos' = List.sort (fun (i1,_) (i2,_) -> Stdlib.Int.compare i1 i2) pos' |> fill_holes 0 in
+    { pos' ; tl' ; named' }
   in
   let npos_zero = Intervals.Atom.mk_singl Z.zero |> Descr.mk_interval |> Ty.mk_descr in
   let extract a =
