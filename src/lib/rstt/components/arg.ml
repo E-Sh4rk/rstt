@@ -126,7 +126,7 @@ let extract ty : Ty.F.t t =
   let extract_npos a = Records.Atom'.find Labels.npos a |> Ty.F.get_descr |> Ty.O.get in
   let extract_callsite a =
     let npos = extract_npos a |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct |> List.hd
-    |> Intervals.Atom.get |> fst |> Option.get |> Z.to_int in
+    |> Intervals.Atom.get |> fst |> Option.get |> Z.to_int |> max 0 in
     let pos' = List.init npos Fun.id |> List.map (fun i ->
         let lbl = Labels.pos i in
         Records.Atom'.find lbl a
@@ -157,7 +157,7 @@ let to_t ctx comp =
   else None
 
 let destruct ty =
-  proj_tag ty |> extract
+  proj_tag ty |> Ty.cap any_d |> extract
 
 let reidentify ~id ty =
   let id = Ty.cup id (Descr.mk_enum dummy_id |> Ty.mk_descr) |> Ty.O.required |> Ty.F.mk_descr

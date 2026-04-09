@@ -68,7 +68,7 @@ let to_t ctx comp =
   if Ty.leq ty any_d then Some (extract ty |> map ctx.Printer.build_fop)
   else None
 
-let destruct ty = proj_tag ty |> extract
+let destruct ty = proj_tag ty |> Ty.cap any_d |> extract
 
 let print prec assoc fmt t =
   let print_atom _prec _assoc fmt {pos;named;sym;tl} =
