@@ -86,7 +86,7 @@ let substitute lst ty =
             match to_sym lbl with
             | None -> (lbl,fty)
             | Some sym ->
-              begin match List.find_opt (fun (f,target) -> f sym && LabelSet.mem target dom) lst with
+              begin match List.find_opt (fun (f,target) -> f sym && not (LabelSet.mem target dom)) lst with
               | None -> (lbl, fty)
               | Some (_, target) -> (target, fty)
               end
