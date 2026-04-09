@@ -1,7 +1,8 @@
 open Sstt
 open Rstt_utils
 
-type t = Pos of int | Named of string | Sym of t list
+type t = Pos of int | Named of string | Sym of sym
+and sym = SLabel of t list | SStr of string
 
 let compare t1 t2 = Stdlib.compare t1 t2
 let equal t1 t2 = Stdlib.(=) t1 t2
@@ -13,24 +14,28 @@ let rec name t =
   match t with
   | Pos i -> Format.asprintf "%i" (i+1)
   | Named str -> str
-  | Sym [] -> invalid_arg "Invalid symbolic label."
-  | Sym [t] -> let str = name t in "#"^str
-  | Sym lst ->
-    let strs = List.map name lst in
-    Format.asprintf "#(%a)" (print_seq Format.pp_print_string ",") strs
+  | Sym sym -> "#"^(sym_name sym)
+and sym_name sym =
+  match sym with
+  | SStr str -> str
+  | SLabel ts ->
+    let strs = List.map name ts in
+    Format.asprintf "(%a)" (print_seq Format.pp_print_string ",") strs
+
 let rec of_name str =
   if String.starts_with ~prefix:"#" str then
-    let str = String.sub str 1 (String.length str - 1) in
-    if String.equal str "" then invalid_arg "Invalid symbolic label."
-    else if String.starts_with ~prefix:"(" str
-    then
-      let str = String.sub str 1 (String.length str - 2) in
-      Sym (String.split_on_char ',' str |> List.map of_name)
-    else Sym [of_name str]
+    Sym (String.sub str 1 (String.length str - 1) |> sym_of_name)
   else
     match int_of_string_opt str with
     | Some i -> Pos (i-1)
     | None -> Named str
+and sym_of_name str =
+  if String.starts_with ~prefix:"(" str
+  then
+    let str = String.sub str 1 (String.length str - 2) in
+    SLabel (String.split_on_char ',' str |> List.map of_name)
+  else SStr str
+
 let get t =
   match Hashtbl.find_opt labels t with
   | Some lbl -> lbl
@@ -48,12 +53,11 @@ let npos = Label.mk "_npos"
 
 (* Symbolic label utilities *)
 
-module Set = Set.Make(struct type nonrec t = t let compare = compare end)
-let captured lbl =
+let to_sym lbl =
   match info lbl with
-  | Sym ts -> Set.of_list ts
-  | Pos _ | Named _ -> Set.empty
-  | exception (Invalid_argument _) -> Set.empty
+  | Sym s -> Some s
+  | Pos _ | Named _ -> None
+  | exception (Invalid_argument _) -> None
 let labels_of_ty t =
   let labels = ref LabelSet.empty in
   let _ = Ty.nodes t |> List.iter (fun n ->
@@ -64,33 +68,36 @@ let labels_of_ty t =
       ) |> ignore
     ) in !labels
 let sym_of_ty ty =
-  labels_of_ty ty |> LabelSet.elements |> List.map captured
-  |> List.fold_left Set.union Set.empty
+  labels_of_ty ty |> LabelSet.elements |> List.filter_map to_sym
 
-type sym_subst = { sym:t ; target:t }
+type sym_selector = SelectLabel of t | SelectString of string
+type sym_subst = { selector:sym_selector ; target:t }
+let select selector sym =
+  match sym, selector with
+  | SStr str, SelectString str' -> String.equal str str'
+  | SLabel ts, SelectLabel t -> List.exists (equal t) ts
+  | _, _ -> false
 let substitute lst ty =
-  let lst = lst |> List.map (fun {sym;target} -> (sym, get target)) in
-  let dom = lst |> List.map fst |> Set.of_list in
-  if Set.inter dom (sym_of_ty ty) |> Set.is_empty |> not then
-    let aux r =
-      r |> Records.map (fun ra ->
-          let dom = Records.Atom.dom ra in
-          let bindings = ra.Records.Atom.bindings |> LabelMap.to_list |> List.map (fun (lbl,fty) ->
-              let captured = captured lbl in
-              begin match List.find_opt (fun (k,_) -> Set.mem k captured) lst with
+  let lst = lst |> List.map (fun {selector;target} -> (select selector, get target)) in
+  let aux r =
+    r |> Records.map (fun ra ->
+        let dom = Records.Atom.dom ra in
+        let bindings = ra.Records.Atom.bindings |> LabelMap.to_list |> List.map (fun (lbl,fty) ->
+            match to_sym lbl with
+            | None -> (lbl,fty)
+            | Some sym ->
+              begin match List.find_opt (fun (f,target) -> f sym && LabelSet.mem target dom) lst with
               | None -> (lbl, fty)
-              | Some (_, target) when LabelSet.mem target dom -> (lbl, fty)
               | Some (_, target) -> (target, fty)
               end
-            ) |> LabelMap.of_list in
-          { Records.Atom.bindings ; tail=ra.Records.Atom.tail }      
-        )
-    in
-    let aux d =
-      Descr.set_component d (Descr.Records (Descr.get_records d |> aux))
-    in
-    let aux vd =
-      VDescr.map aux vd
-    in
-    Transform.transform aux ty
-  else ty
+          ) |> LabelMap.of_list in
+        { Records.Atom.bindings ; tail=ra.Records.Atom.tail }      
+      )
+  in
+  let aux d =
+    Descr.set_component d (Descr.Records (Descr.get_records d |> aux))
+  in
+  let aux vd =
+    VDescr.map aux vd
+  in
+  Transform.transform aux ty

@@ -34,6 +34,7 @@ and ('v,'r,'i) t =
 | TStruct of ('v,'r,'i) t (* Means that the parameter should not be packed in an Attr container *)
 | TCConst of 'v cconst
 | TCPtr of ('v,'r,'i) t
+| TSymLabel of string
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
 and 'r classes =
@@ -69,7 +70,8 @@ let map_classes f c =
 let map f fp fc t =
   let rec aux t =
     let t = match t with
-    | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TNull | TEnv | TSym | TLang -> t
+    | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TNull
+    | TEnv | TSym | TLang | TSymLabel _-> t
     | TCup (t1, t2) -> TCup (aux t1, aux t2)
     | TCap (t1, t2) -> TCap (aux t1, aux t2)
     | TDiff (t1, t2) -> TDiff (aux t1, aux t2)
@@ -110,6 +112,28 @@ module TIdMap = Map.Make(TId)
 module TIdSet = Set.Make(TId)
 
 (* === Construction of types === *)
+
+let sym_ctx t =
+  let ctx = Hashtbl.create 7 in
+  let add_if_sym v t =
+    match t with
+    | TSymLabel str -> Hashtbl.add ctx str v
+    | _ -> ()
+  in
+  let aux t =
+    match t with
+    | TArg args ->
+      args.pos |> List.iteri (fun i -> add_if_sym (Labels.Pos i)) ;
+      let k = List.length args.pos in
+      args.pos_named |> List.iteri (fun i (str,t) ->
+        add_if_sym (Labels.Pos (k+i)) t ;
+        add_if_sym (Labels.Named str) t
+        ) ;
+      args.named |> List.iter (fun (str, t) -> add_if_sym (Labels.Named str) t) ;
+      TArg args
+    | t -> t
+  in
+  map aux Fun.id Fun.id t |> ignore ; ctx
 
 let build_cconst t =
   match t with
@@ -156,7 +180,7 @@ let build_classes t =
   | CNoClass -> Classes.noclass
   | CClasses a -> Classes.mk a
 
-let rec build_struct env t =
+let rec build_struct sctx env t =
   match t with
   | TId i -> (try TIdMap.find i env with Not_found ->
     invalid_arg ("type of "^(string_of_int i)^" not found in the environment"))
@@ -164,26 +188,35 @@ let rec build_struct env t =
   | TVar v -> Ty.mk_var v
   | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TAny -> Ty.any | TEmpty -> Ty.empty
-  | TCup (t1,t2) -> Ty.cup (build_struct env t1) (build_struct env t2)
-  | TCap (t1,t2) -> Ty.cap (build_struct env t1) (build_struct env t2)
-  | TDiff (t1,t2) -> Ty.diff (build_struct env t1) (build_struct env t2)
-  | TNeg t -> Ty.neg (build_struct env t)
+  | TCup (t1,t2) -> Ty.cup (build_struct sctx env t1) (build_struct sctx env t2)
+  | TCap (t1,t2) -> Ty.cap (build_struct sctx env t1) (build_struct sctx env t2)
+  | TDiff (t1,t2) -> Ty.diff (build_struct sctx env t1) (build_struct sctx env t2)
+  | TNeg t -> Ty.neg (build_struct sctx env t)
   | TNull -> Null.any | TEnv -> Env.any | TSym -> Sym.any | TLang -> Lang.any
-  | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
+  | TTuple lst -> Descr.mk_tuple (List.map (build sctx env) lst) |> Ty.mk_descr
   | TPrim p -> build_prim p
-  | TArrow (t1,t2) -> Descr.mk_arrow (build env t1, build env t2) |> Ty.mk_descr
+  | TArrow (t1,t2) -> Descr.mk_arrow (build sctx env t1, build sctx env t2) |> Ty.mk_descr
   | TVec a -> Vec.map_atom build_prim a |> Vec.mk
-  | TList a -> Lst.map_atom (build_field env) a |> Lst.mk
-  | TArg a -> Arg.map_atom (build_field env) a |> Arg.mk
-  | TArg' a -> Arg.map_atom' (build_field env) a |> Arg.mk'
+  | TList a ->
+    let {Lst.pos;named;sym;tl} = Lst.map_atom (build_field sctx env) a in
+    let resolve s =
+      match s with
+      | Labels.SStr str -> Labels.SLabel (Hashtbl.find_all sctx str)
+      | Labels.SLabel ts -> SLabel ts
+    in
+    let sym = sym |> List.map (fun (s,a) -> resolve s,a) in
+    Lst.mk {pos;named;sym;tl}
+  | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
+  | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
   | TCConst c -> build_cconst c
-  | TCPtr t -> Cptr.mk (build env t)
+  | TCPtr t -> Cptr.mk (build sctx env t)
   | TOption _ -> invalid_arg "Unexpected optional type"
   | TAttr _ -> invalid_arg "Unexpected attributes"
   | TStruct _ -> invalid_arg "Unexpected struct"
+  | TSymLabel _ -> invalid_arg "Unexpected symbolic label"
   | TWhere _ -> invalid_arg "Unexpected where clause"
 
-and build env t =
+and build sctx env t =
   match t with
   | TId i -> (try TIdMap.find i env with Not_found ->
     invalid_arg ("type of "^(string_of_int i)^" not found in the environment"))
@@ -191,47 +224,52 @@ and build env t =
   | TAny -> Ty.any | TEmpty -> Ty.empty
   | TVar v -> Ty.mk_var v
   | TRowVar _ -> invalid_arg "Unexpected row variable"
-  | TCup (t1,t2) -> Ty.cup (build env t1) (build env t2)
-  | TCap (t1,t2) -> Ty.cap (build env t1) (build env t2)
-  | TDiff (t1,t2) -> Ty.diff (build env t1) (build env t2)
-  | TNeg t -> Ty.neg (build env t)
+  | TCup (t1,t2) -> Ty.cup (build sctx env t1) (build sctx env t2)
+  | TCap (t1,t2) -> Ty.cap (build sctx env t1) (build sctx env t2)
+  | TDiff (t1,t2) -> Ty.diff (build sctx env t1) (build sctx env t2)
+  | TNeg t -> Ty.neg (build sctx env t)
   | TWhere (t, eqs) ->
     let eqs = eqs |> List.map (fun (x,t) -> x,Var.mk "_",t) in
     let env = List.fold_left (fun env (x,v,_) -> TIdMap.add x (Ty.mk_var v) env) env eqs in
-    let t, eqs = build env t, List.map (fun (_,v,t) -> v,build env t) eqs in
+    let t, eqs = build sctx env t, List.map (fun (_,v,t) -> v,build sctx env t) eqs in
     let s = Ty.of_eqs eqs |> Subst.of_list1 in
     Subst.apply s t
   (* Explicit attr *)
-  | TAttr a -> Attr.map_atom (build_struct env) build_classes a |> Attr.mk
-  | TStruct t -> build_struct env t
+  | TAttr a -> Attr.map_atom (build_struct sctx env) build_classes a |> Attr.mk
+  | TStruct t -> build_struct sctx env t
   (* We don't need attributes for C values, primitive types, tuples, and args *)
   | TPrim p -> build_prim p
   | TCConst c -> build_cconst c
-  | TCPtr t -> Cptr.mk (build env t)
-  | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
-  | TArg a -> Arg.map_atom (build_field env) a |> Arg.mk
-  | TArg' a -> Arg.map_atom' (build_field env) a |> Arg.mk'
+  | TCPtr t -> Cptr.mk (build sctx env t)
+  | TTuple lst -> Descr.mk_tuple (List.map (build sctx env) lst) |> Ty.mk_descr
+  | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
+  | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
   (* R types *)
-  | t -> Attr.mk {content=build_struct env t ; classes=Classes.any}
+  | t -> Attr.mk {content=build_struct sctx env t ; classes=Classes.any}
 
-and build_field env t =
+and build_field sctx env t =
   match t with
-  | TOption t -> Ty.F.mk_descr (build env t |> Ty.O.optional)
+  | TSymLabel _ -> Ty.F.any
+  | TOption t -> Ty.F.mk_descr (build sctx env t |> Ty.O.optional)
   | TRowVar v -> Ty.F.mk_var v
   | TCup (t1,t2) ->
-      let t1 = build_field env t1 in
-      let t2 = build_field env t2 in
+      let t1 = build_field sctx env t1 in
+      let t2 = build_field sctx env t2 in
       Ty.F.cup t1 t2
   | TCap (t1,t2) ->
-      let t1 = build_field env t1 in
-      let t2 = build_field env t2 in
+      let t1 = build_field sctx env t1 in
+      let t2 = build_field sctx env t2 in
       Ty.F.cap t1 t2
   | TDiff (t1,t2) ->
-      let t1 = build_field env t1 in
-      let t2 = build_field env t2 in
+      let t1 = build_field sctx env t1 in
+      let t2 = build_field sctx env t2 in
       Ty.F.diff t1 t2
-  | TNeg t -> Ty.F.neg (build_field env t)
-  | t -> Ty.F.mk_descr (build env t |> Ty.O.required)
+  | TNeg t -> Ty.F.neg (build_field sctx env t)
+  | t -> Ty.F.mk_descr (build sctx env t |> Ty.O.required)
+
+let build_field env t = build_field (sym_ctx t) env t
+let build_struct env t = build_struct (sym_ctx t) env t
+let build env t = build (sym_ctx t) env t
 
 (* === Resolution of identifiers === *)
 
@@ -349,6 +387,7 @@ let resolve env t =
     | TStruct t -> TStruct (aux tids t)
     | TCConst c -> TCConst (resolve_cconst env c)
     | TCPtr t -> TCPtr (aux tids t)
+    | TSymLabel str -> TSymLabel str
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in
       let tids = List.fold_left (fun tids (x,v,_) -> StrMap.add x v tids) tids eqs in

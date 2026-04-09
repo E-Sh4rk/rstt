@@ -82,7 +82,5 @@ let%expect_test "tests" =
     c7: cstring('a & enum)
     c8: c_int_na \ c(42)
     c9: c_int \ c(42)
-    sym1: ( a: { #2: 'a }, b: null | chr1 ) -> 'a
-    sym2: ( a: { #b: 'a }, b: null | chr1 ) -> 'a
-    sym3: ( a: { #(b,2): 'a }, b: null | chr1 ) -> 'a
+    sym: ( a: { #(b,2): 'a }, b: any? ) -> 'a
     |}]

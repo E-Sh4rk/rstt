@@ -34,6 +34,7 @@ and ('v,'r,'i) t =
 | TStruct of ('v,'r,'i) t
 | TCConst of 'v cconst
 | TCPtr of ('v,'r,'i) t
+| TSymLabel of string
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
 and 'r classes =

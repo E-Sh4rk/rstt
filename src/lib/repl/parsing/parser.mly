@@ -49,9 +49,7 @@ let parse_id_or_builtin str =
     let pos, lst = pos_fields lst in
     let named, sym = lst |> List.partition_map (function
         | Named (str,t) -> Either.left (str,t)
-        | Sym (str,t) ->
-            let sym = match Labels.of_name str with Sym s -> s | _ -> assert false in
-            Either.right (sym,t)
+        | Sym (str,t) -> Either.right (Labels.sym_of_name str,t)
         | _ -> raise (Errors.E_Parser ("Unexpected positional field"))
     ) in
     pos, named, sym
@@ -159,6 +157,7 @@ atomic_ty:
 | id=ID { parse_id_or_builtin id }
 | id=VARID { TVar (id) }
 | id=RVARID { TRowVar (id) }
+| id=SYMID { TSymLabel (id) }
 | LPAREN ty=ty RPAREN { ty }
 | P p=prim RPAREN { TPrim p }
 | S s=ty RPAREN { TStruct s }

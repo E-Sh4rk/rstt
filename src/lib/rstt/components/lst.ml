@@ -6,7 +6,7 @@ let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
 let proj_tag ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
 
-type 'a atom = { pos:'a list ; named:(string * 'a) list ; sym:(Labels.t list * 'a) list ; tl:'a }
+type 'a atom = { pos:'a list ; named:(string * 'a) list ; sym:(Labels.sym * 'a) list ; tl:'a }
 type 'a line = 'a atom list * 'a atom list
 type 'a t = 'a line list
 
