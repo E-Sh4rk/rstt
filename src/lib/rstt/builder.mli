@@ -50,7 +50,7 @@ val map : (('v,'r,'i) t -> ('v,'r,'i) t)
   -> ('r classes -> 'r classes)
   -> ('v,'r,'i) t -> ('v,'r,'i) t
 
-module TId : sig (* TODO: seems overcomplicated, should reoslve to types directly *)
+module TId : sig
   type t
   val compare : t -> t -> int
   val equal : t -> t -> bool
