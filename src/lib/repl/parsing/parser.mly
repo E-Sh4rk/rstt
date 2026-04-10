@@ -11,7 +11,7 @@ let parse_id_or_builtin str =
     | "env" -> TEnv
     | "sym" -> TSym
     | "lang" -> TLang
-    | "list" -> TList{pos=[];named=[];sym=[];tl=TOption TAny}
+    | "list" -> TList{bindings=[];sym=[];tl=TOption TAny}
     (* C stuff  *)
     | "c_double" -> TCConst CDouble
     | "c_string" -> TCConst CString
@@ -25,7 +25,7 @@ let parse_id_or_builtin str =
     | "c_false" -> TCConst CFalse
     | str -> TId str
 
- let parse_builtin_prim str =
+let parse_builtin_prim str =
     match str with
     | "any" -> PAny
     | "vec" -> PAny
@@ -37,8 +37,8 @@ let parse_id_or_builtin str =
     | "raw" -> PRaw
     | str -> raise (Errors.E_Parser ("Unknown primitive builtin "^str))
 
- type field = Pos of ty | Named of string * ty | Sym of string * ty
- let split_fields lst =
+type field = Pos of ty | Named of string * ty
+let split_fields lst =
     let rec pos_fields lst =
         match lst with
         | (Pos t)::lst ->
@@ -49,10 +49,22 @@ let parse_id_or_builtin str =
     let pos, lst = pos_fields lst in
     let named, sym = lst |> List.partition_map (function
         | Named (str,t) -> Either.left (str,t)
-        | Sym (str,t) -> Either.right (Labels.sym_of_name str,t)
         | _ -> raise (Errors.E_Parser ("Unexpected positional field"))
     ) in
     pos, named, sym
+
+let split_lst_elts lst =
+    let lst, tl = match List.rev lst with
+    | (`LstTl ty)::lst -> List.rev lst, ty
+    | lst -> List.rev lst, TOption TEmpty
+    in
+    let bindings, sym = lst |> List.partition_map (function
+        | `LstNamed (str,t) -> Either.left (str,t)
+        | `LstSym (str,t) -> Either.right (Labels.sym_of_name str,t)
+        | `LstTl _ -> raise (Errors.E_Parser ("Unexpected list tail"))
+    ) in
+    bindings, sym, tl
+
 %}
 
 %token<string> STRING, SHORT, SBRACKET
@@ -172,8 +184,8 @@ atomic_ty:
 | HAT s=SLEN { let (s,i) = s in TVec (CstLength (Z.to_int i, PHat (parse_builtin_prim s))) }
 | s=prim_singl { TVec (CstLength (1, PHat s)) }
 (* Containers (lists, args, tuples) *)
-| LBRACE fs=separated_list(COMMA, ty_field) tl=optional_tail RBRACE
-{ let pos,named,sym = split_fields fs in TList {pos;named;sym;tl} }
+| LBRACE elts=separated_list(COMMA, lst_elt) RBRACE
+{ let bindings,sym,tl = split_lst_elts elts in TList {bindings;sym;tl} }
 | ALPAREN fs=separated_list(COMMA, ty_non_sym_field) tl=optional_tail RPAREN
 { let pos',named',_ = split_fields fs in TArg' { tl'=tl ; pos' ; named' } }
 | LPAREN pos_named=separated_list(COMMA, ty_named_field) tl=optional_tail named=optional_named RPAREN
@@ -199,6 +211,11 @@ cstr:
 | ELLIPSIS { TOption TAny }
 | { TOption TEmpty }
 
+%inline lst_elt:
+| lbl=SYMID COLON t=simple_ty { `LstSym (lbl, t) }
+| lbl=label COLON t=simple_ty { `LstNamed (lbl, t) }
+| ty=simple_ty { `LstTl ty }
+
 %inline optional_named:
 | SEMICOLON named=separated_list(COMMA, ty_named_field) { named }
 | { [] }
@@ -206,10 +223,6 @@ cstr:
 label:
 | id=ID { id }
 | s=SHORT { s }
-
-%inline ty_field:
-| lbl=SYMID COLON t=simple_ty { Sym (lbl, t) }
-| t=ty_non_sym_field { t }
 
 %inline ty_non_sym_field:
 | lbl=label COLON t=simple_ty { Named (lbl, t) }

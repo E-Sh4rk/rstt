@@ -1,6 +1,6 @@
 
 let print_seq f sep =
-  Format.(pp_print_list  ~pp_sep:(fun fmt () -> pp_print_string fmt sep) f)
+  Format.(pp_print_list ~pp_sep:(fun fmt () -> pp_print_string fmt sep) f)
 
 let print_seq_cut f =
   Format.(pp_print_list ~pp_sep:pp_print_cut f)

@@ -32,11 +32,10 @@ let%expect_test "tests" =
     lst2: true
     lst3: false
     lst4: true
-    lst5: { a: 42 ... }
+    lst5: { a: 42, any }
     lst6: { a: ff }
-    lst7: { a: "brrr" ; int }
-    lst8: {  ; `r } -> { a: 42 ; `r }
-    lst9: { int?, lgl ; int }
+    lst7: { a: "brrr", int }
+    lst8: { `r } -> { a: 42, `r }
     arg1: true
     arg2: true
     arg3: true
@@ -48,7 +47,7 @@ let%expect_test "tests" =
             'A: 'A \ (chr | clx | dbl | lgl | raw) ;
             'B: 'B & lgl ;
             'C: 'C & int ;
-            `R: { _id : `R ; _npos : `R ; 1 : `R ; b : `R ; c : `R ; d : 'D | `R
+            `R: { _id : `R ; _npos : `R ; b : `R ; 1 : `R ; c : `R ; d : 'D | `R
             ;; empty? | `R }
           ]
           [

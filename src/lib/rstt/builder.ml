@@ -198,14 +198,14 @@ let rec build_struct sctx env t =
   | TArrow (t1,t2) -> Descr.mk_arrow (build sctx env t1, build sctx env t2) |> Ty.mk_descr
   | TVec a -> Vec.map_atom build_prim a |> Vec.mk
   | TList a ->
-    let {Lst.pos;named;sym;tl} = Lst.map_atom (build_field sctx env) a in
+    let {Lst.bindings;sym;tl} = Lst.map_atom (build_field sctx env) a in
     let resolve s =
       match s with
       | Labels.SStr str -> Labels.SLabel (Hashtbl.find_all sctx str)
       | Labels.SLabel ts -> SLabel ts
     in
     let sym = sym |> List.map (fun (s,a) -> resolve s,a) in
-    Lst.mk {pos;named;sym;tl}
+    Lst.mk {bindings;sym;tl}
   | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
   | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
   | TCConst c -> build_cconst c

@@ -3,7 +3,7 @@ open Sstt
 val tag : Tag.t
 val any : Ty.t
 
-type 'a atom = { pos:'a list ; named:(string * 'a) list ; sym:(Labels.sym * 'a) list ; tl:'a }
+type 'a atom = { bindings: (string * 'a) list ; sym: (Labels.sym * 'a) list ; tl:'a }
 type 'a line = 'a atom list * 'a atom list
 type 'a t = 'a line list
 
