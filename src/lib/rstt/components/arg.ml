@@ -121,8 +121,9 @@ let extract ty : Ty.F.t t =
   in
   let extract_npos a = Records.Atom'.find Labels.npos a |> Ty.F.get_descr |> Ty.O.get in
   let extract_callsite a =
-    let npos = extract_npos a |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct |> List.hd
-    |> Intervals.Atom.get |> fst |> Option.get |> Z.to_int in
+    let npos = extract_npos a
+      |> Ty.get_descr |> Descr.get_intervals |> Intervals.lb
+      |> Option.get |> Z.to_int in
     let pos' = List.init npos Fun.id |> List.map (fun i ->
         let lbl = Labels.pos i in
         Records.Atom'.find lbl a
