@@ -68,13 +68,16 @@ let%expect_test "tests" =
     arg12: @( int?, lgl ; int )
     arg13: @( lgl, int? ; int )
     class1: <class1>
-    class2: <class1 ; `c>
+    class2: <class1, `c>
     class3: [
               `C: { class1 : `C ; class2 : tt | `C ;; ff | `C }
             ]
-    class4: <(class1, class2)>
-    class5: <class1 ...>
-    class6: int<class1 ...>
+    class4: <class1, class2>
+    class5: <class1, ...>
+    class6: int<class1, ...>
+    class7: <class1, ?class3>
+    class8: <class1, ~class2, ...>
+    class9: <~class2, ?class3, *>
     c1: (c(42) | c_na) | c_string \ c("abc")
     c2: c_true
     c3: c_int

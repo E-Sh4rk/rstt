@@ -41,11 +41,14 @@
 "arg13": @( lgl, int? ; int? ) ;;
 
 "class1": <class1> ;;
-"class2": <class1 ; `c> ;;
-"class3": [ <class1,class2> <= <class1;`C> ];;
-"class4": <class1;`C> [ <class1,class2> <= <class1;`C> ];;
-"class5": <class1 ...> ;;
-"class6": int<class1;`C> [ int <= int<;`C> ];;
+"class2": <class1, `c> ;;
+"class3": [ <class1,class2> <= <class1,`C> ];;
+"class4": <class1,`C> [ <class1,class2> <= <class1,`C> ];;
+"class5": <class1, ...> ;;
+"class6": int<class1,`C> [ int <= int<`C> ];;
+"class7": <class1,~class2,?class3> ;;
+"class8": <class1,~class2,?class3, ...> ;;
+"class9": <class1,~class2,?class3, *> ;;
 
 "c1": c_string\c("abc") | c(42) | c_na ;;
 "c2": c_bool & c_true ;;

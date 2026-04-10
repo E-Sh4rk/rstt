@@ -65,6 +65,24 @@ let split_lst_elts lst =
     ) in
     bindings, sym, tl
 
+let split_classes_elts lst =
+    let lst, tl = match List.rev lst with
+    | `ClassAllOthers::lst -> List.rev lst, Classes.AllOthers
+    | `ClassEllipsis::lst -> List.rev lst, Classes.Unknown
+    | (`ClassRowVar id)::lst -> List.rev lst, Classes.RowVars ([[id],[]])
+    | lst -> List.rev lst, Classes.NoOther
+    in
+    let pos, lst = lst |> List.partition_map (function
+        | `ClassId id -> Either.left (Classes.L (id, []))
+        | `ClassNoId id -> Either.right (`ClassNoId id)
+        | `ClassMaybeId id -> Either.right (`ClassMaybeId id)
+        | _ -> raise (Errors.E_Parser ("Unexpected class tail"))
+    ) in
+    let neg, unk = lst |> List.partition_map (function
+        | `ClassNoId id -> Either.left (Classes.L (id, []))
+        | `ClassMaybeId id -> Either.right (Classes.L (id, []))
+    ) in
+    pos, neg, unk, tl
 %}
 
 %token<string> STRING, SHORT, SBRACKET
@@ -144,19 +162,24 @@ ty_main:
 | ty=ty EOF { ty }
 
 classes:
-| LT classes=separated_list(COMMA, ID) tl=classes_tail GT
-{ { pos=List.map (fun str -> Classes.L (str, [])) classes ; neg=[] ; unk=[] ; tail=tl } }
+| LT elts=separated_list(COMMA, classes_elt) GT
+{
+    let pos, neg, unk, tail = split_classes_elts elts in
+    { pos ; neg ; unk ; tail }
+}
 
-%inline classes_tail:
-| { Classes.NoOther } | STAR { Classes.AllOthers } | ELLIPSIS { Classes.Unknown }
-| SEMICOLON id=RVARID { Classes.RowVars ([[id],[]]) }
+%inline classes_elt:
+| STAR { `ClassAllOthers } | ELLIPSIS { `ClassEllipsis }
+| id=RVARID { `ClassRowVar id }
+| id=ID { `ClassId id } | TNEG id=ID { `ClassNoId id }
+| QUESTION_MARK id=ID { `ClassMaybeId id }
 
 ty:
 | ty=simple_ty { ty }
 
 simple_ty:
 | ty=atomic_ty classes=classes { TAttr {content=ty;classes=CClasses classes} }
-| classes=classes { TAttr {content=TAny;classes= CClasses classes} }
+| classes=classes { TAttr {content=TAny;classes=CClasses classes} }
 | ty=atomic_ty { ty }
 | ty1=simple_ty TOR ty2=simple_ty { TCup (ty1, ty2) }
 | ty1=simple_ty TDIFF ty2=simple_ty { TDiff (ty1, ty2) }

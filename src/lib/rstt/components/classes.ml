@@ -171,15 +171,17 @@ let print _prec _assoc fmt {pos;neg;unk;tail} =
     | `Neg -> print_neg_line fmt t
     | `Unk -> print_unk_line fmt t
   in
-  let print fmt t = print_tuple print_line fmt t in
+  let print suffix fmt t =
+    Format.fprintf fmt "%a%s" print_line t suffix
+  in
   let print_rv _prec _assoc fmt rv = RowVar.pp fmt rv in
   let print_tail fmt t =
     match t with
     | NoOther -> ()
-    | AllOthers -> Format.fprintf fmt " *"
-    | Unknown -> Format.fprintf fmt " ..."
+    | AllOthers -> Format.fprintf fmt "*"
+    | Unknown -> Format.fprintf fmt "..."
     | RowVars dnf ->
-      Format.fprintf fmt " ; %a"
+      Format.fprintf fmt "%a"
         (Prec.print_non_empty_dnf ~any:"any" print_rv Prec.min_prec NoAssoc) dnf
   in
   let bindings =
@@ -187,7 +189,11 @@ let print _prec _assoc fmt {pos;neg;unk;tail} =
     (neg |> List.map (fun n -> `Neg,n))@
     (unk |> List.map (fun n -> `Unk,n))
   in
-  Format.fprintf fmt "<%a%a>" print bindings print_tail tail
+  match tail with
+  | NoOther ->
+    Format.fprintf fmt "<%a>" (print_seq (print "") ", ") bindings
+  | AllOthers | Unknown | RowVars _ ->
+    Format.fprintf fmt "<%a%a>" (print_seq (print ", ") "") bindings print_tail tail
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun _ x -> x) ~print:print
