@@ -90,16 +90,12 @@ let any_d =
   |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
 
-let extract_id (a:Records.Atom'.t) =
+let extract_ids (a:Records.Atom'.t) =
   let enums = Records.Atom'.find Labels.id a |> Ty.F.get_descr |> Ty.O.get
   |> Ty.get_descr |> Descr.get_enums in
   match Enums.destruct enums with
-  | true, lst ->
-    begin match List.filter (fun e -> Enum.equal dummy_id e |> not) lst with
-    | [id] -> Some id
-    | _ -> None
-    end
-  | _, _ -> None
+  | true, lst -> Some (List.filter (fun e -> Enum.equal dummy_id e |> not) lst)
+  | false, _ -> None
 
 let params_of_id id = Hashtbl.find sigs id
 let extract ty : Ty.F.t t =
@@ -126,7 +122,7 @@ let extract ty : Ty.F.t t =
   let extract_npos a = Records.Atom'.find Labels.npos a |> Ty.F.get_descr |> Ty.O.get in
   let extract_callsite a =
     let npos = extract_npos a |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct |> List.hd
-    |> Intervals.Atom.get |> fst |> Option.get |> Z.to_int |> max 0 in
+    |> Intervals.Atom.get |> fst |> Option.get |> Z.to_int in
     let pos' = List.init npos Fun.id |> List.map (fun i ->
         let lbl = Labels.pos i in
         Records.Atom'.find lbl a
@@ -143,11 +139,12 @@ let extract ty : Ty.F.t t =
   in
   let npos_zero = Intervals.Atom.mk_singl Z.zero |> Descr.mk_interval |> Ty.mk_descr in
   let extract a =
-    match extract_id a with
-    | Some id ->
+    match extract_ids a with
+    | Some (id::_) ->
       if Ty.cap (extract_npos a) npos_zero |> Ty.is_empty then None
       else Some (DefSite (extract_defsite id a))
-    | None -> Some (CallSite (extract_callsite a))
+    | Some [] -> Some (CallSite (extract_callsite a))
+    | None -> (* Any *) Some (DefSite {pos=[];named=[];pos_named=[];tl=Ty.F.any})
   in
   let lines = Ty.get_descr ty |> Descr.get_records |> Records.dnf' in
   List.filter_map extract lines
@@ -175,7 +172,7 @@ let reidentify ~id ty =
 
 let ids_of ty =
   proj_tag ty |> Ty.get_descr |> Descr.get_records |> Records.dnf'
-  |> List.map extract_id |> List.filter_map Fun.id
+  |> List.map extract_ids |> List.filter_map Fun.id |> List.concat
 
 let print prec assoc fmt t =
   let print_field_ty = Printer.print_field_ctx Prec.min_prec Prec.NoAssoc in
