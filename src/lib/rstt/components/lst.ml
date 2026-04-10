@@ -10,7 +10,7 @@ type 'a atom = { pos:'a list ; named:(string * 'a) list ; sym:(Labels.sym * 'a) 
 type 'a line = 'a atom list * 'a atom list
 type 'a t = 'a line list
 
-let reserved_labels = [Labels.id ; Labels.npos]
+let reserved_labels = Labels.Reserved.all
 let reserved_bindings = reserved_labels |> List.map (fun lbl -> lbl, Ty.O.absent |> Ty.F.mk_descr)
 let mk { pos ; named ; sym ; tl } =
   let pos = List.mapi (fun i ty -> Labels.pos i, ty) pos in

@@ -15,12 +15,20 @@ val info : Label.t -> t
 val equal : t -> t -> bool
 val compare : t -> t -> int
 
-val id : Label.t
-(** [id] defines a field used to identify arguments nominally. *)
+module Reserved : sig
+    val id : Label.t
+    (** [id] defines a field used to identify arguments nominally. *)
 
-val npos : Label.t
-(** [npos] defines a field used to identify the number of
-    positional parameters an argument type expects. *)
+    val npos : Label.t
+    (** [npos] defines a field used to identify the number of
+        positional parameters an argument defines/expects. *)
+
+    val pos : Label.t
+    (** [pos] defines a field used to identify the  positional
+        parameters an argument defines/expects. *)
+
+    val all : Label.t list
+end
 
 val sym_of_ty : Ty.t -> sym list
 type sym_selector = SelectLabel of t | SelectString of string

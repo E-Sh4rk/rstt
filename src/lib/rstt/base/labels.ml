@@ -48,8 +48,12 @@ let sym sym = get (Sym sym)
 let info lbl =
   try Hashtbl.find info lbl with Not_found -> invalid_arg "Label is not a R label."
 
-let id = Label.mk "_id"
-let npos = Label.mk "_npos"
+module Reserved = struct
+  let id = Label.mk "_id"
+  let npos = Label.mk "_npos"
+  let pos = Label.mk "_pos"
+  let all = [id;npos;pos]
+end
 
 (* Symbolic label utilities *)
 
