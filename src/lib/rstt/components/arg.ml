@@ -13,29 +13,28 @@ let npos_field n = Reserved.npos, Intervals.Atom.mk_singl n |> Descr.mk_interval
 let npos_field' n = Reserved.npos, Intervals.Atom.mk (Some n) None |> Descr.mk_interval |> Ty.mk_descr
   |> Ty.O.required |> Ty.F.mk_descr
 
-type 'a atom = { pos : 'a list ; pos_named : (string * 'a) list ; tl : 'a ; named : (string * 'a) list }
-type 'a atom' = { pos' : 'a list ; tl' : 'a ; named' : (string * 'a) list }
-type 'a elt =
-| DefSite of 'a atom
-| CallSite of 'a atom'
-type 'a t = 'a elt list
+type ('f, 't) atom = { pos_named : (string * 'f) list ; pos_tl: 't ; named_tl : 'f ; named : (string * 'f) list }
+type ('f, 't) atom' = { pos' : 'f list ; pos_tl': 't ; named' : (string * 'f) list ; named_tl' : 'f }
+type ('f, 't) elt =
+| DefSite of ('f, 't) atom
+| CallSite of  ('f, 't) atom'
+type ('f, 't) t = ('f, 't) elt list
 (* type fsig = unit atom *)
-let map_atom f { pos ; pos_named ; tl ; named } =
-  let pos = List.map f pos in
-  let pos_named = List.map (fun (str,t) -> str, f t) pos_named in
-  let named = List.map (fun (str,t) -> str, f t) named in
-  let tl = f tl in
-  { pos ; pos_named ; named ; tl }
-let map_atom' f { pos' ; tl' ; named' } =
-  let pos' = List.map f pos' in
-  let named' = List.map (fun (str,t) -> str, f t) named' in
-  let tl' = f tl' in
-  { pos' ; named' ; tl' }
-let map_elt f t =
+let map_atom ff fo { pos_named ; pos_tl ; named_tl ; named } =
+  let pos_named = List.map (fun (str,t) -> str, ff t) pos_named in
+  let named = List.map (fun (str,t) -> str, ff t) named in
+  let pos_tl, named_tl = fo pos_tl, ff named_tl in
+  { pos_named ; pos_tl ; named_tl ; named }
+let map_atom' ff fo { pos' ; pos_tl' ; named' ; named_tl' } =
+  let pos' = List.map ff pos' in
+  let named' = List.map (fun (str,t) -> str, ff t) named' in
+  let pos_tl', named_tl' = fo pos_tl', ff named_tl' in
+  { pos' ; pos_tl' ; named' ; named_tl' }
+let map_elt ff fo t =
   match t with
-  | DefSite a -> DefSite (map_atom f a)
-  | CallSite a -> CallSite (map_atom' f a)
-let map f t = List.map (map_elt f) t
+  | DefSite a -> DefSite (map_atom ff fo a)
+  | CallSite a -> CallSite (map_atom' ff fo a)
+let map ff fo t = List.map (map_elt ff fo) t
 
 let sigs = Hashtbl.create 100
 
@@ -53,32 +52,37 @@ let fresh_id =
   fun () ->
     i := !i+1 ;
     Enum.mk (string_of_int !i)
-let mk' ~allow_more_pos ~id { pos' ; tl' ; named' } =
+let mk' ~allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   let id = match id with
   | None -> [dummy_id]
   | Some id -> [dummy_id ; id]
   in
   let id = id |> List.map Descr.mk_enum |> List.map Ty.mk_descr
   |> Ty.disj |> Ty.O.required |> Ty.F.mk_descr in
-  let more_pos = allow_more_pos && (Ty.F.get_descr tl' |> Ty.O.get |> Ty.is_empty |> not) in
-  let n = List.length pos' |> Z.of_int in
-  let pos = pos' |> List.mapi (fun i fty -> Labels.pos i, fty) in
+  let allow_more_pos = allow_more_pos && (pos_tl' |> Ty.is_empty |> not) in
+  let pos_tl' = if allow_more_pos then pos_tl' else Ty.empty in
+  let pos_bindings = pos' |> List.mapi (fun i fty -> Labels.pos i, fty) |> LabelMap.of_list in
+  let pos = Reserved.pos, { Records.Atom.bindings=pos_bindings ;
+    tail=Ty.O.optional pos_tl' |> Ty.F.mk_descr }
+  |> Descr.mk_record |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr in
   let named = named' |> List.map (fun (str, fty) -> Labels.named str, fty) in
-  let npos = if more_pos then npos_field' n else npos_field n in
-  let bindings = (Reserved.id, id)::npos::pos@named |> LabelMap.of_list in
-  let tail = Utils.add_option tl' in
+  let n = List.length pos' |> Z.of_int in
+  let npos = if allow_more_pos then npos_field' n else npos_field n in
+  let bindings = (Reserved.id, id)::npos::pos::named |> LabelMap.of_list in
+  let tail = Utils.add_option named_tl' in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
-let mk { pos ; pos_named ; tl ; named } =
+let mk { pos_named ; pos_tl ; named_tl ; named } =
   let id = fresh_id () in
-  let fsig = map_atom (fun _ -> ()) { pos ; pos_named ; tl ; named } in
+  let fsig = map_atom (Fun.const ()) (Fun.const ()) { pos_named ; pos_tl ; named_tl ; named } in
   Hashtbl.add sigs id fsig ;
   let n = List.length pos_named in
   (* let k = List.length pos in *)
   let atoms' = List.init (n + 1) (fun i ->
     let pos', named' = split_at_index pos_named i in
-    let pos' = pos@(pos' |> List.map (fun (_,fty) -> fty)) in
+    let pos' = pos' |> List.map (fun (_,fty) -> fty) in
     let named' = named'@named in
-    mk' ~allow_more_pos:(i=n) ~id:(Some id) { pos' ; named' ; tl'=tl }
+    mk' ~allow_more_pos:(i=n) ~id:(Some id)
+      { pos' ; named' ; pos_tl'=pos_tl ; named_tl'=named_tl }
   ) in
   atoms' |> Ty.disj
 let mk' = mk' ~allow_more_pos:true ~id:None
