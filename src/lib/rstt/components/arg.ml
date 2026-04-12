@@ -156,15 +156,16 @@ let extract ty : (Ty.F.t, Ty.t) t =
   List.filter_map extract lines
 let to_t ctx comp =
   let ty = Op.TagComp.as_atom comp |> snd in
-  if Ty.leq ty any_d then Some (extract ty |> map ctx.Printer.build_fop)
+  if Ty.leq ty any_d
+  then Some (extract ty |> map ctx.Printer.build_fop ctx.Printer.build)
   else None
 
 let destruct ty =
   proj_tag ty |> Ty.cap any_d |> extract
 
 let reidentify ~id ty =
-  let id = Ty.cup id (Descr.mk_enum dummy_id |> Ty.mk_descr) |> Ty.O.required |> Ty.F.mk_descr
-  |> Ty.F.cap any_id in
+  let id = Ty.cup id (Descr.mk_enum dummy_id |> Ty.mk_descr)
+  |> Ty.O.required |> Ty.F.mk_descr |> Ty.F.cap any_id in
   let aux { Records.Atom.bindings ; tail } =
     let bindings = LabelMap.add Reserved.id id bindings in
     { Records.Atom.bindings ; tail }
@@ -182,24 +183,25 @@ let ids_of ty =
 
 let print prec assoc fmt t =
   let print_field_ty = Printer.print_field_ctx Prec.min_prec Prec.NoAssoc in
+  let print_ty = Printer.print_descr_ctx Prec.min_prec Prec.NoAssoc in
   let print_field fmt (name,ty) =
       match name with
       | None -> Format.fprintf fmt "%a" print_field_ty ty
       | Some str -> Format.fprintf fmt "%s: %a" str print_field_ty ty
   in
-  let print_tail fmt f =
-    match f with
-    | Printer.FTy (t, true) when Ty.leq t.Printer.ty Ty.empty -> ()
-    | Printer.FTy (t, true) when Ty.leq Attr.any t.ty -> Format.fprintf fmt "... "
-    | f -> Format.fprintf fmt "; %a " print_field_ty (Utils.prune_option_fop f)
+  let print_tail fmt (ty,f) =
+    match ty, f with
+    | t', Printer.FTy (t, true) when Ty.is_empty t'.Printer.ty && Ty.is_empty t.Printer.ty -> ()
+    | t', Printer.FTy (t, true) when Ty.equiv t.Printer.ty t'.Printer.ty ->
+      Format.fprintf fmt "; %a " print_ty t'
+    | t', f -> Format.fprintf fmt "; %a, %a " print_ty t' print_field_ty (Utils.prune_option_fop f)
   in
   let print_atom _prec _assoc fmt a =
-    let pos, named, pos_named =
-      List.map (fun t -> None, t) a.pos,
+    let named, pos_named =
       List.map (fun (str,t) -> Some str, t) a.named,
       List.map (fun (str,t) -> Some str, t) a.pos_named in
     Format.fprintf fmt "( %a %a%s%a)" (print_seq print_field ", ")
-      (pos@pos_named) print_tail a.tl (if named = [] then "" else "; ")
+      (pos_named) print_tail (a.pos_tl, a.named_tl) (if named = [] then "" else "; ")
       (print_seq print_field ", ") named
   in
   let print_atom' _prec _assoc fmt a =
@@ -207,7 +209,7 @@ let print prec assoc fmt t =
       List.map (fun t -> None, t) a.pos',
       List.map (fun (str,t) -> Some str, t) a.named' in
     Format.fprintf fmt "@( %a %a)" (print_seq print_field ", ")
-      (pos@named) print_tail a.tl'
+      (pos@named) print_tail (a.pos_tl', a.named_tl')
   in
   let print_elt prec assoc fmt elt =
     match elt with
@@ -217,6 +219,10 @@ let print prec assoc fmt t =
   Prec.print_cup print_elt prec assoc fmt t
 
 let printer_builder =
-  Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print
+  let map f =
+    let f' x = (f x).Printer.op in
+    map (Printer.map_fop f) (Printer.map_descr f')
+  in
+  Printer.builder ~to_t:to_t ~map ~print:print
 let printer_params = Printer.{ aliases = []; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params

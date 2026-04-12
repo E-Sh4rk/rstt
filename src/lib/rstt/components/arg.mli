@@ -9,9 +9,9 @@ type ('f, 't) elt =
 type ('f, 't) t = ('f, 't) elt list
 
 val any : Ty.t
-val mk : (Ty.F.t, Ty.O.t) atom -> Ty.t
-val mk' : (Ty.F.t, Ty.O.t) atom' -> Ty.t
-val destruct : Ty.t -> (Ty.F.t, Ty.O.t) t
+val mk : (Ty.F.t, Ty.t) atom -> Ty.t
+val mk' : (Ty.F.t, Ty.t) atom' -> Ty.t
+val destruct : Ty.t -> (Ty.F.t, Ty.t) t
 val reidentify : id:Ty.t -> Ty.t -> Ty.t
 val ids_of : Ty.t -> Enum.t list
 val params_of_id : Enum.t -> (unit, unit) atom
