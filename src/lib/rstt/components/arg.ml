@@ -13,28 +13,28 @@ let npos_field n = Reserved.npos, Intervals.Atom.mk_singl n |> Descr.mk_interval
 let npos_field' n = Reserved.npos, Intervals.Atom.mk (Some n) None |> Descr.mk_interval |> Ty.mk_descr
   |> Ty.O.required |> Ty.F.mk_descr
 
-type ('f, 't) atom = { pos_named : (string * 'f) list ; pos_tl: 't ; named_tl : 'f ; named : (string * 'f) list }
-type ('f, 't) atom' = { pos' : 'f list ; pos_tl': 't ; named' : (string * 'f) list ; named_tl' : 'f }
-type ('f, 't) elt =
-| DefSite of ('f, 't) atom
-| CallSite of  ('f, 't) atom'
-type ('f, 't) t = ('f, 't) elt list
+type 'f atom = { pos_named : (string * 'f) list ; pos_tl: 'f ; named_tl : 'f ; named : (string * 'f) list }
+type 'f atom' = { pos' : 'f list ; pos_tl': 'f ; named' : (string * 'f) list ; named_tl' : 'f }
+type 'f elt =
+| DefSite of 'f atom
+| CallSite of  'f atom'
+type 'f t = 'f elt list
 (* type fsig = unit atom *)
-let map_atom ff fo { pos_named ; pos_tl ; named_tl ; named } =
-  let pos_named = List.map (fun (str,t) -> str, ff t) pos_named in
-  let named = List.map (fun (str,t) -> str, ff t) named in
-  let pos_tl, named_tl = fo pos_tl, ff named_tl in
+let map_atom f { pos_named ; pos_tl ; named_tl ; named } =
+  let pos_named = List.map (fun (str,t) -> str, f t) pos_named in
+  let named = List.map (fun (str,t) -> str, f t) named in
+  let pos_tl, named_tl = f pos_tl, f named_tl in
   { pos_named ; pos_tl ; named_tl ; named }
-let map_atom' ff fo { pos' ; pos_tl' ; named' ; named_tl' } =
-  let pos' = List.map ff pos' in
-  let named' = List.map (fun (str,t) -> str, ff t) named' in
-  let pos_tl', named_tl' = fo pos_tl', ff named_tl' in
+let map_atom' f { pos' ; pos_tl' ; named' ; named_tl' } =
+  let pos' = List.map f pos' in
+  let named' = List.map (fun (str,t) -> str, f t) named' in
+  let pos_tl', named_tl' = f pos_tl', f named_tl' in
   { pos' ; pos_tl' ; named' ; named_tl' }
-let map_elt ff fo t =
+let map_elt f t =
   match t with
-  | DefSite a -> DefSite (map_atom ff fo a)
-  | CallSite a -> CallSite (map_atom' ff fo a)
-let map ff fo t = List.map (map_elt ff fo) t
+  | DefSite a -> DefSite (map_atom f a)
+  | CallSite a -> CallSite (map_atom' f a)
+let map f t = List.map (map_elt f) t
 
 let sigs = Hashtbl.create 100
 
@@ -53,17 +53,18 @@ let fresh_id =
     i := !i+1 ;
     Enum.mk (string_of_int !i)
 let mk' ~allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
+  let pos_tl' = Ty.F.get_descr pos_tl' in
   let id = match id with
   | None -> [dummy_id]
   | Some id -> [dummy_id ; id]
   in
   let id = id |> List.map Descr.mk_enum |> List.map Ty.mk_descr
   |> Ty.disj |> Ty.O.required |> Ty.F.mk_descr in
-  let allow_more_pos = allow_more_pos && (pos_tl' |> Ty.is_empty |> not) in
-  let pos_tl' = if allow_more_pos then pos_tl' else Ty.empty in
+  let allow_more_pos = allow_more_pos && (pos_tl' |> Ty.O.get |> Ty.is_empty |> not) in
+  let pos_tl' = if allow_more_pos then pos_tl' else Ty.O.optional Ty.empty in
   let pos_bindings = pos' |> List.mapi (fun i fty -> Labels.pos i, fty) |> LabelMap.of_list in
   let pos = Reserved.pos, { Records.Atom.bindings=pos_bindings ;
-    tail=Ty.O.optional pos_tl' |> Ty.F.mk_descr }
+    tail=Utils.add_option' pos_tl' |> Ty.F.mk_descr }
   |> Descr.mk_record |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr in
   let named = named' |> List.map (fun (str, fty) -> Labels.named str, fty) in
   let n = List.length pos' |> Z.of_int in
@@ -73,7 +74,7 @@ let mk' ~allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk { pos_named ; pos_tl ; named_tl ; named } =
   let id = fresh_id () in
-  let fsig = map_atom (Fun.const ()) (Fun.const ()) { pos_named ; pos_tl ; named_tl ; named } in
+  let fsig = map_atom (Fun.const ()) { pos_named ; pos_tl ; named_tl ; named } in
   Hashtbl.add sigs id fsig ;
   let n = List.length pos_named in
   (* let k = List.length pos in *)
@@ -104,7 +105,7 @@ let extract_ids (a:Records.Atom'.t) =
 
 (* TODO: push named in a its own field just like pos (this avoids having reserved fields in Lst) *)
 let params_of_id id = Hashtbl.find sigs id
-let extract ty : (Ty.F.t, Ty.t) t =
+let extract ty : Ty.F.t t =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid arg encoding." ;
   let extract_pos a = Records.Atom'.find Reserved.pos a |> Ty.F.get_descr
     |> Ty.O.get |> Ty.get_descr |> Descr.get_records |> Op.Records'.approx in
@@ -119,8 +120,7 @@ let extract ty : (Ty.F.t, Ty.t) t =
       let pos_named = fsig.pos_named |> List.mapi (fun i (name,()) ->
         name, Op.Records'.Atom.find (Labels.pos i) apos)
       in
-      let pos_tl = apos.Op.Records'.Atom.tail |> Ty.F.get_descr |> Ty.O.get in
-      let named_tl = a.Records.Atom'.tail in
+      let pos_tl, named_tl = apos.Op.Records'.Atom.tail, a.Records.Atom'.tail in
       let named = fsig.named |> List.map (fun (name,()) ->
         let lbl = Labels.named name in
         name, Records.Atom'.find lbl a
@@ -140,8 +140,7 @@ let extract ty : (Ty.F.t, Ty.t) t =
         | Labels.Pos _ | Labels.Sym _ -> None
         | exception Invalid_argument _ -> None
         ) in
-    let pos_tl' = apos.Op.Records'.Atom.tail |> Ty.F.get_descr |> Ty.O.get in
-    let named_tl' = a.Records.Atom'.tail in
+    let pos_tl', named_tl' = apos.Op.Records'.Atom.tail, a.Records.Atom'.tail in
     { pos' ; pos_tl' ; named' ; named_tl' }
   in
   let extract a =
@@ -150,14 +149,14 @@ let extract ty : (Ty.F.t, Ty.t) t =
       extract_defsite id a |> Option.map (fun x -> DefSite x)
     | Some [] -> Some (CallSite (extract_callsite a))
     | None -> (* Any *) Some
-      (DefSite {pos_named=[];pos_tl=Ty.any;named=[];named_tl=Ty.F.any})
+      (DefSite {pos_named=[];pos_tl=Ty.F.any;named=[];named_tl=Ty.F.any})
   in
   let lines = Ty.get_descr ty |> Descr.get_records |> Records.dnf' in
   List.filter_map extract lines
 let to_t ctx comp =
   let ty = Op.TagComp.as_atom comp |> snd in
   if Ty.leq ty any_d
-  then Some (extract ty |> map ctx.Printer.build_fop ctx.Printer.build)
+  then Some (extract ty |> map ctx.Printer.build_fop)
   else None
 
 let destruct ty =
@@ -183,18 +182,21 @@ let ids_of ty =
 
 let print prec assoc fmt t =
   let print_field_ty = Printer.print_field_ctx Prec.min_prec Prec.NoAssoc in
-  let print_ty = Printer.print_descr_ctx Prec.min_prec Prec.NoAssoc in
   let print_field fmt (name,ty) =
       match name with
       | None -> Format.fprintf fmt "%a" print_field_ty ty
       | Some str -> Format.fprintf fmt "%s: %a" str print_field_ty ty
   in
-  let print_tail fmt (ty,f) =
-    match ty, f with
-    | t', Printer.FTy (t, true) when Ty.is_empty t'.Printer.ty && Ty.is_empty t.Printer.ty -> ()
-    | t', Printer.FTy (t, true) when Ty.equiv t.Printer.ty t'.Printer.ty ->
-      Format.fprintf fmt "; %a " print_ty t'
-    | t', f -> Format.fprintf fmt "; %a, %a " print_ty t' print_field_ty (Utils.prune_option_fop f)
+  let print_tail fmt (f',f) =
+    match f', f with
+    | Printer.FTy (t', true), Printer.FTy (t, true)
+      when Ty.is_empty t'.Printer.ty && Ty.is_empty t.Printer.ty -> ()
+    | Printer.FTy (t', true), Printer.FTy (t, true)
+      when Ty.equiv t.Printer.ty t'.Printer.ty ->
+      Format.fprintf fmt "; %a " print_field_ty (Utils.prune_option_fop f')
+    | f', f -> Format.fprintf fmt "; %a, %a "
+      print_field_ty (Utils.prune_option_fop f')
+      print_field_ty (Utils.prune_option_fop f)
   in
   let print_atom _prec _assoc fmt a =
     let named, pos_named =
@@ -219,10 +221,6 @@ let print prec assoc fmt t =
   Prec.print_cup print_elt prec assoc fmt t
 
 let printer_builder =
-  let map f =
-    let f' x = (f x).Printer.op in
-    map (Printer.map_fop f) (Printer.map_descr f')
-  in
-  Printer.builder ~to_t:to_t ~map ~print:print
+  Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print
 let printer_params = Printer.{ aliases = []; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params

@@ -27,8 +27,8 @@ and ('v,'r,'i) t =
 | TArrow of ('v,'r,'i) t * ('v,'r,'i) t
 | TVec of 'v prim Vec.atom
 | TList of ('v,'r,'i) t Lst.atom
-| TArg of (('v,'r,'i) t, ('v,'r,'i) t) Arg.atom
-| TArg' of (('v,'r,'i) t, ('v,'r,'i) t) Arg.atom'
+| TArg of ('v,'r,'i) t Arg.atom
+| TArg' of ('v,'r,'i) t Arg.atom'
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t (* Means that the parameter should not be packed in an Attr container *)
@@ -81,8 +81,8 @@ let map f fp fc t =
     | TArrow (t1, t2) -> TArrow (aux t1, aux t2)
     | TVec a -> TVec (Vec.map_atom (map_prim fp) a)
     | TList a -> TList (Lst.map_atom aux a)
-    | TArg a -> TArg (Arg.map_atom aux aux a)
-    | TArg' a -> TArg' (Arg.map_atom' aux aux a)
+    | TArg a -> TArg (Arg.map_atom aux a)
+    | TArg' a -> TArg' (Arg.map_atom' aux a)
     | TOption t -> TOption (aux t)
     | TAttr a -> TAttr (Attr.map_atom aux (map_classes fc) a)
     | TStruct t -> TStruct (aux t)
@@ -204,8 +204,8 @@ let rec build_struct sctx env t =
     in
     let sym = sym |> List.map (fun (s,a) -> resolve s,a) in
     Lst.mk {bindings;sym;tl}
-  | TArg a -> Arg.map_atom (build_field sctx env) (build sctx env) a |> Arg.mk
-  | TArg' a -> Arg.map_atom' (build_field sctx env) (build sctx env) a |> Arg.mk'
+  | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
+  | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
   | TCConst c -> build_cconst c
   | TCPtr t -> Cptr.mk (build sctx env t)
   | TOption _ -> invalid_arg "Unexpected optional type"
@@ -240,8 +240,8 @@ and build sctx env t =
   | TCConst c -> build_cconst c
   | TCPtr t -> Cptr.mk (build sctx env t)
   | TTuple lst -> Descr.mk_tuple (List.map (build sctx env) lst) |> Ty.mk_descr
-  | TArg a -> Arg.map_atom (build_field sctx env) (build sctx env) a |> Arg.mk
-  | TArg' a -> Arg.map_atom' (build_field sctx env) (build sctx env) a |> Arg.mk'
+  | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
+  | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
   (* R types *)
   | t -> Attr.mk {content=build_struct sctx env t ; classes=Classes.any}
 
@@ -383,8 +383,8 @@ let resolve env t =
     | TArrow (t1,t2) -> TArrow (aux tids t1, aux tids t2)
     | TVec a -> TVec (Vec.map_atom (resolve_prim env) a)
     | TList a -> TList (Lst.map_atom (aux tids) a)
-    | TArg a -> TArg (Arg.map_atom (aux tids) (aux tids) a)
-    | TArg' a -> TArg' (Arg.map_atom' (aux tids) (aux tids) a)
+    | TArg a -> TArg (Arg.map_atom (aux tids) a)
+    | TArg' a -> TArg' (Arg.map_atom' (aux tids) a)
     | TOption t -> TOption (aux tids t)
     | TAttr a -> TAttr (Attr.map_atom (aux tids) (resolve_classes env) a)
     | TStruct t -> TStruct (aux tids t)

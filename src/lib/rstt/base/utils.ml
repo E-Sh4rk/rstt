@@ -31,10 +31,12 @@ let prune_option_fop fop =
   in
   aux fop
 
+let add_option' tyo =
+  let ty = Ty.O.get tyo in
+  if Ty.is_empty ty then tyo else Ty.O.get tyo |> Ty.O.optional
+
 let add_option fty =
-  fty |> Ty.F.map (fun tyo ->
-    let ty = Ty.O.get tyo in
-    if Ty.is_empty ty then tyo else Ty.O.get tyo |> Ty.O.optional)
+  fty |> Ty.F.map add_option'
 
 type interval = int option * int option
 let print_interval any _prec _assoc fmt (lb,ub) =

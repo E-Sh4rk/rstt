@@ -47,11 +47,11 @@ let split_fields lst =
         | _ -> [], lst
     in
     let pos, lst = pos_fields lst in
-    let named, sym = lst |> List.partition_map (function
-        | Named (str,t) -> Either.left (str,t)
-        | _ -> raise (Errors.E_Parser ("Unexpected positional field"))
+    let named = lst |> List.map (function
+        | Named (str,t) -> (str,t)
+        | Pos _ -> raise (Errors.E_Parser ("Unexpected positional field"))
     ) in
-    pos, named, sym
+    pos, named
 
 let split_lst_elts lst =
     let lst, tl = match List.rev lst with
@@ -209,10 +209,17 @@ atomic_ty:
 (* Containers (lists, args, tuples) *)
 | LBRACE elts=separated_list(COMMA, lst_elt) RBRACE
 { let bindings,sym,tl = split_lst_elts elts in TList {bindings;sym;tl} }
-| ALPAREN fs=separated_list(COMMA, ty_non_sym_field) tl=optional_tail RPAREN
-{ let pos',named',_ = split_fields fs in TArg' { tl'=tl ; pos' ; named' } }
-| LPAREN pos_named=separated_list(COMMA, ty_named_field) tl=optional_tail named=optional_named RPAREN
-{ TArg { tl ; pos=[] ; pos_named ; named } }
+| ALPAREN fs=separated_list(COMMA, ty_non_sym_field) tl=tail RPAREN
+{
+    let pos',named' = split_fields fs in
+    let pos_tl',named_tl' = tl in
+    TArg' { pos' ; named' ; pos_tl' ; named_tl' }
+}
+| LPAREN pos_named=separated_list(COMMA, ty_named_field) tl=tail named=extra_named RPAREN
+{
+    let pos_tl,named_tl = tl in
+    TArg { pos_named ; pos_tl ; named ; named_tl }
+}
 | T lst=separated_list(COMMA, simple_ty) RPAREN { TTuple lst }
 (* C stuff *)
 | STAR t=atomic_ty { TCPtr t }
@@ -229,17 +236,17 @@ cint:
 cstr:
 | str=STRING { CStrSingl str }
 
-%inline optional_tail:
-| SEMICOLON ty=simple_ty { ty }
-| ELLIPSIS { TOption TAny }
-| { TOption TEmpty }
+%inline tail:
+| SEMICOLON ty=simple_ty { ty, ty }
+| SEMICOLON ty1=simple_ty COMMA ty2=simple_ty { ty1, ty2 }
+| { TOption TEmpty, TOption TEmpty }
 
 %inline lst_elt:
 | lbl=SYMID COLON t=simple_ty { `LstSym (lbl, t) }
 | lbl=label COLON t=simple_ty { `LstNamed (lbl, t) }
 | ty=simple_ty { `LstTl ty }
 
-%inline optional_named:
+%inline extra_named:
 | SEMICOLON named=separated_list(COMMA, ty_named_field) { named }
 | { [] }
 

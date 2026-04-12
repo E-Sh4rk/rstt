@@ -47,8 +47,8 @@ let%expect_test "tests" =
             'A: 'A \ (chr | clx | dbl | lgl | raw) ;
             'B: 'B & lgl ;
             'C: 'C & int ;
-            `R: { _id : `R ; _npos : `R ; b : `R ; 1 : `R ; c : `R ; d : 'D | `R
-            ;; empty? | `R }
+            `R: { _id : `R ; _npos : `R ; _pos : `R ; b : `R ; c : `R ; d : 'D |
+            `R ;; empty? | `R }
           ]
           [
             'B: empty
@@ -59,8 +59,8 @@ let%expect_test "tests" =
           [
             'D: empty
           ]
-    arg6: ( a: int, b: dbl ... )
-    arg7: @( int, b: dbl ... )
+    arg6: ( a: int, b: dbl ; any )
+    arg7: @( int, b: dbl ; any )
     arg8: ( a: int, b: dbl ; int ; named: raw)
     arg9: @( int, b: dbl ; int )
     arg10: true
