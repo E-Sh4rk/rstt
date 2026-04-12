@@ -27,8 +27,8 @@ and ('v,'r,'i) t =
 | TArrow of ('v,'r,'i) t * ('v,'r,'i) t
 | TVec of 'v prim Vec.atom
 | TList of ('v,'r,'i) t Lst.atom
-| TArg of ('v,'r,'i) t Arg.atom
-| TArg' of ('v,'r,'i) t Arg.atom'
+| TArg of (('v,'r,'i) t, ('v,'r,'i) t) Arg.atom
+| TArg' of (('v,'r,'i) t, ('v,'r,'i) t) Arg.atom'
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t
