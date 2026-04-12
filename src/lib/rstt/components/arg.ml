@@ -102,37 +102,37 @@ let extract_ids (a:Records.Atom'.t) =
   | true, lst -> Some (List.filter (fun e -> Enum.equal dummy_id e |> not) lst)
   | false, _ -> None
 
+(* TODO: push named in a its own field just like pos (this avoids having reserved fields in Lst) *)
 let params_of_id id = Hashtbl.find sigs id
-let extract ty : Ty.F.t t =
+let extract ty : (Ty.F.t, Ty.t) t =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid arg encoding." ;
+  let extract_pos a = Records.Atom'.find Reserved.pos a |> Ty.F.get_descr
+    |> Ty.O.get |> Ty.get_descr |> Descr.get_records |> Op.Records'.approx in
+  let extract_npos_min a = Records.Atom'.find Reserved.npos a |> Ty.F.get_descr
+    |> Ty.O.get |> Ty.get_descr |> Descr.get_intervals |> Intervals.lb
+    |> Option.get |> Z.to_int in
   let extract_defsite id a =
     let fsig = Hashtbl.find sigs id in
-    let pos = fsig.pos |> List.mapi (fun i () ->
-      let lbl = Labels.pos i in
-      Records.Atom'.find lbl a
-      ) in
-    let pos_named = fsig.pos_named |> List.map (fun (name,()) ->
-      let lbl = Labels.named name in
-      name, Records.Atom'.find lbl a
-    )
-    in
-    let tl = a.Records.Atom'.tail in
-    let named = fsig.named |> List.map (fun (name,()) ->
-      let lbl = Labels.named name in
-      name, Records.Atom'.find lbl a
-    )
-    in
-    { pos ; pos_named ; tl ; named }
+    if List.length fsig.pos_named <> extract_npos_min a then None
+    else
+      let apos = extract_pos a in
+      let pos_named = fsig.pos_named |> List.mapi (fun i (name,()) ->
+        name, Op.Records'.Atom.find (Labels.pos i) apos)
+      in
+      let pos_tl = apos.Op.Records'.Atom.tail |> Ty.F.get_descr |> Ty.O.get in
+      let named_tl = a.Records.Atom'.tail in
+      let named = fsig.named |> List.map (fun (name,()) ->
+        let lbl = Labels.named name in
+        name, Records.Atom'.find lbl a
+      )
+      in
+      Some { pos_named ; pos_tl ; named_tl ; named }
   in
-  let extract_npos a = Records.Atom'.find Reserved.npos a |> Ty.F.get_descr |> Ty.O.get in
   let extract_callsite a =
-    let npos = extract_npos a
-      |> Ty.get_descr |> Descr.get_intervals |> Intervals.lb
-      |> Option.get |> Z.to_int in
+    let npos, apos = extract_npos_min a, extract_pos a in
     let pos' = List.init npos Fun.id |> List.map (fun i ->
-        let lbl = Labels.pos i in
-        Records.Atom'.find lbl a
-      ) in      
+        Op.Records'.Atom.find (Labels.pos i) apos)
+    in      
     let named' = a.Records.Atom'.bindings |> LabelMap.bindings |>
       List.filter_map (fun (lbl,ty) ->
         match Labels.info lbl with
@@ -140,17 +140,17 @@ let extract ty : Ty.F.t t =
         | Labels.Pos _ | Labels.Sym _ -> None
         | exception Invalid_argument _ -> None
         ) in
-    let tl' = a.Records.Atom'.tail in
-    { pos' ; tl' ; named' }
+    let pos_tl' = apos.Op.Records'.Atom.tail |> Ty.F.get_descr |> Ty.O.get in
+    let named_tl' = a.Records.Atom'.tail in
+    { pos' ; pos_tl' ; named' ; named_tl' }
   in
-  let npos_zero = Intervals.Atom.mk_singl Z.zero |> Descr.mk_interval |> Ty.mk_descr in
   let extract a =
     match extract_ids a with
     | Some (id::_) ->
-      if Ty.cap (extract_npos a) npos_zero |> Ty.is_empty then None
-      else Some (DefSite (extract_defsite id a))
+      extract_defsite id a |> Option.map (fun x -> DefSite x)
     | Some [] -> Some (CallSite (extract_callsite a))
-    | None -> (* Any *) Some (DefSite {pos=[];named=[];pos_named=[];tl=Ty.F.any})
+    | None -> (* Any *) Some
+      (DefSite {pos_named=[];pos_tl=Ty.any;named=[];named_tl=Ty.F.any})
   in
   let lines = Ty.get_descr ty |> Descr.get_records |> Records.dnf' in
   List.filter_map extract lines
