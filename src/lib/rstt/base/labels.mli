@@ -24,10 +24,21 @@ module Reserved : sig
         positional parameters an argument defines/expects. *)
 
     val pos : Label.t
-    (** [pos] defines a field used to identify the  positional
+    (** [pos] defines a field used to identify the positional
         parameters an argument defines/expects. *)
 
-    val all : Label.t list
+    val named : Label.t
+    (** [named] defines a field used to identify the named
+        parameters an argument defines/expects. *)
+
+    val card : Label.t
+    (** [card] defines a field used to characterize the length of a vector. *)
+
+    val content : Label.t
+    (** [content] defines a field used to characterize the content of a Attr type. *)
+
+    val classes : Label.t
+    (** [classes] defines a field used to characterize the classes of a Attr type. *)
 end
 
 val sym_of_ty : Ty.t -> sym list

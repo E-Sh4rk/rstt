@@ -1,4 +1,5 @@
 open Sstt
+module Reserved = Labels.Reserved
 
 let tag = Tag.mk "attr"
 let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
@@ -9,14 +10,12 @@ type ('a, 'c) atom = { content:'a ; classes:'c }
 type ('a, 'c) line = ('a, 'c) atom list * ('a, 'c) atom list
 type ('a, 'c) t = ('a, 'c) line list
 
-let content_label = Label.mk "_content"
-let class_label = Label.mk "_class"
 
 let mk { content ; classes } =
   let classes = Ty.cap classes Classes.any in
   let bindings = LabelMap.of_list [
-    content_label, Ty.F.mk_descr (Ty.O.required content) ;
-    class_label, Ty.F.mk_descr (Ty.O.required classes) ] in
+    Reserved.content, Ty.F.mk_descr (Ty.O.required content) ;
+    Reserved.classes, Ty.F.mk_descr (Ty.O.required classes) ] in
   { Records.Atom.bindings ; tail=Ty.F.mk_descr Ty.O.absent } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk_anyclass content =
   mk { content ; classes=Classes.any }
@@ -24,8 +23,8 @@ let mk_noclass content =
   mk { content ; classes=Classes.noclass }
 let any_d =
   let bindings = LabelMap.of_list [
-    content_label, Ty.F.mk_descr (Ty.O.required Ty.any) ;
-    class_label, Ty.F.mk_descr (Ty.O.required Classes.any) ] in
+    Reserved.content, Ty.F.mk_descr (Ty.O.required Ty.any) ;
+    Reserved.classes, Ty.F.mk_descr (Ty.O.required Classes.any) ] in
   { Records.Atom.bindings ; tail=Ty.F.mk_descr Ty.O.absent } |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
 let partition = (mk_anyclass (Ty.neg Vec.any))::(Vec.partition |> List.map mk_anyclass)
@@ -38,8 +37,8 @@ let extract_records ty =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid attr encoding." ; 
   Ty.get_descr ty |> Descr.get_records |> Records.dnf
 let record_to_atom r =
-  let content = Records.Atom.find content_label r |> Ty.F.get_descr |> Ty.O.get in
-  let classes = Records.Atom.find class_label r  |> Ty.F.get_descr |> Ty.O.get in
+  let content = Records.Atom.find Reserved.content r |> Ty.F.get_descr |> Ty.O.get in
+  let classes = Records.Atom.find Reserved.classes r  |> Ty.F.get_descr |> Ty.O.get in
   { content ; classes }
 let extract t : (Ty.t, Ty.t) t =
   extract_records t |> List.map
@@ -52,9 +51,9 @@ let to_t ctx comp =
 let destruct ty = proj_tag ty |> extract
 
 let proj_content ty =
-  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj content_label |> Ty.O.get
+  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj Reserved.content |> Ty.O.get
 let proj_classes ty =
-  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj class_label |> Ty.O.get
+  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj Reserved.classes |> Ty.O.get
 
 let print prec assoc fmt t =
   let print_atom prec assoc fmt { content ; classes } =

@@ -10,12 +10,10 @@ type 'a atom = { bindings: (string * 'a) list ; sym: (Labels.sym * 'a) list ; tl
 type 'a line = 'a atom list * 'a atom list
 type 'a t = 'a line list
 
-let reserved_labels = Labels.Reserved.all
-let reserved_bindings = reserved_labels |> List.map (fun lbl -> lbl, Ty.O.absent |> Ty.F.mk_descr)
 let mk { bindings ; sym ; tl } =
   let bindings = List.map (fun (str,ty) -> Labels.named str, ty) bindings in
   let sym = List.map (fun (str,ty) -> Labels.sym str, ty) sym in
-  let bindings = LabelMap.of_list (reserved_bindings@bindings@sym) in
+  let bindings = LabelMap.of_list (bindings@sym) in
   let tail = Utils.add_option tl in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let any = mk {bindings=[]; sym=[]; tl=Ty.F.any}
@@ -36,13 +34,11 @@ let record_to_atom { Records.Atom.bindings ; tail } =
     | [] -> [], []
     | (lbl,ty)::lst ->
       let named, sym = partition lst in
-      if reserved_labels |> List.exists (Label.equal lbl) then named, sym
-      else
-        begin match Labels.info lbl with
-        | Pos _ -> assert false
-        | Named str -> (str,ty)::named, sym
-        | Sym str -> named, (str,ty)::sym
-        end
+      begin match Labels.info lbl with
+      | Pos _ -> assert false
+      | Named str -> (str,ty)::named, sym
+      | Sym str -> named, (str,ty)::sym
+      end
   in
   let bindings, sym = bindings |> LabelMap.bindings |> partition in
   { bindings ; sym ; tl=tail }

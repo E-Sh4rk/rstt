@@ -1,4 +1,5 @@
 open Sstt
+module Reserved = Labels.Reserved
 
 type 'a atom =
   | AnyLength of 'a
@@ -8,7 +9,6 @@ type 'a line = 'a atom * 'a atom list
 type 'a t = 'a line list
 
 let tag = Tag.mk "v"
-let card = Label.mk "n"
 let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
 let proj_tag ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
@@ -23,7 +23,7 @@ let mk a =
     | VarLength (l, c) -> l, c
   in
   let len, v = Ty.cap len prim_int, Ty.cap v Prim.any in
-  let bindings = LabelMap.singleton card (Ty.O.required len |> Ty.F.mk_descr) in
+  let bindings = LabelMap.singleton Reserved.card (Ty.O.required len |> Ty.F.mk_descr) in
   let tail = Ty.O.required v |> Ty.F.mk_descr in
   Descr.mk_record { bindings ; tail } |> Ty.mk_descr |> add_tag
 let any = mk (AnyLength Ty.any)
@@ -37,7 +37,7 @@ let map f (l : 'a t) = l |> List.map (map_line f)
 
 let extract atom =
   let open Records.Atom in
-  let len = find card atom |> Ty.F.get_descr |> Ty.O.get in
+  let len = find Reserved.card atom |> Ty.F.get_descr |> Ty.O.get in
   let v = atom.tail |> Ty.F.get_descr |> Ty.O.get in
   (v, len)
 let extract ty =

@@ -52,7 +52,10 @@ module Reserved = struct
   let id = Label.mk "_id"
   let npos = Label.mk "_npos"
   let pos = Label.mk "_pos"
-  let all = [id;npos;pos]
+  let named = Label.mk "_named"
+  let card = Label.mk "_n"
+  let content = Label.mk "_c"
+  let classes = Label.mk "_class"
 end
 
 (* Symbolic label utilities *)
