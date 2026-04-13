@@ -53,6 +53,7 @@ let fresh_id =
     i := !i+1 ;
     Enum.mk (string_of_int !i)
 let mk' ~allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
+  let record t = t |> Descr.mk_record |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr in
   let pos_tl' = Ty.F.get_descr pos_tl' in
   let id = match id with
   | None -> [dummy_id]
@@ -64,14 +65,14 @@ let mk' ~allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   let pos_tl' = if allow_more_pos then pos_tl' else Ty.O.optional Ty.empty in
   let pos_bindings = pos' |> List.mapi (fun i fty -> Labels.pos i, fty) |> LabelMap.of_list in
   let pos = Reserved.pos, { Records.Atom.bindings=pos_bindings ;
-    tail=Utils.add_option' pos_tl' |> Ty.F.mk_descr }
-  |> Descr.mk_record |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr in
-  let named = named' |> List.map (fun (str, fty) -> Labels.named str, fty) in
+    tail=Utils.add_option' pos_tl' |> Ty.F.mk_descr } |> record in
+  let named_bindings = named' |> List.map (fun (str, fty) -> Labels.named str, fty) |> LabelMap.of_list in
+  let named = Reserved.named,
+    { Records.Atom.bindings=named_bindings ; tail=Utils.add_option named_tl' } |> record in
   let n = List.length pos' |> Z.of_int in
   let npos = if allow_more_pos then npos_field' n else npos_field n in
-  let bindings = (Reserved.id, id)::npos::pos::named |> LabelMap.of_list in
-  let tail = Utils.add_option named_tl' in
-  { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
+  let bindings = [Reserved.id,id ; npos ; pos ; named] |> LabelMap.of_list in
+  { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk { pos_named ; pos_tl ; named_tl ; named } =
   let id = fresh_id () in
   let fsig = map_atom (Fun.const ()) { pos_named ; pos_tl ; named_tl ; named } in
@@ -103,11 +104,10 @@ let extract_ids (a:Records.Atom'.t) =
   | true, lst -> Some (List.filter (fun e -> Enum.equal dummy_id e |> not) lst)
   | false, _ -> None
 
-(* TODO: push named in a its own field just like pos (this avoids having reserved fields in Lst) *)
 let params_of_id id = Hashtbl.find sigs id
 let extract ty : Ty.F.t t =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid arg encoding." ;
-  let extract_pos a = Records.Atom'.find Reserved.pos a |> Ty.F.get_descr
+  let extract_record lbl a = Records.Atom'.find lbl a |> Ty.F.get_descr
     |> Ty.O.get |> Ty.get_descr |> Descr.get_records |> Op.Records'.approx in
   let extract_npos_min a = Records.Atom'.find Reserved.npos a |> Ty.F.get_descr
     |> Ty.O.get |> Ty.get_descr |> Descr.get_intervals |> Intervals.lb
@@ -116,31 +116,30 @@ let extract ty : Ty.F.t t =
     let fsig = Hashtbl.find sigs id in
     if List.length fsig.pos_named <> extract_npos_min a then None
     else
-      let apos = extract_pos a in
+      let apos, anamed = extract_record Reserved.pos a, extract_record Reserved.named a in
       let pos_named = fsig.pos_named |> List.mapi (fun i (name,()) ->
         name, Op.Records'.Atom.find (Labels.pos i) apos)
       in
-      let pos_tl, named_tl = apos.Op.Records'.Atom.tail, a.Records.Atom'.tail in
       let named = fsig.named |> List.map (fun (name,()) ->
-        let lbl = Labels.named name in
-        name, Records.Atom'.find lbl a
-      )
+        name, Op.Records'.Atom.find (Labels.named name) anamed)
       in
+      let pos_tl, named_tl = apos.Op.Records'.Atom.tail, anamed.Op.Records'.Atom.tail in
       Some { pos_named ; pos_tl ; named_tl ; named }
   in
   let extract_callsite a =
-    let npos, apos = extract_npos_min a, extract_pos a in
+    let npos, apos, anamed = extract_npos_min a,
+      extract_record Reserved.pos a, extract_record Reserved.named a in
     let pos' = List.init npos Fun.id |> List.map (fun i ->
         Op.Records'.Atom.find (Labels.pos i) apos)
     in      
-    let named' = a.Records.Atom'.bindings |> LabelMap.bindings |>
-      List.filter_map (fun (lbl,ty) ->
+    let named' = anamed.Op.Records'.Atom.bindings |> Op.Records'.Atom.LabelMap.bindings |>
+      List.map (fun (lbl,ty) ->
         match Labels.info lbl with
-        | Labels.Named str -> Some (str,ty)
-        | Labels.Pos _ | Labels.Sym _ -> None
-        | exception Invalid_argument _ -> None
+        | Labels.Named str -> (str,ty)
+        | Labels.Pos _ | Labels.Sym _ -> assert false
+        | exception Invalid_argument _ -> assert false
         ) in
-    let pos_tl', named_tl' = apos.Op.Records'.Atom.tail, a.Records.Atom'.tail in
+    let pos_tl', named_tl' = apos.Op.Records'.Atom.tail, anamed.Op.Records'.Atom.tail in
     { pos' ; pos_tl' ; named' ; named_tl' }
   in
   let extract a =

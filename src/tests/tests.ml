@@ -19,9 +19,9 @@ let%expect_test "tests" =
     tuple1: tuple0
     tuple2: true
     norm1: any
-    norm2: chr | raw | clx | lgl | dbl | int
-    norm3: chr | dbl | clx | raw | lgl
-    vec1: raw42 | lgl2 | int1 | lgl['a]
+    norm2: raw | lgl | chr | clx | int | dbl
+    norm3: clx | raw | chr | dbl | lgl
+    vec1: raw42 | lgl['a] | lgl2 | int1
     vec2: true
     vec3: v['a]('b)
     vec4: v(int(i('a & int)))
@@ -47,8 +47,7 @@ let%expect_test "tests" =
             'A: 'A \ (chr | clx | dbl | lgl | raw) ;
             'B: 'B & lgl ;
             'C: 'C & int ;
-            `R: { _id : `R ; _npos : `R ; _pos : `R ; b : `R ; c : `R ; d : 'D |
-            `R ;; empty? | `R }
+            `R: { b : `R ; c : `R ; d : 'D | `R ;; empty? | `R }
           ]
           [
             'B: empty

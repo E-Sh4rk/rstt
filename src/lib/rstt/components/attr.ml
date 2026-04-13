@@ -16,7 +16,7 @@ let mk { content ; classes } =
   let bindings = LabelMap.of_list [
     Reserved.content, Ty.F.mk_descr (Ty.O.required content) ;
     Reserved.classes, Ty.F.mk_descr (Ty.O.required classes) ] in
-  { Records.Atom.bindings ; tail=Ty.F.mk_descr Ty.O.absent } |> Descr.mk_record |> Ty.mk_descr |> add_tag
+  { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk_anyclass content =
   mk { content ; classes=Classes.any }
 let mk_noclass content =
@@ -25,7 +25,7 @@ let any_d =
   let bindings = LabelMap.of_list [
     Reserved.content, Ty.F.mk_descr (Ty.O.required Ty.any) ;
     Reserved.classes, Ty.F.mk_descr (Ty.O.required Classes.any) ] in
-  { Records.Atom.bindings ; tail=Ty.F.mk_descr Ty.O.absent } |> Descr.mk_record |> Ty.mk_descr
+  { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
 let partition = (mk_anyclass (Ty.neg Vec.any))::(Vec.partition |> List.map mk_anyclass)
 
