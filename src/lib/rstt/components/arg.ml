@@ -2,7 +2,6 @@ open Sstt
 open Rstt_utils
 
 let tag = Tag.mk "arg"
-let dummy_id = Enum.mk "dummy"
 module Reserved = Labels.Reserved
 
 let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
@@ -55,12 +54,8 @@ let fresh_id =
 let mk' ~allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   let record t = t |> Descr.mk_record |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr in
   let pos_tl' = Ty.F.get_descr pos_tl' in
-  let id = match id with
-  | None -> [dummy_id]
-  | Some id -> [dummy_id ; id]
-  in
-  let id = id |> List.map Descr.mk_enum |> List.map Ty.mk_descr
-  |> Ty.disj |> Ty.O.required |> Ty.F.mk_descr in
+  let id = (match id with None -> Ty.empty | Some id -> Descr.mk_enum id |> Ty.mk_descr)
+  |> Ty.O.optional |> Ty.F.mk_descr in
   let allow_more_pos = allow_more_pos && (pos_tl' |> Ty.O.get |> Ty.is_empty |> not) in
   let pos_tl' = if allow_more_pos then pos_tl' else Ty.O.optional Ty.empty in
   let pos_bindings = pos' |> List.mapi (fun i fty -> Labels.pos i, fty) |> LabelMap.of_list in
@@ -88,7 +83,7 @@ let mk { pos_named ; pos_tl ; named_tl ; named } =
   ) in
   atoms' |> Ty.disj
 let mk' = mk' ~allow_more_pos:true ~id:None
-let any_id = Enums.any |> Descr.mk_enums |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr
+let any_id = Enums.any |> Descr.mk_enums |> Ty.mk_descr |> Ty.O.optional |> Ty.F.mk_descr
 let any_d =
   { Records.Atom.bindings=[
       Reserved.id, any_id ;
@@ -101,7 +96,7 @@ let extract_ids (a:Records.Atom'.t) =
   let enums = Records.Atom'.find Reserved.id a |> Ty.F.get_descr |> Ty.O.get
   |> Ty.get_descr |> Descr.get_enums in
   match Enums.destruct enums with
-  | true, lst -> Some (List.filter (fun e -> Enum.equal dummy_id e |> not) lst)
+  | true, lst -> Some lst
   | false, _ -> None
 
 let params_of_id id = Hashtbl.find sigs id
@@ -162,8 +157,7 @@ let destruct ty =
   proj_tag ty |> Ty.cap any_d |> extract
 
 let reidentify ~id ty =
-  let id = Ty.cup id (Descr.mk_enum dummy_id |> Ty.mk_descr)
-  |> Ty.O.required |> Ty.F.mk_descr |> Ty.F.cap any_id in
+  let id = id |> Ty.O.optional |> Ty.F.mk_descr |> Ty.F.cap any_id in
   let aux { Records.Atom.bindings ; tail } =
     let bindings = LabelMap.add Reserved.id id bindings in
     { Records.Atom.bindings ; tail }
