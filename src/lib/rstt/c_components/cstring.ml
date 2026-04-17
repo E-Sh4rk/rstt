@@ -21,18 +21,17 @@ let to_t _ comp =
   with Not_found -> None
 
 let map _ v = v
-  open Prec
 
 let print prec assoc fmt (pos, strs) =
   let pp_string _prec _assoc fmt str = Format.fprintf fmt "c(%S)" str in
-  let aux = print_cup pp_string in
+  let aux = Pp.print_cup pp_string in
   if pos then
     aux prec assoc fmt strs
   else if not pos && strs = [] then
     Format.fprintf fmt "c_string"
   else
-    let sym,prec',_ as opinfo = binop_info Diff in
-    fprintf prec assoc opinfo fmt "c_string%(%)%a" sym (aux prec' Right) strs
+    let sym,prec',_ as opinfo = Prec.binop_info Diff in
+    Prec.fprintf prec assoc opinfo fmt "c_string%(%)%a" sym (aux prec' Right) strs
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}

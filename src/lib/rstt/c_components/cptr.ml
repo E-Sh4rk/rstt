@@ -32,11 +32,10 @@ let to_t ctx comp =
   Some (extract pty |> map ctx.Printer.build)
 let destruct ty = ty |> proj_tag |> extract
 let print prec assoc fmt { nullable ; target } =
-  let open Prec in
   let ((sym, prec', _) as opinfo) = PtrStar.opinfo () in
   let pp_target prec assoc fmt target =
     Prec.fprintf prec assoc opinfo fmt "%(%)%a" sym
-      (Printer.print_descr_ctx prec' NoAssoc) target
+      (Pp.print_descr_ctx prec' NoAssoc) target
   in
   if nullable then
     if Ty.is_empty target.Printer.ty then
@@ -44,8 +43,8 @@ let print prec assoc fmt { nullable ; target } =
     else
       pp_target prec assoc fmt target
   else
-    let sym,prec',_ as opinfo = binop_info Diff in
-    fprintf prec assoc opinfo fmt "%a%(%)%s" (pp_target prec' Right) target sym "c_null"
+    let sym,prec',_ as opinfo = Prec.binop_info Diff in
+    Prec.fprintf prec assoc opinfo fmt "%a%(%)%s" (pp_target prec' Right) target sym "c_null"
 
 
 let printer_builder = Printer.builder ~to_t ~map ~print

@@ -73,7 +73,7 @@ let partition =
 
 let print prec assoc fmt t =
   let shortcut_v v =
-    let str = Format.asprintf "%a" Printer.print_descr v in
+    let str = Format.asprintf "%a" Pp.print_descr v in
     let prefix = Format.asprintf "%(%)" (Na.Hat.sym ()) in
     if String.starts_with ~prefix str
     then
@@ -87,15 +87,15 @@ let print prec assoc fmt t =
     else if Ty.equiv Prim.any' v.ty then
       Format.fprintf fmt "%(%)vec%s" (Na.Hat.sym ()) len
     else if Prim.is_simple v.ty then
-      Format.fprintf fmt "%a%s" Printer.print_descr v len
+      Format.fprintf fmt "%a%s" Pp.print_descr v len
     else
       let v = Utils.prune_printer_descr ~any:Prim.any v in
-      Format.fprintf fmt "%a%s(%a)" Tag.pp tag len Printer.print_descr v
+      Format.fprintf fmt "%a%s(%a)" Tag.pp tag len Pp.print_descr v
   in
   let print_atom _prec _assoc fmt = function
     | VarLength (l,v) ->
       let l = Utils.prune_printer_descr ~any:prim_int l in
-      let len = Format.asprintf "@[<h>[%a]@]" Printer.print_descr l in
+      let len = Format.asprintf "@[<h>[%a]@]" Pp.print_descr l in
       Format.fprintf fmt "%a" (print_v ~len) v
     | AnyLength v ->
       Format.fprintf fmt "%a" (print_v ~len:"") v
@@ -107,7 +107,7 @@ let print prec assoc fmt t =
         Format.fprintf fmt "%a" (print_v ~len) v
   in
   let t = t |> List.map (fun (p,ns) -> [p],ns) in
-  Prec.print_non_empty_dnf ~any:"" print_atom prec assoc fmt t
+  Pp.print_non_empty_dnf ~any:"" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:map ~print:print

@@ -174,7 +174,7 @@ let ids_of ty =
   |> List.map extract_ids |> List.filter_map Fun.id |> List.concat
 
 let print prec assoc fmt t =
-  let print_field_ty = Printer.print_field_ctx Prec.min_prec Prec.NoAssoc in
+  let print_field_ty = Pp.print_field_ctx Prec.min_prec Prec.NoAssoc in
   let print_field fmt (name,ty) =
       match name with
       | None -> Format.fprintf fmt "%a" print_field_ty ty
@@ -211,7 +211,7 @@ let print prec assoc fmt t =
     | DefSite a -> print_atom prec assoc fmt a
     | CallSite a -> print_atom' prec assoc fmt a
   in
-  Prec.print_cup print_elt prec assoc fmt t
+  Pp.print_cup print_elt prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print

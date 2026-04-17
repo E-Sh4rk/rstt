@@ -49,17 +49,16 @@ module P = struct
     | [(Some i1, Some i2)] -> Stdlib.Int.equal i1 i2
     | _ -> false
 
-  open Prec
   let map _f v = v
   let print prec assoc fmt (pos,ints) =
-    let aux = print_cup (Utils.print_interval "int") in
+    let aux = Pp.print_cup (Utils.print_interval "int") in
     if pos then
       aux prec assoc fmt ints
     else if not pos && ints = [] then
       Format.fprintf fmt "int"
     else
-      let sym,prec',_ as opinfo = binop_info Diff in
-      fprintf prec assoc opinfo fmt "int%(%)%a" sym (aux prec' Right) ints
+      let sym,prec',_ as opinfo = Prec.binop_info Diff in
+      Prec.fprintf prec assoc opinfo fmt "int%(%)%a" sym (aux prec' Right) ints
 end
 
 include Na.MakeCompWithNa(P)

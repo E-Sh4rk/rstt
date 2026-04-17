@@ -52,7 +52,6 @@ let to_t _ comp =
 
 let map _f v = v
 let print prec assoc fmt t =
-  let open Prec in
   let pp_interval _prec _assoc fmt i =
     match i with
     | AnyNa -> Format.fprintf fmt "c_int_na"
@@ -64,17 +63,17 @@ let print prec assoc fmt t =
     | Singl i -> Format.fprintf fmt "c(%i)" i
     | Interval (i1,i2) -> Format.fprintf fmt "c%a" (Utils.print_interval "(..)" prec assoc) (i1,i2)
   in
-  let aux = print_cup pp_interval in
+  let aux = Pp.print_cup pp_interval in
   match t with
   | Pos ints -> aux prec assoc fmt ints
   | NegNa ints when ints = [] -> Format.fprintf fmt "c_int_na"
   | Neg ints when ints = [] -> Format.fprintf fmt "c_int"
   | NegNa ints ->
-    let sym,prec',_ as opinfo = binop_info Diff in
-    fprintf prec assoc opinfo fmt "c_int_na%(%)%a" sym (aux prec' Right) ints
+    let sym,prec',_ as opinfo = Prec.binop_info Diff in
+    Prec.fprintf prec assoc opinfo fmt "c_int_na%(%)%a" sym (aux prec' Right) ints
   | Neg ints ->
-    let sym,prec',_ as opinfo = binop_info Diff in
-    fprintf prec assoc opinfo fmt "c_int%(%)%a" sym (aux prec' Right) ints
+    let sym,prec',_ as opinfo = Prec.binop_info Diff in
+    Prec.fprintf prec assoc opinfo fmt "c_int%(%)%a" sym (aux prec' Right) ints
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}

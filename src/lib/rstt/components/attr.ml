@@ -58,14 +58,14 @@ let proj_classes ty =
 let print prec assoc fmt t =
   let print_atom prec assoc fmt { content ; classes } =
     let print_opt_content fmt t =
-      if Ty.is_any t.Printer.ty |> not then Printer.print_descr_atomic fmt t
+      if Ty.is_any t.Printer.ty |> not then Pp.print_descr_atomic fmt t
     in
     if Ty.leq Classes.any classes.Printer.ty then
-      Format.fprintf fmt "%a" (Printer.print_descr_ctx prec assoc) content
+      Format.fprintf fmt "%a" (Pp.print_descr_ctx prec assoc) content
     else
-      Format.fprintf fmt "%a%a" print_opt_content content Printer.print_descr classes
+      Format.fprintf fmt "%a%a" print_opt_content content Pp.print_descr classes
   in
-  Prec.print_non_empty_dnf ~any:"any" print_atom prec assoc fmt t
+  Pp.print_non_empty_dnf ~any:"any" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map f f) ~print:print

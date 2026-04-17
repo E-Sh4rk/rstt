@@ -54,7 +54,7 @@ let destruct ty = proj_tag ty |> Ty.cap any_d |> extract
 
 let print prec assoc fmt t =
   let print_atom _prec _assoc fmt {bindings;sym;tl} =
-    let print_field_ty = Printer.print_field_ctx Prec.min_prec Prec.NoAssoc in
+    let print_field_ty = Pp.print_field_ctx Prec.min_prec Prec.NoAssoc in
     let print_field suffix fmt (str,ty) =
       Format.fprintf fmt "%s: %a%s" str print_field_ty ty suffix
     in
@@ -66,7 +66,7 @@ let print prec assoc fmt t =
       Format.fprintf fmt "{ %a%a }" (print_seq (print_field ", ") "") (bindings@sym)
         print_field_ty (Utils.prune_option_fop tl)
   in
-  Prec.print_non_empty_dnf ~any:"list" print_atom prec assoc fmt t
+  Pp.print_non_empty_dnf ~any:"list" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print

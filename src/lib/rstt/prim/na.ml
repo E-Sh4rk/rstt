@@ -1,5 +1,4 @@
 open Sstt
-open Printer
 
 let na = Enum.mk "na"
 let na_ty = Descr.mk_enum na |> Ty.mk_descr
@@ -12,6 +11,7 @@ module Hat = struct
 end
 
 module type PrimComp = sig
+    open Printer
     val tag_name : string
     val any : Ty.t
     type t
