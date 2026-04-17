@@ -59,5 +59,7 @@
 "c7": c_string('a) ;;
 "c8": c_int_na \ c(42) ;;
 "c9": c_int \ c(42) ;;
+"c10": c_null ;;
+"c11": *c_int \ c_null ;;
 
 "sym": ( a: { #k : 'a }, b = #k ) -> 'a ;;

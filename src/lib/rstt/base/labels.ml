@@ -56,6 +56,7 @@ module Reserved = struct
   let card = Label.mk "_n"
   let content = Label.mk "_c"
   let classes = Label.mk "_class"
+  let target = Label.mk "_target"
 end
 
 (* Symbolic label utilities *)

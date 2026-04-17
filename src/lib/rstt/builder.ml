@@ -1,7 +1,7 @@
 open Sstt
 
 type 'v cconst =
-| CDouble | CString | CChar | CVoid
+| CDouble | CString | CChar | CVoid | CNull
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa
 | CIntSingl of int | CIntInterval of Utils.interval | CIntVar of 'v
 | CStrSingl of string | CStrVar of 'v
@@ -141,6 +141,7 @@ let build_cconst t =
   | CStrVar v -> Cstring.var v
   | CChar -> Cenums.char
   | CVoid -> Cenums.void
+  | CNull -> Cptr.null
   | CBool -> Cint.bool
   | CTrue -> Cint.tt
   | CFalse -> Cint.ff
@@ -321,7 +322,7 @@ let resolve_cconst env t =
     let env', v = tvar !env v in
     env := env' ; CStrVar v
   | CString -> CString | CStrSingl str -> CStrSingl str
-  | CDouble -> CDouble | CChar -> CChar | CVoid -> CVoid
+  | CDouble -> CDouble | CChar -> CChar | CVoid -> CVoid | CNull -> CNull
   | CBool -> CBool | CTrue -> CTrue | CFalse -> CFalse | CNa -> CNa
   | CInt -> CInt | CIntNa -> CIntNa | CIntSingl i -> CIntSingl i
   | CIntInterval (i1,i2) -> CIntInterval (i1,i2)

@@ -1,7 +1,7 @@
 open Sstt
 
 type 'v cconst =
-| CDouble | CString | CChar | CVoid
+| CDouble | CString | CChar | CVoid | CNull
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa
 | CIntSingl of int | CIntInterval of Utils.interval | CIntVar of 'v
 | CStrSingl of string | CStrVar of 'v

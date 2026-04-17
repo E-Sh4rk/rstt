@@ -17,6 +17,7 @@ let parse_id_or_builtin str =
     | "c_string" -> TCConst CString
     | "c_char" -> TCConst CChar
     | "c_void" -> TCConst CVoid
+    | "c_null" -> TCConst CNull
     | "c_int_na" -> TCConst CIntNa
     | "c_int" -> TCConst CInt
     | "c_na" -> TCConst CNa
