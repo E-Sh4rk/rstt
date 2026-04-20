@@ -57,7 +57,7 @@ let mk' ~allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   let id = (match id with None -> Ty.empty | Some id -> Descr.mk_enum id |> Ty.mk_descr)
   |> Ty.O.optional |> Ty.F.mk_descr in
   let allow_more_pos = allow_more_pos && (pos_tl' |> Ty.O.get |> Ty.is_empty |> not) in
-  let pos_tl' = if allow_more_pos then pos_tl' else Ty.O.optional Ty.empty in
+  let pos_tl' = if allow_more_pos then pos_tl' else Ty.empty, snd pos_tl' in
   let pos_bindings = pos' |> List.mapi (fun i fty -> Labels.pos i, fty) |> LabelMap.of_list in
   let pos = Reserved.pos, { Records.Atom.bindings=pos_bindings ;
     tail=Utils.add_option' pos_tl' |> Ty.F.mk_descr } |> record in
@@ -174,7 +174,12 @@ let ids_of ty =
   |> List.map extract_ids |> List.filter_map Fun.id |> List.concat
 
 let print prec assoc fmt t =
-  let print_field_ty = Pp.print_field_ctx Prec.min_prec Prec.NoAssoc in
+  let print_field_ty fmt f =
+    match f with
+    | Printer.FTy (t, true) when Ty.is_empty t.Printer.ty ->
+      Format.fprintf fmt "absent"
+    | f -> Printer.print_field_ctx Prec.min_prec Prec.NoAssoc fmt f
+  in
   let print_field fmt (name,ty) =
       match name with
       | None -> Format.fprintf fmt "%a" print_field_ty ty

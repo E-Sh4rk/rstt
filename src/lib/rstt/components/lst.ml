@@ -54,7 +54,12 @@ let destruct ty = proj_tag ty |> Ty.cap any_d |> extract
 
 let print prec assoc fmt t =
   let print_atom _prec _assoc fmt {bindings;sym;tl} =
-    let print_field_ty = Pp.print_field_ctx Prec.min_prec Prec.NoAssoc in
+    let print_field_ty fmt f =
+      match f with
+      | Printer.FTy (t, true) when Ty.is_empty t.Printer.ty ->
+        Format.fprintf fmt "absent"
+      | f -> Printer.print_field_ctx Prec.min_prec Prec.NoAssoc fmt f
+    in
     let print_field suffix fmt (str,ty) =
       Format.fprintf fmt "%s: %a%s" str print_field_ty ty suffix
     in

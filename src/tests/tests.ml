@@ -66,6 +66,7 @@ let%expect_test "tests" =
     arg11: @( a: <class1> )
     arg12: @( int?, lgl ; int )
     arg13: @( lgl, int? ; int )
+    arg14: ( a: int ; absent, `r )
     class1: <class1>
     class2: <class1, `c>
     class3: [

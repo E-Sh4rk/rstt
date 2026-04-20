@@ -30,7 +30,7 @@
 "arg2": @(v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
 "arg3": @(a:v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
 "arg4": @(a:v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
-"arg5": [ @(v('A), b:'B, c:'C, d:'D) <= (a:v(int), b:v(lgl) ; empty,`R ; c:v(int)) ] ;;
+"arg5": [ @(v('A), b:'B, c:'C, d:'D) <= (a:v(int), b:v(lgl) ; absent,`R ; c:v(int)) ] ;;
 "arg6": ( a:int, b:dbl ; any ) ;;
 "arg7": @( int, b:dbl ; any ) ;;
 "arg8": ( a:int, b:dbl ; int ; named:raw ) ;;
@@ -39,6 +39,7 @@
 "arg11": @(a:<class1>) & (a:<class1>) ;;
 "arg12": @( int?, lgl ; int ) ;;
 "arg13": @( lgl, int? ; int ) ;;
+"arg14": (a:int ; absent, `r) ;;
 
 "class1": <class1> ;;
 "class2": <class1, `c> ;;
