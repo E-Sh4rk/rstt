@@ -172,7 +172,7 @@ let rec print_descr_ctx prec assoc fmt d =
     | Varop (Cup,ds) -> print_cup ~cmp:Compare.descr aux prec assoc fmt ds
     | Varop (Cap,ds) -> print_cap ~cmp:Compare.descr aux prec assoc fmt ds
     | Varop (v,ds) ->
-      Prec.print_nary_op "" aux prec assoc v fmt ds
+      Prec.print_nary_op aux prec assoc v fmt ds
     | Binop (b,d1,d2) ->
       let sym,prec',_ as opinfo = Prec.binop_info b in
       Prec.fprintf prec assoc opinfo fmt "%a%(%)%a"
