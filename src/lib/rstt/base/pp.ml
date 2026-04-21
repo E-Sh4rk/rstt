@@ -116,50 +116,20 @@ let print_dnf ~empty ~any ~cmp f prec assoc fmt dnf =
 
 (* ===== Descr printer ===== *)
 
-let print_builtin fmt b =
-  let str =
-    match b with
-    | Printer.Empty -> "empty"
-    | Any -> "any"
-    | AnyTuple -> "tuple"
-    | AnyEnum -> "enum"
-    | AnyTag -> "tag"
-    | AnyInt -> "int"
-    | AnyArrow -> "arrow"
-    | AnyRecord -> "record"
-    | AnyTupleComp i -> "tuple"^(string_of_int i)
-    | AnyTagComp t -> (Tag.name t)^("()")
-  in
-  Format.fprintf fmt "%s" str
-
-let pp_z = Z.pp_print
-let print_interval fmt (lb,ub) =
-  match lb, ub with
-  | None, None -> print_builtin fmt Printer.AnyInt
-  | Some lb, Some ub when Z.equal lb ub ->
-    Format.fprintf fmt "%a" pp_z lb
-  | Some lb, Some ub ->
-    Format.fprintf fmt "(%a..%a)" pp_z lb pp_z ub
-  | None, Some ub ->
-    Format.fprintf fmt "(..%a)" pp_z ub
-  | Some lb, None ->
-    Format.fprintf fmt "(%a..)" pp_z lb
-
 let rec print_descr_ctx prec assoc fmt d =
   let rec aux prec assoc fmt d =
     let open Format in
     match d.Printer.op with
-    | Extension e ->
-      fprintf fmt "%a" (Printer.print_extension_node_ctx prec assoc) e
+    | Extension e -> Printer.print_extension_node_ctx prec assoc fmt e
     | Alias str -> fprintf fmt "%s" str
     | Node n -> fprintf fmt "%a" Printer.NodeId.pp n
-    | Builtin b -> print_builtin fmt b
+    | Builtin b -> Printer.print_builtin fmt b
     | Var v -> fprintf fmt "%a" Var.pp v
     | Enum a -> fprintf fmt "%a" Enum.pp a
     | Tag (t,d) ->
       fprintf fmt "%a(%a)"
         Tag.pp t print_descr d
-    | Interval (lb,ub) -> fprintf fmt "%a" print_interval (lb,ub)
+    | Interval (lb,ub) -> fprintf fmt "%a" Printer.print_interval (lb,ub)
     | Record (bindings,tail) ->
       let print_binding fmt (l,f) =
         Format.fprintf fmt "%a :@ %a"
@@ -171,16 +141,9 @@ let rec print_descr_ctx prec assoc fmt d =
         print_tail tail
     | Varop (Cup,ds) -> print_cup ~cmp:Compare.descr aux prec assoc fmt ds
     | Varop (Cap,ds) -> print_cap ~cmp:Compare.descr aux prec assoc fmt ds
-    | Varop (v,ds) ->
-      Prec.print_nary_op aux prec assoc v fmt ds
-    | Binop (b,d1,d2) ->
-      let sym,prec',_ as opinfo = Prec.binop_info b in
-      Prec.fprintf prec assoc opinfo fmt "%a%(%)%a"
-        (aux prec' Left) d1 sym
-        (aux prec' Right) d2
-    | Unop (u,d) ->
-      let sym,prec',_ as opinfo = Prec.unop_info u in
-      Prec.fprintf prec assoc opinfo fmt "%(%)%a" sym (aux prec' NoAssoc) d
+    | Varop (v,ds) -> Prec.print_nary_op aux prec assoc v fmt ds
+    | Binop (b,d1,d2) -> Prec.print_binary_op aux prec assoc b fmt d1 d2
+    | Unop (u,d) -> Prec.print_unary_op aux prec assoc u fmt d
   in
   aux prec assoc fmt d
 
@@ -195,14 +158,8 @@ and print_fop prec assoc fmt fop =
         print_descr_ctx prec assoc fmt d
     | FVarop (FCup,ds) -> print_cup ~cmp:(Compare.fop Compare.descr) aux prec assoc fmt ds
     | FVarop (FCap,ds) -> print_cap ~cmp:(Compare.fop Compare.descr) aux prec assoc fmt ds
-    | FBinop (b,fop1,fop2) ->
-      let sym,prec',_ as opinfo = Prec.fbinop_info b in
-      Prec.fprintf prec assoc opinfo fmt "%a%(%)%a"
-        (aux prec' Left) fop1 sym
-        (aux prec' Right) fop2
-    | FUnop (u,fop) ->
-      let sym,prec',_ as opinfo = Prec.funop_info u in
-      Prec.fprintf prec assoc opinfo fmt "%(%)%a" sym (aux prec' NoAssoc) fop
+    | FBinop (b,fop1,fop2) -> Prec.print_binary_fop aux prec assoc b fmt fop1 fop2
+    | FUnop (u,fop) -> Prec.print_unary_fop aux prec assoc u fmt fop
   in
   aux prec assoc fmt fop
 
