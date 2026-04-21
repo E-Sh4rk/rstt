@@ -72,6 +72,17 @@ let partition =
   Prim.partition |> List.map (fun ty -> mk (AnyLength ty))
 
 let print prec assoc fmt t =
+  let open Rstt_utils in
+  let cmp v1 v2 =
+    match v1, v2 with
+    | VarLength (l1,v1), VarLength (l2,v2) ->
+      Pp.Compare.descr l1 l2 |> ccmp Pp.Compare.descr v1 v2
+    | AnyLength v1, AnyLength v2 -> Pp.Compare.descr v1 v2
+    | CstLength (n1,v1), CstLength (n2,v2) ->
+      Stdlib.compare n1 n2 |> ccmp Pp.Compare.descr v1 v2
+    | VarLength _, _ -> -1 | _, VarLength _ -> 1
+    | AnyLength _, _ -> -1 | _, AnyLength _ -> 1
+  in
   let shortcut_v v =
     let str = Format.asprintf "%a" Pp.print_descr v in
     let prefix = Format.asprintf "%(%)" (Na.Hat.sym ()) in
@@ -107,7 +118,7 @@ let print prec assoc fmt t =
         Format.fprintf fmt "%a" (print_v ~len) v
   in
   let t = t |> List.map (fun (p,ns) -> [p],ns) in
-  Pp.print_non_empty_dnf ~any:"" print_atom prec assoc fmt t
+  Pp.print_non_empty_dnf ~cmp ~any:"" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:map ~print:print

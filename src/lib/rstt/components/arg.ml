@@ -174,6 +174,30 @@ let ids_of ty =
   |> List.map extract_ids |> List.filter_map Fun.id |> List.concat
 
 let print prec assoc fmt t =
+  let cmp t1 t2 =
+    let open Rstt_utils in
+    let cmp_pos_bindings = List.compare (Pp.Compare.fop Pp.Compare.descr) in
+    let cmp_field (str1,f1) (str2,f2) =
+      String.compare str1 str2 |> ccmp (Pp.Compare.fop Pp.Compare.descr) f1 f2
+    in
+    let cmp_bindings b1 b2 = List.compare cmp_field b1 b2 in
+    let cmp_def a1 a2 =
+      Pp.Compare.fop Pp.Compare.descr a1.pos_tl a2.pos_tl |> ccmp
+      (Pp.Compare.fop Pp.Compare.descr) a1.named_tl a2.named_tl |> ccmp
+      cmp_bindings a1.pos_named a2.pos_named |> ccmp
+      cmp_bindings a1.named a2.named
+    in
+    let cmp_call a1 a2 =
+      Pp.Compare.fop Pp.Compare.descr a1.pos_tl' a2.pos_tl' |> ccmp
+      (Pp.Compare.fop Pp.Compare.descr) a1.named_tl' a2.named_tl' |> ccmp
+      cmp_pos_bindings a1.pos' a2.pos' |> ccmp
+      cmp_bindings a1.named' a2.named'
+    in
+    match t1, t2 with
+    | DefSite a1, DefSite a2 -> cmp_def a1 a2
+    | CallSite a1, CallSite a2 -> cmp_call a1 a2
+    | DefSite _, _ -> -1 | _, DefSite _ -> 1
+  in
   let print_field_ty fmt f =
     match f with
     | Printer.FTy (t, true) when Ty.is_empty t.Printer.ty ->
@@ -216,7 +240,7 @@ let print prec assoc fmt t =
     | DefSite a -> print_atom prec assoc fmt a
     | CallSite a -> print_atom' prec assoc fmt a
   in
-  Pp.print_cup print_elt prec assoc fmt t
+  Pp.print_cup ~cmp print_elt prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print

@@ -53,6 +53,19 @@ let to_t ctx comp =
 let destruct ty = proj_tag ty |> Ty.cap any_d |> extract
 
 let print prec assoc fmt t =
+  let cmp {bindings=b1;sym=s1;tl=t1} {bindings=b2;sym=s2;tl=t2} =
+    let open Rstt_utils in
+    let cmp_field (str1,f1) (str2,f2) =
+      String.compare str1 str2 |> ccmp (Pp.Compare.fop Pp.Compare.descr) f1 f2
+    in
+    let cmp_sym_field (lbl1,f1) (lbl2,f2) =
+      Stdlib.compare lbl1 lbl2 |> ccmp (Pp.Compare.fop Pp.Compare.descr) f1 f2
+    in
+    let cmp_bindings b1 b2 = List.compare cmp_field b1 b2 in
+    let cmp_sym_bindings b1 b2 = List.compare cmp_sym_field b1 b2 in
+    Pp.Compare.fop Pp.Compare.descr t1 t2 |> ccmp cmp_sym_bindings s1 s2
+    |> ccmp cmp_bindings b1 b2
+  in
   let print_atom _prec _assoc fmt {bindings;sym;tl} =
     let print_field_ty fmt f =
       match f with
@@ -71,7 +84,7 @@ let print prec assoc fmt t =
       Format.fprintf fmt "{ %a%a }" (print_seq (print_field ", ") "") (bindings@sym)
         print_field_ty (Utils.prune_option_fop tl)
   in
-  Pp.print_non_empty_dnf ~any:"list" print_atom prec assoc fmt t
+  Pp.print_non_empty_dnf ~cmp ~any:"list" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print

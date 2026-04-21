@@ -63,7 +63,7 @@ let print prec assoc fmt t =
     | Singl i -> Format.fprintf fmt "c(%i)" i
     | Interval (i1,i2) -> Format.fprintf fmt "c%a" (Utils.print_interval "(..)" prec assoc) (i1,i2)
   in
-  let aux = Pp.print_cup pp_interval in
+  let aux = Pp.print_cup ~cmp:Stdlib.compare pp_interval in
   match t with
   | Pos ints -> aux prec assoc fmt ints
   | NegNa ints when ints = [] -> Format.fprintf fmt "c_int_na"

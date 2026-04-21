@@ -56,6 +56,9 @@ let proj_classes ty =
   proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj Reserved.classes |> Ty.O.get
 
 let print prec assoc fmt t =
+  let cmp { content=c1 ; classes=cl1 } { content=c2 ; classes=cl2 } =
+    Pp.Compare.descr c1 c2 |> Rstt_utils.ccmp Pp.Compare.descr cl1 cl2
+  in
   let print_atom prec assoc fmt { content ; classes } =
     let print_opt_content fmt t =
       if Ty.is_any t.Printer.ty |> not then Pp.print_descr_atomic fmt t
@@ -65,7 +68,7 @@ let print prec assoc fmt t =
     else
       Format.fprintf fmt "%a%a" print_opt_content content Pp.print_descr classes
   in
-  Pp.print_non_empty_dnf ~any:"any" print_atom prec assoc fmt t
+  Pp.print_non_empty_dnf ~cmp ~any:"any" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map f f) ~print:print

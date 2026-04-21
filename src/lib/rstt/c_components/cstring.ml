@@ -24,7 +24,7 @@ let map _ v = v
 
 let print prec assoc fmt (pos, strs) =
   let pp_string _prec _assoc fmt str = Format.fprintf fmt "c(%S)" str in
-  let aux = Pp.print_cup pp_string in
+  let aux = Pp.print_cup ~cmp:String.compare pp_string in
   if pos then
     aux prec assoc fmt strs
   else if not pos && strs = [] then

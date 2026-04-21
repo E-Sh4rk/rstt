@@ -51,7 +51,7 @@ module P = struct
 
   let map _f v = v
   let print prec assoc fmt (pos,ints) =
-    let aux = Pp.print_cup (Utils.print_interval "int") in
+    let aux = Pp.print_cup ~cmp:Stdlib.compare (Utils.print_interval "int") in
     if pos then
       aux prec assoc fmt ints
     else if not pos && ints = [] then

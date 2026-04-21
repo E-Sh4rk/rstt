@@ -19,14 +19,14 @@ let%expect_test "tests" =
     tuple1: tuple0
     tuple2: true
     norm1: any
-    norm2: lgl | int | chr | dbl | raw | clx
-    norm3: raw | lgl | dbl | chr | clx
-    vec1: raw42 | lgl['a] | lgl2 | int1
+    norm2: chr | clx | dbl | int | lgl | raw
+    norm3: chr | clx | dbl | lgl | raw
+    vec1: int1 | lgl2 | lgl['a] | raw42
     vec2: true
     vec3: v['a]('b)
-    vec4: v(int(i('a & int)))
-    vec5: v(chr(s('a & enum)))
-    vec6: (vec & ~int | int[^(int \ 1)] -> c_false) & (int1 -> c_true)
+    vec4: v(int(i(int | 'a)))
+    vec5: v(chr(s(enum | 'a)))
+    vec6: (int1 -> c_true) | (int[^(int \ 1)] | vec & ~int -> c_false)
     vec7: true
     lst1: true
     lst2: true
@@ -78,13 +78,13 @@ let%expect_test "tests" =
     class7: <class1, ?class3>
     class8: <class1, ~class2, ...>
     class9: <~class2, ?class3, *>
-    c1: (c(42) | c_na) | c_string \ c("abc")
+    c1: (c_na | c(42)) | c_string \ c("abc")
     c2: c_true
     c3: c_int
     c4: ~c_na
     c5: *c_int
-    c6: cint('a & int)
-    c7: cstring('a & enum)
+    c6: cint(int | 'a)
+    c7: cstring(enum | 'a)
     c8: c_int_na \ c(42)
     c9: c_int \ c(42)
     c10: c_null

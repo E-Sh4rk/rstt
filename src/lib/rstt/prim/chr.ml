@@ -38,7 +38,7 @@ module P = struct
 
   let print prec assoc fmt { positive ; content } =
     let pp_string _prec _assoc fmt str = Format.fprintf fmt "%S" str in
-    let aux = Pp.print_cup pp_string in
+    let aux = Pp.print_cup ~cmp:String.compare pp_string in
     if positive then
       aux prec assoc fmt content
     else if not positive && content = [] then
