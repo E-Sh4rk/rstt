@@ -172,10 +172,17 @@ and print_tail fmt tail =
 and print_descr fmt d = print_descr_ctx Prec.min_prec NoAssoc fmt d
 and print_fop' fmt fop = print_fop Prec.min_prec NoAssoc fmt fop
 let print_descr_atomic = print_descr_ctx Prec.max_prec Prec.NoAssoc
-let print fmt t =
-  assert (t.Printer.defs = []) ;
-  print_descr fmt t.main
 let print_field_ctx = print_fop
+
+
+let print_def fmt (n,d) =
+  Format.fprintf fmt "%a =@ %a" Printer.NodeId.pp n print_descr d
+let print fmt t =
+  Format.fprintf fmt "%a" print_descr t.Printer.main ;
+  match t.defs with
+  | [] -> ()
+  | defs ->
+    Format.fprintf fmt "@ where@ %a" (Prec.print_seq print_def "@ and@ ") defs
 
 (* ========================= *)
 
