@@ -25,6 +25,7 @@ let parse_id_or_builtin str =
     | "c_bool" -> TCConst CBool
     | "c_true" -> TCConst CTrue
     | "c_false" -> TCConst CFalse
+    | "c_ptr" -> TCConst CPtr
     | str -> TId str
 
 let parse_builtin_prim str =

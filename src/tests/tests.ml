@@ -84,10 +84,14 @@ let%expect_test "tests" =
     c4: ~c_na
     c5: *c_int
     c6: cint(int & 'a)
-    c7: cstring(enum & 'a)
+    c7: cstring(enum & 'a) \ c_null
     c8: c_int_na \ c(42)
     c9: c_int \ c(42)
     c10: c_null
     c11: *c_int \ c_null
+    c12: *any \ c_null
+    c13: c_ptr
+    c14: *any \ c_null
+    c15: c_ptr
     sym: ( a: { #(b,2): 'a }, b: any? ) -> 'a
     |}]

@@ -62,5 +62,9 @@
 "c9": c_int \ c(42) ;;
 "c10": c_null ;;
 "c11": *c_int \ c_null ;;
+"c12": *any \ c_string ;;
+"c13": *any | c_string ;;
+"c14": c_ptr \ c_string ;;
+"c15": c_ptr | c_string ;;
 
 "sym": ( a: { #k : 'a }, b = #k ) -> 'a ;;

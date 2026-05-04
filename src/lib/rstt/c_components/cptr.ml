@@ -12,39 +12,56 @@ let tag = Tag.mk "ptr"
 let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
 let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
                 |> Op.TagComp.as_atom |> snd
-let mk ty =
+let mk' ty =
   let open Records.Atom in
   let bindings =  [Reserved.target, ty |> Ty.O.optional |> Ty.F.mk_descr] |> LabelMap.of_list in
   let ty = Descr.mk_record { bindings ; tail=Ty.F.any } |> Ty.mk_descr in
   add_tag ty
-let any = mk Ty.any
-let null = mk Ty.empty
+let any = mk' Ty.any
+let null = mk' Ty.empty
+let string = mk' Cstring.any
+let var_string v = Ty.diff (mk' (Cstring.var v)) null
+let singl_string str = Ty.diff (mk' (Cstring.singl str)) null
+let mk_nonstring ty = mk' (Ty.diff ty Cstring.any)
 
-type 'a t = { nullable:bool ; target:'a }
-let map f { nullable ; target } = { nullable ; target=f target }
+type 'a t = { nullable:bool ; target:'a ; str:'a }
+let map f { nullable ; target; str } = { nullable ; target=f target ; str=f str }
 let extract ty =
   let oty = Ty.get_descr ty |> Descr.get_records |> Op.Records.approx
   |> Op.Records.Atom.find Reserved.target in
-  { nullable=Ty.O.is_optional oty ; target=Ty.O.get oty }
+  let nullable, target = Ty.O.is_optional oty, Ty.O.get oty in
+  let target, str = Ty.diff target Cstring.any, Ty.cap target Cstring.any in
+  { nullable ; target ; str }
 
 let to_t ctx comp =
   let (_, pty) = Op.TagComp.as_atom comp in
   Some (extract pty |> map ctx.Printer.build)
 let destruct ty = ty |> proj_tag |> extract
-let print prec assoc fmt { nullable ; target } =
+let print prec assoc fmt { nullable ; target ; str } =
   let ((sym, prec', _) as opinfo) = PtrStar.opinfo () in
   let pp_target prec assoc fmt target =
     Prec.fprintf prec assoc opinfo fmt "%(%)%a" sym
-      (Pp.print_descr_ctx prec' NoAssoc) target
+      (Pp.print_descr_ctx prec' NoAssoc)
+      (Utils.prune_printer_descr ~any:(Ty.neg Cstring.any) target)
+  in
+  let pp_str = Pp.print_descr_ctx in
+  let pp_target_str prec assoc fmt (target,str) =
+    let target_is_empty, str_is_empty = Ty.is_empty target.Printer.ty, Ty.is_empty str.Printer.ty in
+    if target_is_empty && str_is_empty then Format.fprintf fmt "c_null"
+    else if target_is_empty then pp_str prec assoc fmt str
+    else if str_is_empty then pp_target prec assoc fmt target
+    else if Ty.is_any (Ty.cup target.Printer.ty str.Printer.ty)
+    then Format.fprintf fmt "c_ptr"
+    else
+      let sym,prec',_ as opinfo = Prec.varop_info Cup in
+      Prec.fprintf prec assoc opinfo fmt "%a%(%)%a"
+        (pp_target prec' Left) target sym (pp_str prec' Right) str
   in
   if nullable then
-    if Ty.is_empty target.Printer.ty then
-      Format.fprintf fmt "c_null"
-    else
-      pp_target prec assoc fmt target
+    pp_target_str prec assoc fmt (target,str)
   else
     let sym,prec',_ as opinfo = Prec.binop_info Diff in
-    Prec.fprintf prec assoc opinfo fmt "%a%(%)%s" (pp_target prec' Right) target sym "c_null"
+    Prec.fprintf prec assoc opinfo fmt "%a%(%)%s" (pp_target_str prec' Left) (target,str) sym "c_null"
 
 
 let printer_builder = Printer.builder ~to_t ~map ~print

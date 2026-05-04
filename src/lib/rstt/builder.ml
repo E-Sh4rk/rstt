@@ -2,7 +2,7 @@ open Sstt
 
 type 'v cconst =
 | CDouble | CString | CChar | CVoid | CNull
-| CBool | CTrue | CFalse | CNa | CInt | CIntNa
+| CBool | CTrue | CFalse | CNa | CInt | CIntNa | CPtr
 | CIntSingl of int | CIntInterval of Utils.interval | CIntVar of 'v
 | CStrSingl of string | CStrVar of 'v
 
@@ -136,9 +136,9 @@ let build_sym_ctx t =
 let build_cconst t =
   match t with
   | CDouble -> Cenums.double
-  | CString -> Cstring.any
-  | CStrSingl str -> Cstring.singl str
-  | CStrVar v -> Cstring.var v
+  | CString -> Cptr.string
+  | CStrSingl str -> Cptr.singl_string str
+  | CStrVar v -> Cptr.var_string v
   | CChar -> Cenums.char
   | CVoid -> Cenums.void
   | CNull -> Cptr.null
@@ -148,6 +148,7 @@ let build_cconst t =
   | CNa -> Cint.na
   | CInt -> Cint.any
   | CIntNa -> Cint.any_na
+  | CPtr -> Cptr.any
   | CIntSingl i -> Cint.singl i
   | CIntInterval (i1,i2) -> Cint.interval (i1,i2)
   | CIntVar v -> Cint.var v
@@ -208,7 +209,7 @@ let rec build_struct sctx env t =
   | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
   | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
   | TCConst c -> build_cconst c
-  | TCPtr t -> Cptr.mk (build sctx env t)
+  | TCPtr t -> Cptr.mk_nonstring (build sctx env t)
   | TOption _ -> invalid_arg "Unexpected optional type"
   | TAttr _ -> invalid_arg "Unexpected attributes"
   | TStruct _ -> invalid_arg "Unexpected struct"
@@ -239,7 +240,7 @@ and build sctx env t =
   (* We don't need attributes for C values, primitive types, tuples, and args *)
   | TPrim p -> build_prim p
   | TCConst c -> build_cconst c
-  | TCPtr t -> Cptr.mk (build sctx env t)
+  | TCPtr t -> Cptr.mk_nonstring (build sctx env t)
   | TTuple lst -> Descr.mk_tuple (List.map (build sctx env) lst) |> Ty.mk_descr
   | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
   | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
@@ -324,7 +325,7 @@ let resolve_cconst env t =
   | CString -> CString | CStrSingl str -> CStrSingl str
   | CDouble -> CDouble | CChar -> CChar | CVoid -> CVoid | CNull -> CNull
   | CBool -> CBool | CTrue -> CTrue | CFalse -> CFalse | CNa -> CNa
-  | CInt -> CInt | CIntNa -> CIntNa | CIntSingl i -> CIntSingl i
+  | CInt -> CInt | CPtr -> CPtr | CIntNa -> CIntNa | CIntSingl i -> CIntSingl i
   | CIntInterval (i1,i2) -> CIntInterval (i1,i2)
 let resolve_prim env t =
   let rec aux t =

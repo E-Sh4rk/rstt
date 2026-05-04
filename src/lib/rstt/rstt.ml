@@ -20,4 +20,4 @@ module Pp = Pp
 module Cenums = Cenums
 module Cint = Cint
 module Cptr = Cptr
-module Cstring = Cstring
+(* module Cstring = Cstring *) (* Strings should be made through Cptr *)
