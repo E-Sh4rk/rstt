@@ -69,11 +69,11 @@ let print prec assoc fmt t =
   | NegNa ints when ints = [] -> Format.fprintf fmt "c_int_na"
   | Neg ints when ints = [] -> Format.fprintf fmt "c_int"
   | NegNa ints ->
-    let sym,prec',_ as opinfo = Prec.binop_info Diff in
-    Prec.fprintf prec assoc opinfo fmt "c_int_na%(%)%a" sym (aux prec' Right) ints
+    Prec.print_binary_op' (Prec.print_atomic_str "c_int_na") aux
+      prec assoc Diff fmt () ints
   | Neg ints ->
-    let sym,prec',_ as opinfo = Prec.binop_info Diff in
-    Prec.fprintf prec assoc opinfo fmt "c_int%(%)%a" sym (aux prec' Right) ints
+    Prec.print_binary_op' (Prec.print_atomic_str "c_int") aux
+      prec assoc Diff fmt () ints
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}

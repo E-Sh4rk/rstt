@@ -44,8 +44,8 @@ module P = struct
     else if not positive && content = [] then
       Format.fprintf fmt "chr"
     else
-      let sym,prec',_ as opinfo = Prec.binop_info Diff in
-      Prec.fprintf prec assoc opinfo fmt "chr%(%)%a" sym (aux prec' Right) content
+      Prec.print_binary_op' (Prec.print_atomic_str "chr") aux
+        prec assoc Diff fmt () content
 end
 
 include Na.MakeCompWithNa(P)

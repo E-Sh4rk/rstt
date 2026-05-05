@@ -28,17 +28,17 @@ let to_t ctx comp =
   Some (extract pty |> map ctx.Printer.build)
 let destruct ty = ty |> proj_tag |> extract
 let print prec assoc fmt { nullable ; target } =
-  let pp_target fmt target =
+  let pp_target _ _ fmt target =
     if Ty.is_any target.Printer.ty
     then Format.fprintf fmt "externalptr"
     else Format.fprintf fmt "externalptr(%a)" Pp.print_descr target
   in
   if nullable then
-    pp_target fmt target
+    pp_target prec assoc fmt target
   else
-    let sym,_,_ as opinfo = Prec.binop_info Diff in
-    Prec.fprintf prec assoc opinfo fmt "%a%(%)%s"
-      pp_target target sym "externalptr(empty)"
+    Prec.print_binary_op' pp_target (Prec.print_atomic_str "externalptr(empty)")
+      prec assoc Diff fmt target ()
+
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}

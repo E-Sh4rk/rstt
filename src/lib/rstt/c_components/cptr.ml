@@ -39,9 +39,7 @@ let to_t ctx comp =
 let destruct ty = ty |> proj_tag |> extract
 let print prec assoc fmt { nullable ; target ; str } =
   let pp_target prec assoc fmt target =
-    let ((sym, prec', _) as opinfo) = PtrStar.opinfo () in
-    Prec.fprintf prec assoc opinfo fmt "%(%)%a" sym
-      (Pp.print_descr_ctx prec' NoAssoc)
+    Prec.print_unary Pp.print_descr_ctx prec assoc (PtrStar.opinfo ()) fmt
       (Utils.prune_printer_descr ~any:(Ty.neg Cstring.any) target)
   in
   let pp_str = Pp.print_descr_ctx in
@@ -60,8 +58,8 @@ let print prec assoc fmt { nullable ; target ; str } =
   if nullable then
     pp_target_str prec assoc fmt (target,str)
   else
-    let sym,prec',_ as opinfo = Prec.binop_info Diff in
-    Prec.fprintf prec assoc opinfo fmt "%a%(%)%s" (pp_target_str prec' Left) (target,str) sym "c_null"
+    Prec.print_binary_op' pp_target_str (Prec.print_atomic_str "c_null")
+      prec assoc Diff fmt (target,str) ()
 
 
 let printer_builder = Printer.builder ~to_t ~map ~print

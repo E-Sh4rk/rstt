@@ -60,17 +60,12 @@ module MakeCompWithNa(P:PrimComp) = struct
 
   let print prec assoc fmt t =
     let print_without_na prec assoc fmt t =
-      Prec.fprintf prec assoc (Hat.opinfo ()) fmt "%(%)%a" (Hat.sym ())
-        (P.print Hat.prec NoAssoc) t
+      Prec.print_unary P.print prec assoc (Hat.opinfo ()) fmt t
     in
     match t with
     | WithNa t -> P.print prec assoc fmt t
     | WithoutNa t -> print_without_na prec assoc fmt t
     | Na ->
-      let sym,prec',_ as opinfo = Prec.binop_info Diff in
-      Prec.fprintf prec assoc opinfo fmt "%a%(%)%a"
-        (P.print prec' Left) P.any_t
-        sym
-        (print_without_na prec' Right) P.any_t
-
+      Prec.print_binary_op' P.print print_without_na
+        prec assoc Diff fmt P.any_t P.any_t
 end

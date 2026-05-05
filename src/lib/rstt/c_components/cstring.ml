@@ -30,8 +30,8 @@ let print prec assoc fmt (pos, strs) =
   else if not pos && strs = [] then
     Format.fprintf fmt "c_string"
   else
-    let sym,prec',_ as opinfo = Prec.binop_info Diff in
-    Prec.fprintf prec assoc opinfo fmt "c_string%(%)%a" sym (aux prec' Right) strs
+    Prec.print_binary_op' (Prec.print_atomic_str "c_string") aux
+      prec assoc Diff fmt () strs
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}

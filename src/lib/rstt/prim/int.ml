@@ -57,8 +57,8 @@ module P = struct
     else if not pos && ints = [] then
       Format.fprintf fmt "int"
     else
-      let sym,prec',_ as opinfo = Prec.binop_info Diff in
-      Prec.fprintf prec assoc opinfo fmt "int%(%)%a" sym (aux prec' Right) ints
+      Prec.print_binary_op' (Prec.print_atomic_str "int") aux
+        prec assoc Diff fmt () ints
 end
 
 include Na.MakeCompWithNa(P)
