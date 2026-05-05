@@ -36,6 +36,8 @@ let%expect_test "tests" =
     lst6: { a: ff }
     lst7: { a: "brrr", int }
     lst8: { `r } -> { a: 42, `r }
+    eptr1: externalptr
+    eptr2: externalptr \ externalptr(empty)
     arg1: true
     arg2: true
     arg3: true

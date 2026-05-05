@@ -17,7 +17,7 @@ and ('v,'r,'i) t =
 | TTy of Ty.t
 | TVar of 'v
 | TRowVar of 'r
-| TAny | TEmpty | TNull | TEnv | TSym | TLang
+| TAny | TEmpty | TNull | TEnv | TSym | TLang | TExtPtr
 | TCup of ('v,'r,'i) t * ('v,'r,'i) t
 | TCap of ('v,'r,'i) t * ('v,'r,'i) t
 | TDiff of ('v,'r,'i) t * ('v,'r,'i) t
@@ -29,6 +29,7 @@ and ('v,'r,'i) t =
 | TList of ('v,'r,'i) t Lst.atom
 | TArg of ('v,'r,'i) t Arg.atom
 | TArg' of ('v,'r,'i) t Arg.atom'
+| TExtPtr' of ('v,'r,'i) t
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t

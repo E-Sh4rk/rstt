@@ -8,7 +8,7 @@ module PtrStar = struct
   let opinfo () = (sym (), prec, assoc)
 end
 
-let tag = Tag.mk "ptr"
+let tag = Tag.mk "cptr"
 let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
 let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
                 |> Op.TagComp.as_atom |> snd
@@ -38,8 +38,8 @@ let to_t ctx comp =
   Some (extract pty |> map ctx.Printer.build)
 let destruct ty = ty |> proj_tag |> extract
 let print prec assoc fmt { nullable ; target ; str } =
-  let ((sym, prec', _) as opinfo) = PtrStar.opinfo () in
   let pp_target prec assoc fmt target =
+    let ((sym, prec', _) as opinfo) = PtrStar.opinfo () in
     Prec.fprintf prec assoc opinfo fmt "%(%)%a" sym
       (Pp.print_descr_ctx prec' NoAssoc)
       (Utils.prune_printer_descr ~any:(Ty.neg Cstring.any) target)

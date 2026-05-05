@@ -96,7 +96,7 @@ let split_classes_elts lst =
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP VB P T S HAT ARROW STAR
 %token PI PC PCI PCS
-%token TT FF
+%token TT FF EPTR_ANY EPTR
 %token QUESTION_MARK EXCL_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
 %token LEQ GEQ LT GT
@@ -209,7 +209,8 @@ atomic_ty:
 | s=SLEN { let (s,i) = s in TVec (CstLength (Z.to_int i, parse_builtin_prim s)) }
 | HAT s=SLEN { let (s,i) = s in TVec (CstLength (Z.to_int i, PHat (parse_builtin_prim s))) }
 | s=prim_singl { TVec (CstLength (1, PHat s)) }
-(* Containers (lists, args, tuples) *)
+(* Containers (lists, args, tuples, externalptr) *)
+| EPTR_ANY { TExtPtr } | EPTR ty=ty RPAREN { TExtPtr' ty }
 | LBRACE elts=separated_list(COMMA, lst_elt) RBRACE
 { let bindings,sym,tl = split_lst_elts elts in TList {bindings;sym;tl} }
 | ALPAREN fs=separated_list(COMMA, ty_non_sym_field) tl=tail RPAREN

@@ -26,6 +26,9 @@
 "lst7": { a:"brrr", int } ;;
 "lst8": { `r } -> { a:v1(^42), `r } ;;
 
+"eptr1": externalptr ;;
+"eptr2": externalptr \ externalptr(empty) ;;
+
 "arg1": @(v(int), v(lgl)) <= (a:v(int), b:v(lgl)) ;;
 "arg2": @(v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
 "arg3": @(a:v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;

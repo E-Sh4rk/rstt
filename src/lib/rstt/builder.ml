@@ -17,7 +17,7 @@ and ('v,'r,'i) t =
 | TTy of Ty.t
 | TVar of 'v
 | TRowVar of 'r
-| TAny | TEmpty | TNull | TEnv | TSym | TLang
+| TAny | TEmpty | TNull | TEnv | TSym | TLang | TExtPtr
 | TCup of ('v,'r,'i) t * ('v,'r,'i) t
 | TCap of ('v,'r,'i) t * ('v,'r,'i) t
 | TDiff of ('v,'r,'i) t * ('v,'r,'i) t
@@ -29,6 +29,7 @@ and ('v,'r,'i) t =
 | TList of ('v,'r,'i) t Lst.atom
 | TArg of ('v,'r,'i) t Arg.atom
 | TArg' of ('v,'r,'i) t Arg.atom'
+| TExtPtr' of ('v,'r,'i) t
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t (* Means that the parameter should not be packed in an Attr container *)
@@ -71,7 +72,7 @@ let map f fp fc t =
   let rec aux t =
     let t = match t with
     | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TNull
-    | TEnv | TSym | TLang | TSymLabel _-> t
+    | TEnv | TSym | TLang | TExtPtr | TSymLabel _-> t
     | TCup (t1, t2) -> TCup (aux t1, aux t2)
     | TCap (t1, t2) -> TCap (aux t1, aux t2)
     | TDiff (t1, t2) -> TDiff (aux t1, aux t2)
@@ -83,6 +84,7 @@ let map f fp fc t =
     | TList a -> TList (Lst.map_atom aux a)
     | TArg a -> TArg (Arg.map_atom aux a)
     | TArg' a -> TArg' (Arg.map_atom' aux a)
+    | TExtPtr' t -> TExtPtr' (aux t)
     | TOption t -> TOption (aux t)
     | TAttr a -> TAttr (Attr.map_atom aux (map_classes fc) a)
     | TStruct t -> TStruct (aux t)
@@ -192,7 +194,8 @@ let rec build_struct sctx env t =
   | TCap (t1,t2) -> Ty.cap (build_struct sctx env t1) (build_struct sctx env t2)
   | TDiff (t1,t2) -> Ty.diff (build_struct sctx env t1) (build_struct sctx env t2)
   | TNeg t -> Ty.neg (build_struct sctx env t)
-  | TNull -> Null.any | TEnv -> Env.any | TSym -> Sym.any | TLang -> Lang.any
+  | TNull -> Null.any | TEnv -> Env.any | TSym -> Sym.any
+  | TLang -> Lang.any | TExtPtr -> ExternalPtr.any
   | TTuple lst -> Descr.mk_tuple (List.map (build sctx env) lst) |> Ty.mk_descr
   | TPrim p -> build_prim p
   | TArrow (t1,t2) -> Descr.mk_arrow (build sctx env t1, build sctx env t2) |> Ty.mk_descr
@@ -208,6 +211,7 @@ let rec build_struct sctx env t =
     Lst.mk {bindings;sym;tl}
   | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
   | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
+  | TExtPtr' t -> ExternalPtr.mk (build sctx env t)
   | TCConst c -> build_cconst c
   | TCPtr t -> Cptr.mk_nonstring (build sctx env t)
   | TOption _ -> invalid_arg "Unexpected optional type"
@@ -375,7 +379,7 @@ let resolve env t =
       let env', v = rvar !env v in
       env := env' ; TRowVar v
     | TAny -> TAny | TEmpty -> TEmpty | TNull -> TNull | TEnv -> TEnv
-    | TSym -> TSym | TLang -> TLang
+    | TSym -> TSym | TLang -> TLang | TExtPtr -> TExtPtr
     | TCup (t1,t2) -> TCup (aux tids t1, aux tids t2)
     | TCap (t1,t2) -> TCap (aux tids t1, aux tids t2)
     | TDiff (t1,t2) -> TDiff (aux tids t1, aux tids t2)
@@ -387,6 +391,7 @@ let resolve env t =
     | TList a -> TList (Lst.map_atom (aux tids) a)
     | TArg a -> TArg (Arg.map_atom (aux tids) a)
     | TArg' a -> TArg' (Arg.map_atom' (aux tids) a)
+    | TExtPtr' t -> TExtPtr' (aux tids t)
     | TOption t -> TOption (aux tids t)
     | TAttr a -> TAttr (Attr.map_atom (aux tids) (resolve_classes env) a)
     | TStruct t -> TStruct (aux tids t)
