@@ -33,7 +33,7 @@ let prune_option_fop fop =
 
 let add_option' tyo =
   let ty = Ty.O.get tyo |> Ty.O.Atom.get in
-  if Ty.is_empty ty then tyo else ty |> Ty.O.Atom.optional |> Ty.O.mk
+  if Ty.is_empty ty then tyo else ty |> Ty.O.optional
 
 let add_option fty =
   fty |> Ty.F.map add_option'

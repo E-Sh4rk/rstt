@@ -64,15 +64,15 @@ let tt, ff = Descr.mk_enum tt |> Ty.mk_descr, Descr.mk_enum ff |> Ty.mk_descr
 let bb = Ty.cup tt ff
 let mk {pos;neg;unk;tail} =
   let pos, unk, neg = labels_of_attrs pos, labels_of_attrs unk, labels_of_attrs neg in
-  let pbindings = pos |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.Atom.required tt |> Ty.O.mk)) in
-  let ubindings = unk |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.Atom.required bb |> Ty.O.mk)) in
-  let nbindings = neg |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.Atom.required ff |> Ty.O.mk)) in
+  let pbindings = pos |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.required tt)) in
+  let ubindings = unk |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.required bb)) in
+  let nbindings = neg |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.required ff)) in
   let bindings = LabelMap.of_list (pbindings@nbindings@ubindings) in
   let tail = match tail with
-  | RowVars dnf -> dnf |> List.map (fun (ps,ns) -> (ps,ns,Ty.O.Atom.required bb |> Ty.O.mk)) |> Ty.F.of_dnf
-  | NoOther -> ff |> Ty.O.Atom.required |> Ty.O.mk |> Ty.F.mk_descr
-  | AllOthers -> tt |> Ty.O.Atom.required |> Ty.O.mk |> Ty.F.mk_descr
-  | Unknown -> bb |> Ty.O.Atom.required |> Ty.O.mk |> Ty.F.mk_descr
+  | RowVars dnf -> dnf |> List.map (fun (ps,ns) -> (ps,ns,Ty.O.required bb)) |> Ty.F.of_dnf
+  | NoOther -> ff |> Ty.O.required |> Ty.F.mk_descr
+  | AllOthers -> tt |> Ty.O.required |> Ty.F.mk_descr
+  | Unknown -> bb |> Ty.O.required |> Ty.F.mk_descr
   in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 

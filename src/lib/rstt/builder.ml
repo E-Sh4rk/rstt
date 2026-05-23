@@ -253,7 +253,7 @@ and build sctx env t =
 
 and build_field sctx env t =
   match t with
-  | TOption t -> Ty.F.mk_descr (build sctx env t |> Ty.O.Atom.optional |> Ty.O.mk)
+  | TOption t -> Ty.F.mk_descr (build sctx env t |> Ty.O.optional)
   | TRowVar v -> Ty.F.mk_var v
   | TCup (t1,t2) ->
       let t1 = build_field sctx env t1 in
@@ -268,7 +268,7 @@ and build_field sctx env t =
       let t2 = build_field sctx env t2 in
       Ty.F.diff t1 t2
   | TNeg t -> Ty.F.neg (build_field sctx env t)
-  | t -> Ty.F.mk_descr (build sctx env t |> Ty.O.Atom.required |> Ty.O.mk)
+  | t -> Ty.F.mk_descr (build sctx env t |> Ty.O.required)
 
 let build_field env t =
   let ctx, t = build_sym_ctx t in

@@ -14,7 +14,7 @@ let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
                 |> Op.TagComp.as_atom |> snd
 let mk' ty =
   let open Records.Atom in
-  let bindings =  [Reserved.target, ty |> Ty.O.Atom.optional |> Ty.O.mk |> Ty.F.mk_descr] |> LabelMap.of_list in
+  let bindings =  [Reserved.target, ty |> Ty.O.optional |> Ty.F.mk_descr] |> LabelMap.of_list in
   let ty = Descr.mk_record { bindings ; tail=Ty.F.any } |> Ty.mk_descr in
   add_tag ty
 let any = mk' Ty.any

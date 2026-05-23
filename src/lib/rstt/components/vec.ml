@@ -23,8 +23,8 @@ let mk a =
     | VarLength (l, c) -> l, c
   in
   let len, v = Ty.cap len prim_int, Ty.cap v Prim.any in
-  let bindings = LabelMap.singleton Reserved.card (Ty.O.Atom.required len |> Ty.O.mk |> Ty.F.mk_descr) in
-  let tail = Ty.O.Atom.required v |> Ty.O.mk |> Ty.F.mk_descr in
+  let bindings = LabelMap.singleton Reserved.card (Ty.O.required len |> Ty.F.mk_descr) in
+  let tail = Ty.O.required v |> Ty.F.mk_descr in
   Descr.mk_record { bindings ; tail } |> Ty.mk_descr |> add_tag
 let any = mk (AnyLength Ty.any)
 

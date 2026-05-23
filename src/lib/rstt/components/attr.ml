@@ -14,8 +14,8 @@ type ('a, 'c) t = ('a, 'c) line list
 let mk { content ; classes } =
   let classes = Ty.cap classes Classes.any in
   let bindings = LabelMap.of_list [
-    Reserved.content, Ty.F.mk_descr (Ty.O.Atom.required content |> Ty.O.mk) ;
-    Reserved.classes, Ty.F.mk_descr (Ty.O.Atom.required classes |> Ty.O.mk) ] in
+    Reserved.content, Ty.F.mk_descr (Ty.O.required content) ;
+    Reserved.classes, Ty.F.mk_descr (Ty.O.required classes) ] in
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk_anyclass content =
   mk { content ; classes=Classes.any }
@@ -23,8 +23,8 @@ let mk_noclass content =
   mk { content ; classes=Classes.noclass }
 let any_d =
   let bindings = LabelMap.of_list [
-    Reserved.content, Ty.F.mk_descr (Ty.O.Atom.required Ty.any |> Ty.O.mk) ;
-    Reserved.classes, Ty.F.mk_descr (Ty.O.Atom.required Classes.any |> Ty.O.mk) ] in
+    Reserved.content, Ty.F.mk_descr (Ty.O.required Ty.any) ;
+    Reserved.classes, Ty.F.mk_descr (Ty.O.required Classes.any) ] in
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
 let partition = (mk_anyclass (Ty.neg Vec.any))::(Vec.partition |> List.map mk_anyclass)
