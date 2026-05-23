@@ -7,6 +7,7 @@ let parse_id_or_builtin str =
     match str with
     | "empty" -> TEmpty
     | "any" -> TAny
+    | "sexp" -> TSexp
     | "absent" -> TOption TEmpty
     | "null" -> TNull
     | "env" -> TEnv

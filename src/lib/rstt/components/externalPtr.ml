@@ -8,7 +8,7 @@ let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
 
 let mk' ty =
   let open Records.Atom in
-  let bindings = [Reserved.target, ty |> Ty.O.optional |> Ty.F.mk_descr] |> LabelMap.of_list in
+  let bindings = [Reserved.target, ty |> Ty.O.Atom.optional |> Ty.O.mk |> Ty.F.mk_descr] |> LabelMap.of_list in
   let ty = Descr.mk_record { bindings ; tail=Ty.F.any } |> Ty.mk_descr in
   add_tag ty
 let any = mk' Ty.any
@@ -19,8 +19,8 @@ type 'a t = { nullable:bool ; target:'a }
 let map f { nullable ; target } = { nullable ; target=f target }
 let extract ty =
   let oty = Ty.get_descr ty |> Descr.get_records |> Op.Records.approx
-  |> Op.Records.Atom.find Reserved.target in
-  let nullable, target = Ty.O.is_optional oty, Ty.O.get oty in
+  |> Op.Records.Atom.find Reserved.target |> Ty.O.get in
+  let nullable, target = Ty.O.Atom.is_optional oty, Ty.O.Atom.get oty in
   { nullable ; target }
 
 let to_t ctx comp =

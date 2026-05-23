@@ -116,6 +116,23 @@ let print_dnf ~empty ~any ~cmp f prec assoc fmt dnf =
 
 (* ===== Descr printer ===== *)
 
+let print_builtin fmt b =
+  let open Sstt.Printer in
+  let str =
+    match b with
+    | Empty -> "empty"
+    | Any -> "any"
+    | AnyTuple -> "tuple"
+    | AnyEnum -> "enum"
+    | AnyTag -> "tag"
+    | AnyInt -> "int"
+    | AnyArrow -> "arrow"
+    | AnyRecord -> "record"
+    | AnyTupleComp i -> "tuple"^(string_of_int i)
+    | AnyTagComp t -> (Tag.name t)^("()")
+  in
+  Format.fprintf fmt "%s" str
+
 let rec print_descr_ctx prec assoc fmt d =
   let rec aux prec assoc fmt d =
     let open Format in
@@ -123,7 +140,7 @@ let rec print_descr_ctx prec assoc fmt d =
     | Extension e -> Printer.print_extension_node_ctx prec assoc fmt e
     | Alias str -> fprintf fmt "%s" str
     | Node n -> fprintf fmt "%a" Printer.NodeId.pp n
-    | Builtin b -> Printer.print_builtin fmt b
+    | Builtin b -> print_builtin fmt b
     | Var v -> fprintf fmt "%a" Var.pp v
     | Enum a -> fprintf fmt "%a" Enum.pp a
     | Tag (t,d) ->

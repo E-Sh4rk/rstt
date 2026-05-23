@@ -8,9 +8,9 @@ let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
 let proj_tag ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
 let npos_field n = Reserved.npos, Intervals.Atom.mk_singl n |> Descr.mk_interval |> Ty.mk_descr
-  |> Ty.O.required |> Ty.F.mk_descr
+  |> Ty.O.Atom.required |> Ty.O.mk |> Ty.F.mk_descr
 let npos_field' n = Reserved.npos, Intervals.Atom.mk (Some n) None |> Descr.mk_interval |> Ty.mk_descr
-  |> Ty.O.required |> Ty.F.mk_descr
+  |> Ty.O.Atom.required |> Ty.O.mk |> Ty.F.mk_descr
 
 type 'f atom = { pos_named : (string * 'f) list ; pos_tl: 'f ; named_tl : 'f ; named : (string * 'f) list }
 type 'f atom' = { pos' : 'f list ; pos_tl': 'f ; named' : (string * 'f) list ; named_tl' : 'f }
@@ -52,12 +52,12 @@ let fresh_id =
     i := !i+1 ;
     Enum.mk (string_of_int !i)
 let mk' ~allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
-  let record t = t |> Descr.mk_record |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr in
-  let pos_tl' = Ty.F.get_descr pos_tl' in
+  let record t = t |> Descr.mk_record |> Ty.mk_descr |> Ty.O.Atom.required |> Ty.O.mk |> Ty.F.mk_descr in
+  let pos_tl' = Ty.F.get_descr pos_tl' |> Ty.O.get in
   let id = (match id with None -> Ty.empty | Some id -> Descr.mk_enum id |> Ty.mk_descr)
-  |> Ty.O.optional |> Ty.F.mk_descr in
-  let allow_more_pos = allow_more_pos && (pos_tl' |> Ty.O.get |> Ty.is_empty |> not) in
-  let pos_tl' = if allow_more_pos then pos_tl' else Ty.empty, snd pos_tl' in
+  |> Ty.O.Atom.optional |> Ty.O.mk |> Ty.F.mk_descr in
+  let allow_more_pos = allow_more_pos && (pos_tl' |> Ty.O.Atom.get |> Ty.is_empty |> not) in
+  let pos_tl' = if allow_more_pos then Ty.O.mk pos_tl' else Ty.O.mk (Ty.empty, snd pos_tl') in
   let pos_bindings = pos' |> List.mapi (fun i fty -> Labels.pos i, fty) |> LabelMap.of_list in
   let pos = Reserved.pos, { Records.Atom.bindings=pos_bindings ;
     tail=Utils.add_option' pos_tl' |> Ty.F.mk_descr } |> record in
@@ -83,7 +83,8 @@ let mk { pos_named ; pos_tl ; named_tl ; named } =
   ) in
   atoms' |> Ty.disj
 let mk' = mk' ~allow_more_pos:true ~id:None
-let any_id = Enums.any |> Descr.mk_enums |> Ty.mk_descr |> Ty.O.optional |> Ty.F.mk_descr
+let any_id = Enums.any |> Descr.mk_enums |> Ty.mk_descr
+|> Ty.O.Atom.optional |> Ty.O.mk |> Ty.F.mk_descr
 let any_d =
   { Records.Atom.bindings=[
       Reserved.id, any_id ;
@@ -93,7 +94,7 @@ let any_d =
 let any = add_tag any_d
 
 let extract_ids (a:Records.Atom'.t) =
-  let enums = Records.Atom'.find Reserved.id a |> Ty.F.get_descr |> Ty.O.get
+  let enums = Records.Atom'.find Reserved.id a |> Ty.F.get_descr |> Ty.O.get |> Ty.O.Atom.get
   |> Ty.get_descr |> Descr.get_enums in
   match Enums.destruct enums with
   | true, lst -> Some lst
@@ -103,9 +104,9 @@ let params_of_id id = Hashtbl.find sigs id
 let extract ty : Ty.F.t t =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid arg encoding." ;
   let extract_record lbl a = Records.Atom'.find lbl a |> Ty.F.get_descr
-    |> Ty.O.get |> Ty.get_descr |> Descr.get_records |> Op.Records'.approx in
+    |> Ty.O.get |> Ty.O.Atom.get |> Ty.get_descr |> Descr.get_records |> Op.Records'.approx in
   let extract_npos_min a = Records.Atom'.find Reserved.npos a |> Ty.F.get_descr
-    |> Ty.O.get |> Ty.get_descr |> Descr.get_intervals |> Intervals.lb
+    |> Ty.O.get |> Ty.O.Atom.get |> Ty.get_descr |> Descr.get_intervals |> Intervals.lb
     |> Option.get |> Z.to_int in
   let extract_defsite id a =
     let fsig = Hashtbl.find sigs id in
@@ -157,7 +158,7 @@ let destruct ty =
   proj_tag ty |> Ty.cap any_d |> extract
 
 let reidentify ~id ty =
-  let id = id |> Ty.O.optional |> Ty.F.mk_descr |> Ty.F.cap any_id in
+  let id = id |> Ty.O.Atom.optional |> Ty.O.mk |> Ty.F.mk_descr |> Ty.F.cap any_id in
   let aux { Records.Atom.bindings ; tail } =
     let bindings = LabelMap.add Reserved.id id bindings in
     { Records.Atom.bindings ; tail }

@@ -1,6 +1,8 @@
 
 "base1": any ;;
 "base2": v(any) ;;
+"base3": sexp ;;
+"base4": any\sexp ;;
 
 "tuple1": t() ;;
 "tuple2": t(p(42),p(73)) <= t(p(int),p(int)) ;;

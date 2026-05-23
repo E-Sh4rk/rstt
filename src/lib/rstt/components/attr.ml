@@ -14,8 +14,8 @@ type ('a, 'c) t = ('a, 'c) line list
 let mk { content ; classes } =
   let classes = Ty.cap classes Classes.any in
   let bindings = LabelMap.of_list [
-    Reserved.content, Ty.F.mk_descr (Ty.O.required content) ;
-    Reserved.classes, Ty.F.mk_descr (Ty.O.required classes) ] in
+    Reserved.content, Ty.F.mk_descr (Ty.O.Atom.required content |> Ty.O.mk) ;
+    Reserved.classes, Ty.F.mk_descr (Ty.O.Atom.required classes |> Ty.O.mk) ] in
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk_anyclass content =
   mk { content ; classes=Classes.any }
@@ -23,8 +23,8 @@ let mk_noclass content =
   mk { content ; classes=Classes.noclass }
 let any_d =
   let bindings = LabelMap.of_list [
-    Reserved.content, Ty.F.mk_descr (Ty.O.required Ty.any) ;
-    Reserved.classes, Ty.F.mk_descr (Ty.O.required Classes.any) ] in
+    Reserved.content, Ty.F.mk_descr (Ty.O.Atom.required Ty.any |> Ty.O.mk) ;
+    Reserved.classes, Ty.F.mk_descr (Ty.O.Atom.required Classes.any |> Ty.O.mk) ] in
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
 let partition = (mk_anyclass (Ty.neg Vec.any))::(Vec.partition |> List.map mk_anyclass)
@@ -37,8 +37,8 @@ let extract_records ty =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid attr encoding." ; 
   Ty.get_descr ty |> Descr.get_records |> Records.dnf
 let record_to_atom r =
-  let content = Records.Atom.find Reserved.content r |> Ty.F.get_descr |> Ty.O.get in
-  let classes = Records.Atom.find Reserved.classes r  |> Ty.F.get_descr |> Ty.O.get in
+  let content = Records.Atom.find Reserved.content r |> Ty.F.get_descr |> Ty.O.get |> Ty.O.Atom.get in
+  let classes = Records.Atom.find Reserved.classes r  |> Ty.F.get_descr |> Ty.O.get |> Ty.O.Atom.get in
   { content ; classes }
 let extract t : (Ty.t, Ty.t) t =
   extract_records t |> List.map
@@ -51,9 +51,9 @@ let to_t ctx comp =
 let destruct ty = proj_tag ty |> extract
 
 let proj_content ty =
-  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj Reserved.content |> Ty.O.get
+  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj Reserved.content |> Ty.O.get |> Ty.O.Atom.get
 let proj_classes ty =
-  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj Reserved.classes |> Ty.O.get
+  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj Reserved.classes |> Ty.O.get |> Ty.O.Atom.get
 
 let print prec assoc fmt t =
   let cmp { content=c1 ; classes=cl1 } { content=c2 ; classes=cl2 } =
@@ -65,10 +65,11 @@ let print prec assoc fmt t =
     in
     if Ty.leq Classes.any classes.Printer.ty then
       Format.fprintf fmt "%a" (Pp.print_descr_ctx prec assoc) content
+      (* TODO: ambiguous... 'sexp' is printed as 'any' *)
     else
       Format.fprintf fmt "%a%a" print_opt_content content Pp.print_descr classes
   in
-  Pp.print_non_empty_dnf ~cmp ~any:"any" print_atom prec assoc fmt t
+  Pp.print_non_empty_dnf ~cmp ~any:"sexp" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map f f) ~print:print

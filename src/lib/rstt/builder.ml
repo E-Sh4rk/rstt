@@ -17,8 +17,8 @@ and ('v,'r,'i) t =
 | TTy of Ty.t
 | TVar of 'v
 | TRowVar of 'r
-| TAny | TEmpty | TNull | TEnv | TSym | TLang | TExtPtr
-| TCup of ('v,'r,'i) t * ('v,'r,'i) t
+| TAny | TEmpty | TSexp (* Attr.any *)
+| TNull | TEnv | TSym | TLang | TExtPtr| TCup of ('v,'r,'i) t * ('v,'r,'i) t
 | TCap of ('v,'r,'i) t * ('v,'r,'i) t
 | TDiff of ('v,'r,'i) t * ('v,'r,'i) t
 | TNeg of ('v,'r,'i) t
@@ -71,7 +71,7 @@ let map_classes f c =
 let map f fp fc t =
   let rec aux t =
     let t = match t with
-    | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TNull
+    | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TSexp | TNull
     | TEnv | TSym | TLang | TExtPtr | TSymLabel _-> t
     | TCup (t1, t2) -> TCup (aux t1, aux t2)
     | TCap (t1, t2) -> TCap (aux t1, aux t2)
@@ -215,7 +215,7 @@ let rec build_struct sctx env t =
   | TCConst c -> build_cconst c
   | TCPtr t -> Cptr.mk_nonstring (build sctx env t)
   | TOption _ -> invalid_arg "Unexpected optional type"
-  | TAttr _ -> invalid_arg "Unexpected attributes"
+  | TSexp | TAttr _ -> invalid_arg "Unexpected attributes"
   | TStruct _ -> invalid_arg "Unexpected struct"
   | TSymLabel _ -> invalid_arg "Unexpected symbolic label"
   | TWhere _ -> invalid_arg "Unexpected where clause"
@@ -225,7 +225,7 @@ and build sctx env t =
   | TId i -> (try TIdMap.find i env with Not_found ->
     invalid_arg ("type of "^(string_of_int i)^" not found in the environment"))
   | TTy ty -> ty
-  | TAny -> Ty.any | TEmpty -> Ty.empty
+  | TAny -> Ty.any | TEmpty -> Ty.empty | TSexp -> Attr.any
   | TVar v -> Ty.mk_var v
   | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TCup (t1,t2) -> Ty.cup (build sctx env t1) (build sctx env t2)
@@ -253,7 +253,7 @@ and build sctx env t =
 
 and build_field sctx env t =
   match t with
-  | TOption t -> Ty.F.mk_descr (build sctx env t |> Ty.O.optional)
+  | TOption t -> Ty.F.mk_descr (build sctx env t |> Ty.O.Atom.optional |> Ty.O.mk)
   | TRowVar v -> Ty.F.mk_var v
   | TCup (t1,t2) ->
       let t1 = build_field sctx env t1 in
@@ -268,7 +268,7 @@ and build_field sctx env t =
       let t2 = build_field sctx env t2 in
       Ty.F.diff t1 t2
   | TNeg t -> Ty.F.neg (build_field sctx env t)
-  | t -> Ty.F.mk_descr (build sctx env t |> Ty.O.required)
+  | t -> Ty.F.mk_descr (build sctx env t |> Ty.O.Atom.required |> Ty.O.mk)
 
 let build_field env t =
   let ctx, t = build_sym_ctx t in
@@ -378,7 +378,7 @@ let resolve env t =
     | TRowVar v ->
       let env', v = rvar !env v in
       env := env' ; TRowVar v
-    | TAny -> TAny | TEmpty -> TEmpty | TNull -> TNull | TEnv -> TEnv
+    | TAny -> TAny | TEmpty -> TEmpty | TSexp -> TSexp | TNull -> TNull | TEnv -> TEnv
     | TSym -> TSym | TLang -> TLang | TExtPtr -> TExtPtr
     | TCup (t1,t2) -> TCup (aux tids t1, aux tids t2)
     | TCap (t1,t2) -> TCap (aux tids t1, aux tids t2)

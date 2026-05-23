@@ -23,8 +23,8 @@ let mk a =
     | VarLength (l, c) -> l, c
   in
   let len, v = Ty.cap len prim_int, Ty.cap v Prim.any in
-  let bindings = LabelMap.singleton Reserved.card (Ty.O.required len |> Ty.F.mk_descr) in
-  let tail = Ty.O.required v |> Ty.F.mk_descr in
+  let bindings = LabelMap.singleton Reserved.card (Ty.O.Atom.required len |> Ty.O.mk |> Ty.F.mk_descr) in
+  let tail = Ty.O.Atom.required v |> Ty.O.mk |> Ty.F.mk_descr in
   Descr.mk_record { bindings ; tail } |> Ty.mk_descr |> add_tag
 let any = mk (AnyLength Ty.any)
 
@@ -37,8 +37,8 @@ let map f (l : 'a t) = l |> List.map (map_line f)
 
 let extract atom =
   let open Records.Atom in
-  let len = find Reserved.card atom |> Ty.F.get_descr |> Ty.O.get in
-  let v = atom.tail |> Ty.F.get_descr |> Ty.O.get in
+  let len = find Reserved.card atom |> Ty.F.get_descr |> Ty.O.get |> Ty.O.Atom.get in
+  let v = atom.tail |> Ty.F.get_descr |> Ty.O.get |> Ty.O.Atom.get in
   (v, len)
 let extract ty =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid vector encoding." ; 
