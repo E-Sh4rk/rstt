@@ -55,6 +55,11 @@ let proj_content ty =
 let proj_classes ty =
   proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj Reserved.classes |> Ty.O.get |> Ty.O.Atom.get
 
+let sexp_content =
+  [Arg.any ; Env.any ; Lang.any ; Lst.any ; Null.any ; Sym.any ; Vec.any]
+  |> Ty.disj
+let is_descr_sexp_content {Sstt.Printer.ty ; _} =
+  Ty.leq ty sexp_content
 let print prec assoc fmt t =
   let cmp { content=c1 ; classes=cl1 } { content=c2 ; classes=cl2 } =
     Pp.Compare.descr c1 c2 |> Rstt_utils.ccmp Pp.Compare.descr cl1 cl2
@@ -63,9 +68,8 @@ let print prec assoc fmt t =
     let print_opt_content fmt t =
       if Ty.is_any t.Printer.ty |> not then Pp.print_descr_atomic fmt t
     in
-    if Ty.leq Classes.any classes.Printer.ty then
+    if Ty.leq Classes.any classes.Printer.ty && is_descr_sexp_content content then
       Format.fprintf fmt "%a" (Pp.print_descr_ctx prec assoc) content
-      (* TODO: ambiguous... 'sexp' is printed as 'any' *)
     else
       Format.fprintf fmt "%a%a" print_opt_content content Pp.print_descr classes
   in

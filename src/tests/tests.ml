@@ -16,8 +16,8 @@ let%expect_test "tests" =
   [%expect {|
     base1: any
     base2: vec
-    base3: any
-    base4: ~any
+    base3: <...>
+    base4: ~<...>
     tuple1: tuple0
     tuple2: true
     norm1: any
@@ -28,7 +28,7 @@ let%expect_test "tests" =
     vec3: v['a]('b)
     vec4: v(int(i(int & 'a)))
     vec5: v(chr(s(enum & 'a)))
-    vec6: (int1 -> c_true) & (int[^(int \ 1)] | vec & ~int -> c_false)
+    vec6: ((int1 -> c_true) & (int[^(int \ 1)] | vec & ~int -> c_false))<...>
     vec7: true
     lst1: true
     lst2: true
@@ -37,9 +37,9 @@ let%expect_test "tests" =
     lst5: { a: 42, any }
     lst6: { a: ff }
     lst7: { a: "brrr", int }
-    lst8: { `r } -> { a: 42, `r }
-    eptr1: externalptr
-    eptr2: externalptr \ externalptr(empty)
+    lst8: ({ `r } -> { a: 42, `r })<...>
+    eptr1: externalptr<...>
+    eptr2: (externalptr \ externalptr(empty))<...>
     arg1: true
     arg2: true
     arg3: true
@@ -97,5 +97,5 @@ let%expect_test "tests" =
     c13: c_ptr
     c14: *any \ c_null
     c15: c_ptr
-    sym: ( a: { #(b,2): 'a }, b: any? ) -> 'a
+    sym: (( a: { #(b,2): 'a }, b: any? ) -> 'a)<...>
     |}]
