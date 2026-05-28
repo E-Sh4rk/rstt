@@ -48,7 +48,7 @@ let%expect_test "tests" =
             'A: 'A \ prim
           ]
           [
-            'A: 'A \ (chr | clx | dbl | lgl | raw) ;
+            'A: 'A \ p(chr | clx | dbl | lgl | raw) ;
             'B: 'B & lgl ;
             'C: 'C & int ;
             `R: { b : `R ; c : `R ; d : 'D | `R ;; empty? | `R }

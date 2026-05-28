@@ -120,7 +120,8 @@ type printing_pos = Tl | Struct | Prim
 open Effect.Deep
 open Effect
 type _ Effect.t += GetPos: printing_pos t
-let current_pos () = perform GetPos
+let current_pos () =
+  try perform GetPos with Unhandled GetPos -> Tl
 let with_pos (pp:printing_pos) f t =
   match f t with
   | x -> x

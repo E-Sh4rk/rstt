@@ -83,8 +83,9 @@ let print prec assoc fmt t =
     | VarLength _, _ -> -1 | _, VarLength _ -> 1
     | AnyLength _, _ -> -1 | _, AnyLength _ -> 1
   in
+  let print_prim_descr = Pp.print_prim_descr_ctx Prec.min_prec Prec.NoAssoc in
   let shortcut_v v =
-    let str = Format.asprintf "%a" Pp.print_descr v in
+    let str = Format.asprintf "%a" print_prim_descr v in
     let prefix = Format.asprintf "%(%)" (Na.Hat.sym ()) in
     if String.starts_with ~prefix str
     then
@@ -98,15 +99,15 @@ let print prec assoc fmt t =
     else if Ty.equiv Prim.any' v.ty then
       Format.fprintf fmt "%(%)vec%s" (Na.Hat.sym ()) len
     else if Prim.is_simple v.ty then
-      Format.fprintf fmt "%a%s" Pp.print_descr v len
+      Format.fprintf fmt "%a%s" print_prim_descr v len
     else
       let v = Utils.prune_printer_descr ~any:Prim.any v in
-      Format.fprintf fmt "%a%s(%a)" Tag.pp tag len Pp.print_descr v
+      Format.fprintf fmt "%a%s(%a)" Tag.pp tag len print_prim_descr v
   in
   let print_atom _prec _assoc fmt = function
     | VarLength (l,v) ->
       let l = Utils.prune_printer_descr ~any:prim_int l in
-      let len = Format.asprintf "@[<h>[%a]@]" Pp.print_descr l in
+      let len = Format.asprintf "@[<h>[%a]@]" print_prim_descr l in
       Format.fprintf fmt "%a" (print_v ~len) v
     | AnyLength v ->
       Format.fprintf fmt "%a" (print_v ~len:"") v
