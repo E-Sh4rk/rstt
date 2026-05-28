@@ -35,6 +35,7 @@ and ('v,'r,'i) t =
 | TStruct of ('v,'r,'i) t (* Means that the parameter should not be packed in an Attr container *)
 | TCConst of 'v cconst
 | TCPtr of ('v,'r,'i) t
+| TCArrow of ('v,'r,'i) t * ('v,'r,'i) t
 | TSymLabel of string
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
@@ -90,6 +91,7 @@ let map f fp fc t =
     | TStruct t -> TStruct (aux t)
     | TCConst c -> TCConst c
     | TCPtr t -> TCPtr (aux t)
+    | TCArrow (t1, t2) -> TCArrow (aux t1, aux t2)
     | TWhere (t, lst) -> TWhere (aux t, lst |> List.map (fun (id, t) -> id, aux t))
     in
     f t
@@ -198,7 +200,8 @@ let rec build_struct sctx env t =
   | TLang -> Lang.any | TExtPtr -> ExternalPtr.any
   | TTuple lst -> Descr.mk_tuple (List.map (build sctx env) lst) |> Ty.mk_descr
   | TPrim p -> build_prim p
-  | TArrow (t1,t2) -> Descr.mk_arrow (build sctx env t1, build sctx env t2) |> Ty.mk_descr
+  | TArrow (t1,t2) | TCArrow (t1,t2) ->
+    Descr.mk_arrow (build sctx env t1, build sctx env t2) |> Ty.mk_descr
   | TVec a -> Vec.map_atom build_prim a |> Vec.mk
   | TList a ->
     let {Lst.bindings;sym;tl} = Lst.map_atom (build_field sctx env) a in
@@ -241,6 +244,8 @@ and build sctx env t =
   (* Explicit attr *)
   | TAttr a -> Attr.map_atom (build_struct sctx env) build_classes a |> Attr.mk
   | TStruct t -> build_struct sctx env t
+  | TCArrow (t1,t2) ->
+    Descr.mk_arrow (build sctx env t1, build sctx env t2) |> Ty.mk_descr
   (* We don't need attributes for C values, primitive types, tuples, and args *)
   | TPrim p -> build_prim p
   | TCConst c -> build_cconst c
@@ -397,6 +402,7 @@ let resolve env t =
     | TStruct t -> TStruct (aux tids t)
     | TCConst c -> TCConst (resolve_cconst env c)
     | TCPtr t -> TCPtr (aux tids t)
+    | TCArrow (t1,t2) -> TCArrow (aux tids t1, aux tids t2)
     | TSymLabel str -> TSymLabel str
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in

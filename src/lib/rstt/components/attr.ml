@@ -56,7 +56,8 @@ let proj_classes ty =
   proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj Reserved.classes |> Ty.O.get |> Ty.O.Atom.get
 
 let sexp_content =
-  [ Env.any ; ExternalPtr.any ; Lang.any ; Lst.any ; Null.any ; Sym.any ; Vec.any]
+  [ Sstt.Arrows.any |> Sstt.Descr.mk_arrows |> Sstt.Ty.mk_descr ;
+    Env.any ; ExternalPtr.any ; Lang.any ; Lst.any ; Null.any ; Sym.any ; Vec.any]
   |> Ty.disj
 let is_descr_sexp_content {Sstt.Printer.ty ; _} =
   Ty.leq ty sexp_content

@@ -28,7 +28,7 @@ let%expect_test "tests" =
     vec3: v['a]('b)
     vec4: v(int(i(int & 'a)))
     vec5: v(chr(s(enum & 'a)))
-    vec6: ((int1 -> c_true) & (int[^(int \ 1)] | vec & ~int -> c_false))<...>
+    vec6: (int1 -> c_true) & (int[^(int \ 1)] | vec & ~int -> c_false)
     vec7: true
     lst1: true
     lst2: true
@@ -37,7 +37,7 @@ let%expect_test "tests" =
     lst5: { a: 42, any }
     lst6: { a: ff }
     lst7: { a: "brrr", int }
-    lst8: ({ `r } -> { a: 42, `r })<...>
+    lst8: { `r } -> { a: 42, `r }
     eptr1: externalptr
     eptr2: externalptr \ externalptr(empty)
     arg1: true
@@ -71,6 +71,10 @@ let%expect_test "tests" =
     arg12: @( int?, lgl ; int )
     arg13: @( lgl, int? ; int )
     arg14: ( a: int ; absent, `r )
+    arr1: int --> int
+    arr2: int -> int
+    arr3: int -> int
+    arr4: int -> int
     class1: <class1>
     class2: <class1, `c>
     class3: [
@@ -97,5 +101,5 @@ let%expect_test "tests" =
     c13: c_ptr
     c14: *any \ c_null
     c15: c_ptr
-    sym: (( a: { #(b,2): 'a }, b: any? ) -> 'a)<...>
+    sym: ( a: { #(b,2): 'a }, b: any? ) -> 'a
     |}]

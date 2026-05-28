@@ -49,7 +49,7 @@ rule token = parse
 | blank    { token lexbuf }
 | ";;" { BREAK } | ',' { COMMA } | ':' { COLON } | ';' { SEMICOLON } | '=' { EQUAL }
 | "..." { ELLIPSIS } | ".." { DPOINT } | '*' { STAR }
-| "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW } | "!" { EXCL_MARK }
+| "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW } | "-->" { CARROW } | "!" { EXCL_MARK }
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE } | "@(" { ALPAREN }
 | "[" { LBRACKET } | "]" { RBRACKET }
 | "<=" { LEQ } | ">=" { GEQ } | "<" { LT } | ">" { GT }
