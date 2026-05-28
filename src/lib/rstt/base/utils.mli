@@ -7,3 +7,6 @@ val add_option' : Ty.O.t -> Ty.O.t
 
 type interval = int option * int option
 val print_interval : string -> int -> Prec.assoc -> Format.formatter -> interval -> unit
+
+val struct_print : (int -> Prec.assoc -> Format.formatter -> 'a -> unit)
+    -> int -> Prec.assoc -> Format.formatter -> 'a -> unit

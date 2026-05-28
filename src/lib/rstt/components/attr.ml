@@ -56,7 +56,7 @@ let proj_classes ty =
   proj_tag ty |> Ty.get_descr |> Descr.get_records |> Op.Records.proj Reserved.classes |> Ty.O.get |> Ty.O.Atom.get
 
 let sexp_content =
-  [Arg.any ; Env.any ; Lang.any ; Lst.any ; Null.any ; Sym.any ; Vec.any]
+  [ Env.any ; ExternalPtr.any ; Lang.any ; Lst.any ; Null.any ; Sym.any ; Vec.any]
   |> Ty.disj
 let is_descr_sexp_content {Sstt.Printer.ty ; _} =
   Ty.leq ty sexp_content
@@ -66,10 +66,11 @@ let print prec assoc fmt t =
   in
   let print_atom prec assoc fmt { content ; classes } =
     let print_opt_content fmt t =
-      if Ty.is_any t.Printer.ty |> not then Pp.print_descr_atomic fmt t
+      if Ty.is_any t.Printer.ty |> not
+      then Pp.print_struct_descr_ctx Prec.max_prec Prec.NoAssoc fmt t
     in
     if Ty.leq Classes.any classes.Printer.ty && is_descr_sexp_content content then
-      Format.fprintf fmt "%a" (Pp.print_descr_ctx prec assoc) content
+      Format.fprintf fmt "%a" (Pp.print_struct_descr_ctx prec assoc) content
     else
       Format.fprintf fmt "%a%a" print_opt_content content Pp.print_descr classes
   in

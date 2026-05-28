@@ -14,6 +14,7 @@ let to_t _ comp =
 
 let map _f v = v
 let print _ _ fmt () = Format.fprintf fmt "sym"
+let print = Utils.struct_print print
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}

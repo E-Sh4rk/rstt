@@ -38,7 +38,7 @@ let print prec assoc fmt { nullable ; target } =
   else
     Prec.print_binary_op' pp_target (Prec.print_atomic_str "externalptr(empty)")
       prec assoc Diff fmt target ()
-
+let print = Utils.struct_print print
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}

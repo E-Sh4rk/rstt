@@ -51,3 +51,7 @@ let print_interval any _prec _assoc fmt (lb,ub) =
   | Some lb, None ->
     Format.fprintf fmt "(%i..)" lb
 
+let struct_print f prec assoc fmt t =
+  if Pp.current_pos () = Pp.Struct
+  then f prec assoc fmt t
+  else Pp.pp_struct_tag f prec assoc fmt t

@@ -120,6 +120,7 @@ let print prec assoc fmt t =
   in
   let t = t |> List.map (fun (p,ns) -> [p],ns) in
   Pp.print_non_empty_dnf ~cmp ~any:"" print_atom prec assoc fmt t
+let print = Utils.struct_print print
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:map ~print:print

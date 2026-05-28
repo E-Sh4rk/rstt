@@ -85,6 +85,7 @@ let print prec assoc fmt t =
         print_field_ty (Utils.prune_option_fop tl)
   in
   Pp.print_non_empty_dnf ~cmp ~any:"list" print_atom prec assoc fmt t
+let print = Utils.struct_print print
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print

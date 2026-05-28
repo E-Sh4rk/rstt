@@ -242,6 +242,7 @@ let print prec assoc fmt t =
     | CallSite a -> print_atom' prec assoc fmt a
   in
   Pp.print_cup ~cmp print_elt prec assoc fmt t
+(* let print = Utils.struct_print print *) (* Args are not packed in Attr *)
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print
