@@ -86,6 +86,9 @@ let%expect_test "tests" =
     class7: <class1, ?class3>
     class8: <class1, ~class2, ...>
     class9: <~class2, ?class3, *>
+    attr1: int with { dim: int, any }
+    attr2: int with { dim: int }
+    attr3: int with ({ dim: int, any } & ~{ dim: int })
     c1: (c_na | c(42)) | c_string \ c("abc")
     c2: c_true
     c3: c_int
