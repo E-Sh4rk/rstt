@@ -95,7 +95,7 @@ let split_classes_elts lst =
 %token<string*Z.t> SLEN
 %token TYPE
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
-%token C VP VB P T S HAT ARROW CARROW STAR
+%token C VP VB P T S HAT ARROW CARROW STAR WITH
 %token PI PC PCI PCS
 %token TT FF EPTR_ANY EPTR
 %token QUESTION_MARK EXCL_MARK DPOINT
@@ -182,9 +182,12 @@ ty:
 | ty=simple_ty { ty }
 
 simple_ty:
-| ty=atomic_ty classes=classes { TAttr {content=ty;classes=CClasses classes} }
-| classes=classes { TAttr {content=TAny;classes=CClasses classes} }
+| ty=atomic_ty classes=classes { TAttr {content=ty;classes=CClasses classes;attrs=TAny} }
+| ty=atomic_ty classes=classes WITH attrs=atomic_ty { TAttr {content=ty;classes=CClasses classes;attrs=attrs} }
+| classes=classes { TAttr {content=TAny;classes=CClasses classes;attrs=TAny} }
+| classes=classes WITH attrs=atomic_ty { TAttr {content=TAny;classes=CClasses classes;attrs=attrs} }
 | ty=atomic_ty { ty }
+| ty=atomic_ty WITH attrs=atomic_ty { TAttr {content=ty;classes=CAny;attrs=attrs} }
 | ty1=simple_ty TOR ty2=simple_ty { TCup (ty1, ty2) }
 | ty1=simple_ty TDIFF ty2=simple_ty { TDiff (ty1, ty2) }
 | ty1=simple_ty TAND ty2=simple_ty { TCap (ty1, ty2) }

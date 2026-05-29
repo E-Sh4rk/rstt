@@ -40,6 +40,9 @@ module Reserved : sig
     val classes : Label.t
     (** [classes] defines a field used to characterize the classes of a Attr type. *)
 
+    val attrs : Label.t
+    (** [attrs] defines a field used to characterize the attributes (except classes) of a Attr type. *)
+
     val target : Label.t
     (** [target] defines a field used to characterize the target of a CPtr type. *)
 end

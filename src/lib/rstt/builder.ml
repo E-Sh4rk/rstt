@@ -254,7 +254,8 @@ and build sctx env t =
   | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
   | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
   (* R types *)
-  | t -> Attr.mk {content=build_struct sctx env t ; classes=Classes.any}
+  | t -> Attr.mk
+    {content=build_struct sctx env t ; classes=Ty.any ; attrs=Ty.any}
 
 and build_field sctx env t =
   match t with
