@@ -19,10 +19,10 @@ let mk { content ; classes ; attrs } =
     Reserved.classes, Ty.F.mk_descr (Ty.O.required classes) ;
     Reserved.attrs, Ty.F.mk_descr (Ty.O.required attrs) ] in
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr |> add_tag
-let mk_anyclass content =
+let mk_content content =
   mk { content ; classes=Classes.any ; attrs=Lst.any }
-let mk_noclass content =
-  mk { content ; classes=Classes.noclass ; attrs=Lst.any }
+let mk_content_noattr content =
+  mk { content ; classes=Classes.noclass ; attrs=Lst.empty }
 let any_d =
   let bindings = LabelMap.of_list [
     Reserved.content, Ty.F.mk_descr (Ty.O.required Ty.any) ;
@@ -30,7 +30,7 @@ let any_d =
     Reserved.attrs, Ty.F.mk_descr (Ty.O.required Lst.any) ] in
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
-let partition = (mk_anyclass (Ty.neg Vec.any))::(Vec.partition |> List.map mk_anyclass)
+let partition = (mk_content (Ty.neg Vec.any))::(Vec.partition |> List.map mk_content)
 
 let map_atom f fc { content ; classes ; attrs } = { content=f content ; classes=fc classes ; attrs=f attrs }
 let map_line f fc (ps,ns) = (List.map (map_atom f fc) ps, List.map (map_atom f fc) ns)

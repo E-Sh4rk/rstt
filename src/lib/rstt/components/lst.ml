@@ -18,6 +18,7 @@ let mk { bindings ; sym ; tl } =
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let any = mk {bindings=[]; sym=[]; tl=Ty.F.any}
 let any_d = proj_tag any
+let empty = mk {bindings=[]; sym=[]; tl=Ty.F.mk_descr Ty.O.absent}
 
 let map_atom f {bindings;sym;tl} =
   let aux (str,t) = str, f t in
