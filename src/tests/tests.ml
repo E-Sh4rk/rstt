@@ -89,6 +89,8 @@ let%expect_test "tests" =
     attr1: int with { dim: int, any }
     attr2: int with { dim: int }
     attr3: int with ({ dim: int, any } & ~{ dim: int })
+    attr4: true
+    attr5: true
     c1: (c_na | c(42)) | c_string \ c("abc")
     c2: c_true
     c3: c_int

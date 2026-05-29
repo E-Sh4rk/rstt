@@ -64,7 +64,8 @@
 "attr1": int with { dim:int, any } ;;
 "attr2": int with { dim:int } ;;
 "attr3": int with { dim:int, any } \ int with { dim:int } ;;
-
+"attr4": 42<> with {  } <= int ;;
+"attr5": int <= int with { any } ;;
 
 "c1": c_string\c("abc") | c(42) | c_na ;;
 "c2": c_bool & c_true ;;
