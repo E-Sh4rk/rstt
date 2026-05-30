@@ -61,7 +61,7 @@ let proj_content = proj Reserved.content
 let proj_classes = proj Reserved.classes
 let proj_attrs = proj Reserved.attrs
 
-let attr_content = (* TODO: can externalptr, lang have attributes? *)
+let attr_content =
   [ Sstt.Arrows.any |> Sstt.Descr.mk_arrows |> Sstt.Ty.mk_descr ;
     Env.any ; ExternalPtr.any ; Lang.any ; Lst.any ; Vec.any ]
   |> Ty.disj
