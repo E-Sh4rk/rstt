@@ -61,12 +61,12 @@ let proj_content = proj Reserved.content
 let proj_classes = proj Reserved.classes
 let proj_attrs = proj Reserved.attrs
 
-let sexp_content =
+let attr_content = (* TODO: can externalptr, lang have attributes? *)
   [ Sstt.Arrows.any |> Sstt.Descr.mk_arrows |> Sstt.Ty.mk_descr ;
-    Env.any ; ExternalPtr.any ; Lang.any ; Lst.any ; Null.any ; Sym.any ; Vec.any]
+    Env.any ; ExternalPtr.any ; Lang.any ; Lst.any ; Vec.any ]
   |> Ty.disj
-let is_descr_sexp_content {Sstt.Printer.ty ; _} =
-  Ty.leq ty sexp_content
+let is_descr_attr_content {Sstt.Printer.ty ; _} =
+  Ty.leq ty attr_content
 let print prec assoc fmt t =
   let cmp { content=c1 ; classes=cl1 ; attrs=a1 }
           { content=c2 ; classes=cl2 ; attrs=a2 } =
@@ -87,7 +87,7 @@ let print prec assoc fmt t =
     in
     let anyclass = Ty.leq Classes.any classes.Printer.ty in
     let anyattr = Ty.leq Lst.any attrs.Printer.ty in
-    if anyclass && anyattr && is_descr_sexp_content content then
+    if anyclass && anyattr && is_descr_attr_content content then
       Format.fprintf fmt "%a" (Pp.print_struct_descr_ctx prec assoc) content
     else if anyattr then
       Format.fprintf fmt "%a%a" print_opt_content content print_classes classes
@@ -97,7 +97,7 @@ let print prec assoc fmt t =
       Format.fprintf fmt "%a%a with %a"
         print_opt_content content print_classes classes print_attrs attrs
   in
-  Pp.print_non_empty_dnf ~cmp ~any:"sexp" print_atom prec assoc fmt t
+  Pp.print_non_empty_dnf ~cmp ~any:"attr" print_atom prec assoc fmt t
 
 let printer_builder =
   Printer.builder ~to_t:to_t ~map:(fun f -> map f f) ~print:print

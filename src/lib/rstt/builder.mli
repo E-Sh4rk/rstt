@@ -17,7 +17,7 @@ and ('v,'r,'i) t =
 | TTy of Ty.t
 | TVar of 'v
 | TRowVar of 'r
-| TAny | TEmpty | TSexp (* Attr.any *)
+| TAny | TEmpty | TAttrAny (* Attr.any *)
 | TNull | TEnv | TSym | TLang | TExtPtr
 | TCup of ('v,'r,'i) t * ('v,'r,'i) t
 | TCap of ('v,'r,'i) t * ('v,'r,'i) t

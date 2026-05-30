@@ -17,7 +17,7 @@ and ('v,'r,'i) t =
 | TTy of Ty.t
 | TVar of 'v
 | TRowVar of 'r
-| TAny | TEmpty | TSexp (* Attr.any *)
+| TAny | TEmpty | TAttrAny (* Attr.any *)
 | TNull | TEnv | TSym | TLang | TExtPtr| TCup of ('v,'r,'i) t * ('v,'r,'i) t
 | TCap of ('v,'r,'i) t * ('v,'r,'i) t
 | TDiff of ('v,'r,'i) t * ('v,'r,'i) t
@@ -72,7 +72,7 @@ let map_classes f c =
 let map f fp fc t =
   let rec aux t =
     let t = match t with
-    | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TSexp | TNull
+    | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TAttrAny | TNull
     | TEnv | TSym | TLang | TExtPtr | TSymLabel _-> t
     | TCup (t1, t2) -> TCup (aux t1, aux t2)
     | TCap (t1, t2) -> TCap (aux t1, aux t2)
@@ -196,8 +196,8 @@ let rec build_struct sctx env t =
   | TCap (t1,t2) -> Ty.cap (build_struct sctx env t1) (build_struct sctx env t2)
   | TDiff (t1,t2) -> Ty.diff (build_struct sctx env t1) (build_struct sctx env t2)
   | TNeg t -> Ty.neg (build_struct sctx env t)
-  | TNull -> Null.any | TEnv -> Env.any | TSym -> Sym.any
-  | TLang -> Lang.any | TExtPtr -> ExternalPtr.any
+  | TNull -> Null.any | TSym -> Sym.any
+  | TEnv -> Env.any | TLang -> Lang.any | TExtPtr -> ExternalPtr.any
   | TTuple lst -> Descr.mk_tuple (List.map (build sctx env) lst) |> Ty.mk_descr
   | TPrim p -> build_prim p
   | TArrow (t1,t2) | TCArrow (t1,t2) ->
@@ -218,7 +218,7 @@ let rec build_struct sctx env t =
   | TCConst c -> build_cconst c
   | TCPtr t -> Cptr.mk_nonstring (build sctx env t)
   | TOption _ -> invalid_arg "Unexpected optional type"
-  | TSexp | TAttr _ -> invalid_arg "Unexpected attributes"
+  | TAttrAny | TAttr _ -> invalid_arg "Unexpected attributes"
   | TStruct _ -> invalid_arg "Unexpected struct"
   | TSymLabel _ -> invalid_arg "Unexpected symbolic label"
   | TWhere _ -> invalid_arg "Unexpected where clause"
@@ -228,7 +228,8 @@ and build sctx env t =
   | TId i -> (try TIdMap.find i env with Not_found ->
     invalid_arg ("type of "^(string_of_int i)^" not found in the environment"))
   | TTy ty -> ty
-  | TAny -> Ty.any | TEmpty -> Ty.empty | TSexp -> Attr.any
+  | TAny -> Ty.any | TEmpty -> Ty.empty | TAttrAny -> Attr.any
+  | TNull -> Null.any | TSym -> Sym.any
   | TVar v -> Ty.mk_var v
   | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TCup (t1,t2) -> Ty.cup (build sctx env t1) (build sctx env t2)
@@ -384,7 +385,7 @@ let resolve env t =
     | TRowVar v ->
       let env', v = rvar !env v in
       env := env' ; TRowVar v
-    | TAny -> TAny | TEmpty -> TEmpty | TSexp -> TSexp | TNull -> TNull | TEnv -> TEnv
+    | TAny -> TAny | TEmpty -> TEmpty | TAttrAny -> TAttrAny | TNull -> TNull | TEnv -> TEnv
     | TSym -> TSym | TLang -> TLang | TExtPtr -> TExtPtr
     | TCup (t1,t2) -> TCup (aux tids t1, aux tids t2)
     | TCap (t1,t2) -> TCap (aux tids t1, aux tids t2)
