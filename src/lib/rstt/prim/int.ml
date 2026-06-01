@@ -27,38 +27,41 @@ module P = struct
     intervals |> List.map (fun a ->
               let i1, i2 = Intervals.Atom.get a in
               i1 |> Option.map Z.to_int, i2 |> Option.map Z.to_int)
-  let extract ty =
-    let intervals = Ty.get_descr ty |> Descr.get_intervals |> Intervals.destruct in
-    let intervals' = Ty.get_descr ty |> Descr.get_intervals |> Intervals.destruct_neg in
+  let extract_line (pvs, nvs, d) =
+    let intervals = d |> Descr.get_intervals |> Intervals.destruct in
+    let intervals' = d |> Descr.get_intervals |> Intervals.destruct_neg in
     if List.length intervals' < List.length intervals
-    then false, conv_intervals intervals'
-    else true, conv_intervals intervals
+    then { Utils.pos=false ; prim=conv_intervals intervals' ; pvs ; nvs }
+    else { pos=true ; prim=conv_intervals intervals ; pvs ; nvs }
+  let extract ty =
+    Ty.def ty |> VDescr.dnf |> List.map extract_line
 
-  type t = bool * (int option * int option) list
-  let any_t = false, []
+  let any_t = Utils.any_prim_t
 
+  type t = Utils.interval Utils.prim_t
   let to_t _ ty =
     let pty = proj_tag ty in
-    if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty)
+    if Ty.leq pty any_p
     then Some (extract pty)
     else None
-  let destruct ty = proj_tag ty
-    |> Ty.get_descr |> Descr.get_intervals |> Intervals.destruct |> conv_intervals
+  let destruct ty = proj_tag ty |> extract
   let is_singleton ty =
-    match destruct ty with
-    | [(Some i1, Some i2)] -> Stdlib.Int.equal i1 i2
-    | _ -> false
+    let aux = function (Some i1, Some i2) -> Stdlib.Int.equal i1 i2 | _ -> false in
+    destruct ty |> Utils.is_singleton aux
 
   let map _f v = v
-  let print prec assoc fmt (pos,ints) =
+  let print prec assoc fmt lines =
     let aux = Pp.print_cup ~cmp:Stdlib.compare (Utils.print_interval "int") in
-    if pos then
-      aux prec assoc fmt ints
-    else if not pos && ints = [] then
-      Format.fprintf fmt "int"
-    else
-      Prec.print_binary_op' (Prec.print_atomic_str "int") aux
-        prec assoc Diff fmt () ints
+    let dnf = Utils.t_to_dnf lines in
+    let print_lit prec assoc fmt t =
+      match t with
+      | Utils.P (true, ints) -> aux prec assoc fmt ints
+      | P (false, []) -> Format.fprintf fmt "int"
+      | P (false, ints) -> Prec.print_binary_op' (Prec.print_atomic_str "int") aux
+          prec assoc Diff fmt () ints
+      | V v -> Format.fprintf fmt "int(%a)" Var.pp v
+    in
+    Pp.print_non_empty_dnf ~any:"int" ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
 end
 
 include Na.MakeCompWithNa(P)

@@ -181,8 +181,7 @@ let print _prec _assoc fmt {pos;neg;unk;tail} =
     | AllOthers -> Format.fprintf fmt "*"
     | Unknown -> Format.fprintf fmt "..."
     | RowVars dnf ->
-      Format.fprintf fmt "%a"
-        (Pp.print_non_empty_dnf ~cmp:RowVar.compare ~any:"any" print_rv Prec.min_prec NoAssoc) dnf
+      Pp.print_non_empty_dnf ~cmp:RowVar.compare ~any:"any" print_rv Prec.min_prec NoAssoc fmt dnf
   in
   let bindings =
     (pos |> List.map (fun p -> `Pos,p))@

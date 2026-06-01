@@ -53,7 +53,8 @@ let pair_to_atom (v,l) =
   then AnyLength v
   else
     match Prim.destruct l |> Prim.Int.destruct with
-    | false, [(Some n1, Some n2)] when Stdlib.Int.equal n1 n2 -> CstLength (n1, v)
+    | false, [{pos=true;prim=[(Some n1, Some n2)];pvs=[];nvs=[]}] when Stdlib.Int.equal n1 n2
+    -> CstLength (n1, v)
     | _ -> VarLength (l, v)
 
 let to_t ctx comp =
@@ -119,7 +120,7 @@ let print prec assoc fmt t =
         Format.fprintf fmt "%a" (print_v ~len) v
   in
   let t = t |> List.map (fun (p,ns) -> [p],ns) in
-  Pp.print_non_empty_dnf ~cmp ~any:"" print_atom prec assoc fmt t
+  Pp.print_non_empty_dnf ~cmp ~any:"vec" print_atom prec assoc fmt t
 let print = Utils.struct_print print
 
 let printer_builder =

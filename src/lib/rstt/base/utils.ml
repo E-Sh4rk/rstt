@@ -55,3 +55,16 @@ let struct_print f prec assoc fmt t =
   if Pp.current_pos () = Pp.Struct
   then f prec assoc fmt t
   else Pp.pp_struct_tag f prec assoc fmt t
+
+type 'a prim_line = { pos:bool ; prim:'a list ; pvs:Var.t list ; nvs:Var.t list }
+type 'a prim_t = 'a prim_line list
+type 'a prim_atom = P of (bool * 'a list) | V of Var.t
+let any_prim_t = [{ pos=false ; prim=[] ; pvs=[] ; nvs=[] }]
+let is_singleton f t =
+  match t with
+  | [{pos=true;prim=[p];pvs=[];nvs=[]}] -> f p
+  | _ -> false
+let line_to_atoms { pos ; prim ; pvs ; nvs } =
+  let hd = if not pos && prim = [] && pvs <> [] then [] else [P (pos, prim)] in
+  hd@(List.map (fun x -> V x) pvs), (List.map (fun x -> V x) nvs)
+let t_to_dnf x = List.map line_to_atoms x
