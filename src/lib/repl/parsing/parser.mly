@@ -96,7 +96,7 @@ let split_classes_elts lst =
 %token TYPE
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP VB P T S HAT ARROW CARROW STAR WITH
-%token PI PC PCI PCS
+%token PI PC PCI PCINA PCS
 %token TT FF EPTR_ANY EPTR
 %token QUESTION_MARK EXCL_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
@@ -235,6 +235,7 @@ atomic_ty:
 | C i=cint RPAREN { TCConst i }
 | C str=cstr RPAREN { TCConst str }
 | PCI id=VARID RPAREN { TCConst (CIntVar id) }
+| PCINA id=VARID RPAREN { TCConst (CIntNaVar id) }
 | PCS id=VARID RPAREN { TCConst (CStrVar id) }
 
 cint:

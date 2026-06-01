@@ -3,7 +3,7 @@ open Sstt
 type 'v cconst =
 | CDouble | CString | CChar | CVoid | CNull
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa | CPtr
-| CIntSingl of int | CIntInterval of Utils.interval | CIntVar of 'v
+| CIntSingl of int | CIntInterval of Utils.interval | CIntVar of 'v | CIntNaVar of 'v 
 | CStrSingl of string | CStrVar of 'v
 
 type 'v prim =
@@ -156,6 +156,7 @@ let build_cconst t =
   | CIntSingl i -> Cint.singl i
   | CIntInterval (i1,i2) -> Cint.interval (i1,i2)
   | CIntVar v -> Cint.var v
+  | CIntNaVar v -> Cint.var_na v
 
 let rec build_prim t =
   match t with
@@ -330,6 +331,9 @@ let resolve_cconst env t =
   | CIntVar v ->
     let env', v = tvar !env v in
     env := env' ; CIntVar v
+  | CIntNaVar v ->
+    let env', v = tvar !env v in
+    env := env' ; CIntNaVar v
   | CStrVar v ->
     let env', v = tvar !env v in
     env := env' ; CStrVar v

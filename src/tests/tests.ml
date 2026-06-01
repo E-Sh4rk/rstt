@@ -26,10 +26,12 @@ let%expect_test "tests" =
     vec1: int1 | lgl2 | lgl['a] | raw42
     vec2: true
     vec3: v['a]('b)
-    vec4: v(^int('a))
-    vec5: v(chr(s(enum & 'a)))
-    vec6: (int1 -> c_true) & (int[^(int \ 1)] | vec & ~int -> c_false)
-    vec7: true
+    vec4: v(int('a))
+    vec5: v(^int('a))
+    vec6: v(chr(na | s(enum & 'a)))
+    vec7: v(chr(s(enum & 'a)))
+    vec8: (int1 -> c_true) & (int[^(int \ 1)] | vec & ~int -> c_false)
+    vec9: true
     lst1: true
     lst2: true
     lst3: false
@@ -97,7 +99,7 @@ let%expect_test "tests" =
     c3: c_int
     c4: ~(c_int_na \ c_int)
     c5: *c_int
-    c6: c_int & c_int('a)
+    c6: c_int & c_int_na('a)
     c7: cstring(enum & 'a) \ c_null
     c8: c_int_na \ c(42)
     c9: c(..41) | c(43..)
@@ -107,5 +109,7 @@ let%expect_test "tests" =
     c13: c_ptr
     c14: *any \ c_null
     c15: c_ptr
+    c16: c_int_na & c_int_na('a)
+    c17: c_int_na \ c_int & c_int_na('a)
     sym: ( a: { #(b,2): 'a }, b: any? ) -> 'a
     |}]

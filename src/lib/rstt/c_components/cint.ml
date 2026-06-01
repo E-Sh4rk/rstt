@@ -18,6 +18,7 @@ let any_na_p = Ty.cup any_p na_p
 let any_na = add_tag any_na_p
 let any = add_tag any_p
 let var v = Ty.mk_var v |> Ty.cap any_p |> add_tag
+let var_na v = Ty.mk_var v |> Ty.cap any_na_p |> add_tag
 
 type elt = AnyNa | Any | Bool | Tt | Ff | Interval of Utils.interval | Singl of int
 
@@ -74,7 +75,7 @@ let print prec assoc fmt lines =
     | P (false, []) -> Format.fprintf fmt "c_int_na"
     | P (false, ints) -> Prec.print_binary_op' (Prec.print_atomic_str "c_int_na") aux
         prec assoc Diff fmt () ints
-    | V v -> Format.fprintf fmt "c_int(%a)" Var.pp v
+    | V v -> Format.fprintf fmt "c_int_na(%a)" Var.pp v
   in
   Pp.print_non_empty_dnf ~any:"c_int_na" ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
 

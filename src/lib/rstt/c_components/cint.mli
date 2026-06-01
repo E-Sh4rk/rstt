@@ -8,4 +8,5 @@ val any : Ty.t
 val any_na : Ty.t
 val singl : int -> Ty.t
 val interval : Utils.interval -> Ty.t
+val var_na : Var.t -> Ty.t
 val var : Var.t -> Ty.t

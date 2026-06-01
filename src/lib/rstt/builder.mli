@@ -3,7 +3,7 @@ open Sstt
 type 'v cconst =
 | CDouble | CString | CChar | CVoid | CNull
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa | CPtr
-| CIntSingl of int | CIntInterval of Utils.interval | CIntVar of 'v
+| CIntSingl of int | CIntInterval of Utils.interval | CIntVar of 'v | CIntNaVar of 'v 
 | CStrSingl of string | CStrVar of 'v
 
 type 'v prim =

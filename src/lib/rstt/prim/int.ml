@@ -72,7 +72,8 @@ let () = Pp.add_printer_param printer_params
 
 let int i = mk (P.int i)
 let int' i = mk' (P.int i)
-let var v = mk' (P.var v)
+let var v = mk (P.var v)
+let var' v = mk' (P.var v)
 let interval i = mk (P.interval i)
 let interval' i = mk' (P.interval i)
 let bounded i = mk (P.bounded i)

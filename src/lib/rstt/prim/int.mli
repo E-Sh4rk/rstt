@@ -4,6 +4,7 @@ val tag : Tag.t
 val int : int -> Ty.t
 val int' : int -> Ty.t
 val var : Var.t -> Ty.t
+val var' : Var.t -> Ty.t
 val interval : Utils.interval -> Ty.t
 val interval' : Utils.interval -> Ty.t
 val bounded : int * int -> Ty.t

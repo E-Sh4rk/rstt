@@ -35,7 +35,7 @@ rule token = parse
 | int as i { INT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
 | "v("  { VP } | "v[" { VB } | s as str { SHORT str } | "p("  { P } | "t(" { T } | "s(" { S } | "c(" { C }
-| "int(" { PI } | "chr(" { PC } | "c_int(" { PCI } | "c_string(" { PCS }
+| "int(" { PI } | "chr(" { PC } | "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS }
 | "tt" { TT } | "ff" { FF }
 | "externalptr(" { EPTR } | "externalptr" { EPTR_ANY }
 | "with" { WITH }
