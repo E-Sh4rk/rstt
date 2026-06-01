@@ -28,8 +28,8 @@ let%expect_test "tests" =
     vec3: v['a]('b)
     vec4: v(int('a))
     vec5: v(^int('a))
-    vec6: v(chr(na | s(enum & 'a)))
-    vec7: v(chr(s(enum & 'a)))
+    vec6: v(chr('a))
+    vec7: v(^chr('a))
     vec8: (int1 -> c_true) & (int[^(int \ 1)] | vec & ~int -> c_false)
     vec9: true
     lst1: true
