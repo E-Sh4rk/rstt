@@ -100,14 +100,14 @@ let%expect_test "tests" =
     c4: ~(c_int_na \ c_int)
     c5: *c_int
     c6: c_int & c_int_na('a)
-    c7: cstring(enum & 'a) \ c_null
+    c7: c_string('a)
     c8: c_int_na \ c(42)
     c9: c(..41) | c(43..)
     c10: c_null
     c11: *c_int \ c_null
-    c12: *any \ c_null
+    c12: *any
     c13: c_ptr
-    c14: *any \ c_null
+    c14: *any
     c15: c_ptr
     c16: c_int_na & c_int_na('a)
     c17: c_int_na \ c_int & c_int_na('a)

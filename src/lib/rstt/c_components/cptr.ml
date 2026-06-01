@@ -12,20 +12,21 @@ let tag = Tag.mk "cptr"
 let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
 let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
                 |> Op.TagComp.as_atom |> snd
-let mk' ty =
+let mk ty =
   let open Records.Atom in
   let bindings =  [Reserved.target, ty |> Ty.O.optional |> Ty.F.mk_descr] |> LabelMap.of_list in
   let ty = Descr.mk_record { bindings ; tail=Ty.F.any } |> Ty.mk_descr in
   add_tag ty
-let any = mk' Ty.any
-let null = mk' Ty.empty
+let any = mk Ty.any
+let null = mk Ty.empty
+let mk' ty = Ty.diff (mk ty) null
 let string = mk' Cstring.any
-let var_string v = Ty.diff (mk' (Cstring.var v)) null
-let singl_string str = Ty.diff (mk' (Cstring.singl str)) null
-let mk_nonstring ty = mk' (Ty.diff ty Cstring.any)
+let var_string v = mk' (Cstring.var v)
+let singl_string str = mk' (Cstring.singl str)
+let mk_nonstring ty = mk (Ty.diff ty Cstring.any)
 
 type 'a t = { nullable:bool ; target:'a ; str:'a }
-let map f { nullable ; target; str } = { nullable ; target=f target ; str=f str }
+let map f { nullable ; target ; str } = { nullable ; target=f target ; str=f str }
 let extract ty =
   let oty = Ty.get_descr ty |> Descr.get_records |> Op.Records.approx
   |> Op.Records.Atom.find Reserved.target |> Ty.O.get in
@@ -43,22 +44,28 @@ let print prec assoc fmt { nullable ; target ; str } =
       (Utils.prune_printer_descr ~any:(Ty.neg Cstring.any) target)
   in
   let pp_str = Pp.print_descr_ctx in
-  let pp_target_str prec assoc fmt (target,str) =
-    let target_is_empty, str_is_empty = Ty.is_empty target.Printer.ty, Ty.is_empty str.Printer.ty in
-    if target_is_empty && str_is_empty then Format.fprintf fmt "c_null"
-    else if target_is_empty then pp_str prec assoc fmt str
-    else if str_is_empty then pp_target prec assoc fmt target
-    else if Ty.is_any (Ty.cup target.Printer.ty str.Printer.ty)
-    then Format.fprintf fmt "c_ptr"
-    else
-      let sym,prec',_ as opinfo = Prec.varop_info Cup in
-      Prec.fprintf prec assoc opinfo fmt "%a%(%)%a"
-        (pp_target prec' Left) target sym (pp_str prec' Right) str
+  let target_is_empty, str_is_empty =
+    Ty.is_empty target.Printer.ty, Ty.is_empty str.Printer.ty
   in
-  if nullable then
-    pp_target_str prec assoc fmt (target,str)
+  let pp_nonempty_target_str prec assoc fmt (target,str) =
+    if Ty.is_any (Ty.cup target.Printer.ty str.Printer.ty) then
+      Format.fprintf fmt "c_ptr"
+    else
+      Prec.print_binary' pp_target pp_str
+        prec assoc (Prec.varop_info Cup) fmt target str
+  in
+  if target_is_empty && str_is_empty then Format.fprintf fmt "c_null"
+  else if nullable && target_is_empty then
+    Prec.print_binary' pp_str (Prec.print_atomic_str "c_null")
+      prec assoc (Prec.varop_info Cup) fmt str ()
+  else if target_is_empty then pp_str prec assoc fmt str
+  else if nullable && str_is_empty then pp_target prec assoc fmt target
+  else if str_is_empty then
+    Prec.print_binary_op' pp_target (Prec.print_atomic_str "c_null")
+      prec assoc Diff fmt target ()
+  else if nullable then pp_nonempty_target_str prec assoc fmt (target,str)
   else
-    Prec.print_binary_op' pp_target_str (Prec.print_atomic_str "c_null")
+    Prec.print_binary_op' pp_nonempty_target_str (Prec.print_atomic_str "c_null")
       prec assoc Diff fmt (target,str) ()
 
 
