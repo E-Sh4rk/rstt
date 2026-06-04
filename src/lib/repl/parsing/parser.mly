@@ -41,6 +41,10 @@ let parse_builtin_prim str =
     | "raw" -> PRaw
     | str -> raise (Errors.E_Parser ("Unknown primitive builtin "^str))
 
+let assert_one i =
+    if Z.equal i Z.one |> not
+    then raise (Errors.E_Parser ("Cannot specify a size other than 1 for a vector"))
+
 type field = Pos of ty | Named of string * ty
 let split_fields lst =
     let rec pos_fields lst =
@@ -89,13 +93,13 @@ let split_classes_elts lst =
     pos, neg, unk, tl
 %}
 
-%token<string> STRING, SHORT, SBRACKET
+%token<string> STRING, SHORT(*, SBRACKET*)
 %token<Z.t> INT, VLEN
 %token<string> ID, VARID, RVARID, SYMID
 %token<string*Z.t> SLEN
 %token TYPE
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
-%token C VP VB P T S HAT ARROW CARROW STAR WITH
+%token C VP (*VB*) P T S HAT ARROW CARROW STAR WITH
 %token PI PC PCI PCINA PCS
 %token TT FF EPTR_ANY EPTR
 %token QUESTION_MARK EXCL_MARK DPOINT
@@ -204,16 +208,16 @@ atomic_ty:
 | P p=prim RPAREN { TPrim p }
 | S s=ty RPAREN { TStruct s }
 (* Vectors *)
-| VP p=prim RPAREN { TVec (AnyLength p) }
-| s=SHORT { TVec (AnyLength (parse_builtin_prim s)) }
-| HAT s=SHORT { TVec (AnyLength (PHat (parse_builtin_prim s))) }
-| VB l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
-| s=SBRACKET l=prim RBRACKET {TVec (VarLength (l,parse_builtin_prim s)) }
-| HAT s=SBRACKET l=prim RBRACKET { TVec (VarLength (l,PHat (parse_builtin_prim s))) }
-| i=VLEN LPAREN p=prim RPAREN { TVec (CstLength (Z.to_int i, p)) }
-| s=SLEN { let (s,i) = s in TVec (CstLength (Z.to_int i, parse_builtin_prim s)) }
-| HAT s=SLEN { let (s,i) = s in TVec (CstLength (Z.to_int i, PHat (parse_builtin_prim s))) }
-| s=prim_singl { TVec (CstLength (1, PHat s)) }
+| VP p=prim RPAREN { TVec (Vector p) }
+| s=SHORT { TVec (Vector (parse_builtin_prim s)) }
+| HAT s=SHORT { TVec (Vector (PHat (parse_builtin_prim s))) }
+// | VB l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
+// | s=SBRACKET l=prim RBRACKET {TVec (VarLength (l,parse_builtin_prim s)) }
+// | HAT s=SBRACKET l=prim RBRACKET { TVec (VarLength (l,PHat (parse_builtin_prim s))) }
+| i=VLEN LPAREN p=prim RPAREN { assert_one i ; TVec (Scalar (p)) }
+| s=SLEN { let (s,i) = s in assert_one i ; TVec (Scalar (parse_builtin_prim s)) }
+| HAT s=SLEN { let (s,i) = s in assert_one i ; TVec (Scalar (PHat (parse_builtin_prim s))) }
+| s=prim_singl { TVec (Scalar (PHat s)) }
 (* Containers (lists, args, tuples, externalptr) *)
 | EPTR_ANY { TExtPtr } | EPTR ty=ty RPAREN { TExtPtr' ty }
 | LBRACE elts=separated_list(COMMA, lst_elt) RBRACE

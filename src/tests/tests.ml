@@ -23,15 +23,16 @@ let%expect_test "tests" =
     norm1: any
     norm2: chr | clx | dbl | int | lgl | raw
     norm3: chr | clx | dbl | lgl | raw
-    vec1: int1 | lgl2 | lgl['a] | raw42
+    vec1: int1 | lgl | raw1
     vec2: true
-    vec3: v['a]('b)
+    vec3: v1('b)
     vec4: v(int('a))
     vec5: v(^int('a))
     vec6: v(chr('a))
     vec7: v(^chr('a))
-    vec8: (int1 -> c_true) & (int[^(int \ 1)] | vec & ~int -> c_false)
+    vec8: (int1 -> c_true) & (vec & ~int1 -> c_false)
     vec9: true
+    vec10: true
     lst1: true
     lst2: true
     lst3: false

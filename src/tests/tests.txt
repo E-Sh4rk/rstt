@@ -11,15 +11,16 @@
 "norm2": ![ vec ] ;;
 "norm3": ![ vec \ int ] ;;
 
-"vec1": int1 | lgl2 | lgl['a] | v[42](raw) ;;
+"vec1": int1 | lgl | v1(raw) ;;
 "vec2": v(^any) = ^vec ;;
-"vec3": v['a]('b) ;;
+"vec3": v1('b) ;;
 "vec4": v(int('a)) ;;
 "vec5": v(^int('a)) ;;
 "vec6": v(chr('a)) ;;
 "vec7": v(^chr('a)) ;;
-"vec8": ((int1) -> c_true) & ((int) -> c_bool) & ((int[^((..0) | (2..))]) | (vec & ~int) -> c_false) ;;
+"vec8": ((int1) -> c_true) & ((int) -> c_bool) & ((int\int1) | (vec & ~int) -> c_false) ;;
 "vec9": 42 = v1(^42) ;;
+"vec10": tt|ff = ^lgl1 ;;
 
 "lst1": { v(int) } <= { any } ;;
 "lst2": { a:v(42), b:v(43), v(int) } <= { v(int) } ;;

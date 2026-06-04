@@ -1,9 +1,8 @@
 open Sstt
 
 type 'a atom =
-  | AnyLength of 'a
-  | CstLength of int * 'a
-  | VarLength of 'a (* subtype of Prim.Int.any *) * 'a
+  | Vector of 'a
+  | Scalar of 'a
 type 'a line = 'a atom * 'a atom list
 type 'a t = 'a line list
 

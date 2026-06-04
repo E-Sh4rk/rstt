@@ -31,8 +31,8 @@ module Reserved : sig
     (** [named] defines a field used to identify the named
         parameters an argument defines/expects. *)
 
-    val card : Label.t
-    (** [card] defines a field used to characterize the length of a vector. *)
+    val elt0 : Label.t
+    (** [elt0] defines the type of the first element of a vector (used for scalar vectors). *)
 
     val content : Label.t
     (** [content] defines a field used to characterize the content of a Attr type. *)
