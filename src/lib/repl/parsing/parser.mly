@@ -154,7 +154,8 @@ simpl_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
 | ty=ty { CTy ty }
-| EXCL_MARK LBRACKET e=expr_nocmp RBRACKET { CNorm e }
+| EXCL_MARK LBRACKET e=expr_nocmp RBRACKET { CPartition e }
+| QUESTION_MARK LBRACKET e=expr_nocmp RBRACKET { CRegroup e }
 | LBRACKET e=expr_nocmp RBRACKET { e }
 
 op:

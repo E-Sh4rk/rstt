@@ -20,6 +20,16 @@ let poly_leq t1 t2 =
   Tallying.tally delta [ t1, t2 ] |> List.is_empty |> not
 
 let rec compute_expr env e =
+  let transform_ty f e =
+    let r, env = compute_expr env e in
+    let r =
+      match r with
+      | RBool bs -> RBool bs
+      | RSubst ss -> RSubst ss
+      | RTy tys -> RTy (List.map f tys)
+    in
+    r, env
+  in
   match e with
   | CTy ty ->
     let ty, env = build_ty env ty in
@@ -69,15 +79,8 @@ let rec compute_expr env e =
       | EQ -> poly_leq ty1 ty2 && poly_leq ty2 ty1
     in
     RBool (cartesian_product tys1 tys2 |> List.map aux), env
-  | CNorm e ->
-    let r, env = compute_expr env e in
-    let r =
-      match r with
-      | RBool bs -> RBool bs
-      | RSubst ss -> RSubst ss
-      | RTy tys -> RTy (List.map Simplify.partition_vecs tys)
-    in
-    r, env
+  | CPartition e -> transform_ty Simplify.partition_vecs e
+  | CRegroup e -> transform_ty Simplify.regroup_vecs e
 
 let simplify_res e =
   match e with
