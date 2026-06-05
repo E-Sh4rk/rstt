@@ -3,4 +3,3 @@ open Sstt
 val partition_vecs : Ty.t -> Ty.t
 val leq_partition : Ty.t -> Ty.t -> bool
 val regroup_vecs : Ty.t -> Ty.t
-(* val simplify : Ty.t -> Ty.t *)

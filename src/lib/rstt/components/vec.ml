@@ -29,6 +29,10 @@ let mk a =
   in
   let bindings = LabelMap.singleton Reserved.elt0 elt0 in
   Descr.mk_record { bindings ; tail } |> Ty.mk_descr |> add_tag
+let mk_line (p, ns) =
+  let p = mk p in
+  let ns = List.map mk ns |> List.map Ty.neg in
+  Ty.conj (p::ns)
 let any = mk (Vector Ty.any)
 
 let map_atom f = function

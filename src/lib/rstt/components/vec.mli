@@ -9,6 +9,7 @@ type 'a t = 'a line list
 val tag : Tag.t
 val any : Ty.t
 val mk : Ty.t atom -> Ty.t
+val mk_line : Ty.t line -> Ty.t
 val partition : Ty.t list
 
 val destruct : Ty.t -> Ty.t t
