@@ -20,9 +20,13 @@ let%expect_test "tests" =
     base4: ~<...>
     tuple1: tuple0
     tuple2: true
-    norm1: any
-    norm2: CHR | CLX | DBL | INT | LGL | raw
-    norm3: CHR | CLX | DBL | LGL | raw
+    part1: any
+    part2: CHR | CLX | DBL | INT | LGL | raw
+    part3: CHR | CLX | DBL | LGL | raw
+    part4: INT | LGL | raw
+    regroup1: LGL | raw
+    regroup2: INT | LGL | raw
+    regroup3: CHR | INT | LGL | raw
     vec1: INT1 | LGL | raw1
     vec2: true
     vec3: v1('b)
@@ -30,7 +34,7 @@ let%expect_test "tests" =
     vec5: v(^INT('a))
     vec6: v(CHR('a))
     vec7: v(^CHR('a))
-    vec8: (INT & ~INT1 | vec & ~INT -> c_false) & (INT1 -> c_true)
+    vec8: (INT1 -> c_true) & (vec & ~INT1 -> c_false)
     vec9: true
     vec10: true
     lst1: true

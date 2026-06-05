@@ -7,9 +7,13 @@
 "tuple1": t() ;;
 "tuple2": t(p(42),p(73)) <= t(p(INT),p(INT)) ;;
 
-"norm1": ![ any ] ;;
-"norm2": ![ vec ] ;;
-"norm3": ![ vec \ INT ] ;;
+"part1": ![ any ] ;;
+"part2": ![ vec ] ;;
+"part3": ![ vec \ INT ] ;;
+"part4": ![ int ] ;;
+"regroup1": ?[ RAW | LGL ] ;;
+"regroup2": ?[ RAW | LGL | INT ] ;;
+"regroup3": ?[ RAW | LGL | INT | CHR ] ;;
 
 "vec1": INT1 | LGL | v1(RAW) ;;
 "vec2": v(^any) = ^vec ;;
