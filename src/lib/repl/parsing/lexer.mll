@@ -26,6 +26,7 @@ let symid = '#'['a'-'z''A'-'Z''0'-'9''_''\'']*
 
 let int = ('+'|'-')? ['0'-'9']+ ('_'+ ['0'-'9']+)*
 let s = "vec" | "lgl" | "chr" | "int" | "dbl" | "clx" | "raw"
+              | "LGL" | "CHR" | "INT" | "DBL" | "CLX" | "RAW"
 let vlen = 'v'['0'-'9']+
 let slen = s ['0'-'9']+
 let sbracket = s '['
@@ -35,7 +36,7 @@ rule token = parse
 | int as i { INT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
 | "v("  { VP } | s as str { SHORT str } | "p("  { P } | "t(" { T } | "s(" { S } | "c(" { C }
-| "int(" { PI } | "chr(" { PC } | "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS }
+| "INT(" { PI } | "CHR(" { PC } | "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS }
 | "tt" { TT } | "ff" { FF }
 | "externalptr(" { EPTR } | "externalptr" { EPTR_ANY }
 | "with" { WITH }

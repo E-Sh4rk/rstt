@@ -23,7 +23,7 @@ module P = struct
   let print _ _ fmt {t; f} =
     match t, f with
     | false, false -> assert false
-    | true, true -> Format.fprintf fmt "lgl"
+    | true, true -> Format.fprintf fmt "LGL"
     | true, false -> Format.fprintf fmt "tt"
     | false, true -> Format.fprintf fmt "ff"
 end

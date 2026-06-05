@@ -18,31 +18,30 @@ let any' = any_p' |> add_tag
 let mk p = add_tag (Ty.cap p any_p)
 let destruct = proj_tag
 let comps =
-  [ Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any ]
-  |> List.map (fun ty -> mk ty)
+  [ Int.any, Int.any_sub ; Chr.any, Chr.any_sub ; Dbl.any, Dbl.any_sub ;
+    Raw.any, Raw.any_sub ; Clx.any, Clx.any_sub ; Lgl.any, Lgl.any_sub ]
 let comps' =
-  [ Int.any' ; Chr.any' ; Dbl.any' ; Raw.any' ; Clx.any' ; Lgl.any' ]
-  |> List.map (fun ty -> mk ty)
-let partition = comps
-let is_simple ty =
-  comps |> List.exists (Ty.equiv ty) ||
-  comps' |> List.exists (Ty.equiv ty)
-let is_singleton ty =
-  comps |> List.exists (Ty.leq ty) &&
-  let ty = proj_tag ty in
-  (Int.is_singleton ty || Chr.is_singleton ty || Dbl.is_singleton ty ||
-   Raw.is_singleton ty || Clx.is_singleton ty || Lgl.is_singleton ty)
+  [ Int.any', Int.any_sub' ; Chr.any', Chr.any_sub' ; Dbl.any', Dbl.any_sub' ;
+    Raw.any', Raw.any_sub' ; Clx.any', Clx.any_sub' ; Lgl.any', Lgl.any_sub' ]
 
-type t = | TAny | TAny' | TComp of Printer.descr
+type t = | TAny | TAny' | TComp of Printer.descr | TSubComp of Printer.descr
+let is_sub pty =
+  comps@comps' |> List.find_map (fun (any,any_sub) ->
+      if Ty.equiv pty any_sub then Some (Ty.cap any pty) else None
+    )
 let to_t ctx comp =
   let (_, pty) = Op.TagComp.as_atom comp in
   if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty)
   then
     if Ty.leq any_p pty then Some TAny
     else if Ty.equiv any_p' pty then Some TAny'
-    else Some (TComp (ctx.Printer.build pty))
+    else
+      match is_sub pty with
+      | None -> Some (TComp (ctx.Printer.build pty))
+      | Some pty -> Some (TSubComp (ctx.Printer.build pty))
   else None
-let map f = function TAny -> TAny | TAny' -> TAny' | TComp d -> TComp (f d)
+let map f = function TAny -> TAny | TAny' -> TAny'
+  | TComp d -> TComp (f d) | TSubComp d -> TSubComp (f d)
 let print prec assoc fmt t =
   let pos = Pp.current_pos () in
   match t with
@@ -52,7 +51,23 @@ let print prec assoc fmt t =
   | TAny' -> Format.fprintf fmt "%(%)prim" (Na.Hat.sym ())
   | TComp d -> Format.fprintf fmt "%a"
     (Pp.pp_prim_tag Pp.print_descr_ctx prec assoc) d
+  | TSubComp d -> 
+    let str = Format.asprintf "%a" (Pp.pp_prim_tag Pp.print_descr_ctx prec assoc) d in
+    Format.fprintf fmt "%s" (String.lowercase_ascii str)
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}
 let () = Pp.add_printer_param printer_params
+
+let partition = comps |> List.map (fun (any,_) -> mk any)
+let simpl_comps =
+  let (a1, a2), (a3, a4) = List.split comps, List.split comps' in
+  List.concat [a1;a2;a3;a4] |> List.map mk
+let is_simple ty =
+  simpl_comps |> List.exists (Ty.equiv ty)
+let is_singleton ty =
+  Ty.vars_toplevel ty |> VarSet.is_empty &&
+  let ty = proj_tag ty in
+  comps |> List.exists (fun (any, _) -> Ty.leq ty any) &&
+  (Int.is_singleton ty || Chr.is_singleton ty || Dbl.is_singleton ty ||
+   Raw.is_singleton ty || Clx.is_singleton ty || Lgl.is_singleton ty)

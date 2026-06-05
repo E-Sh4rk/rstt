@@ -9,7 +9,9 @@ type 'v cconst =
 type 'v prim =
 | PInt' of Utils.interval | PChr' of string | PLgl' of bool
 | PIntVar of 'v | PChrVar of 'v
-| PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny | PHat of 'v prim | PVar of 'v
+| PLgl | PChr | PInt | PDbl | PClx | PRaw
+| PSubLgl | PSubChr | PSubInt | PSubDbl | PSubClx | PSubRaw
+| PAny | PHat of 'v prim | PVar of 'v
 | PCup of 'v prim * 'v prim | PCap of 'v prim * 'v prim | PDiff of 'v prim * 'v prim | PNeg of 'v prim
 
 and ('v,'r,'i) t =
@@ -47,8 +49,9 @@ let map_prim f p =
   let rec aux p =
     let p = match p with
     | PInt' _ | PChr' _ | PLgl' _
-    | PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny
-    | PVar _ | PIntVar _ | PChrVar _ -> p
+    | PLgl | PChr | PInt | PDbl | PClx | PRaw
+    | PSubLgl | PSubChr | PSubInt | PSubDbl | PSubClx | PSubRaw
+    | PAny | PVar _ | PIntVar _ | PChrVar _ -> p
     | PHat p -> PHat (aux p)
     | PCup (p1, p2) -> PCup (aux p1, aux p2)
     | PCap (p1, p2) -> PCap (aux p1, aux p2)
@@ -168,6 +171,12 @@ let rec build_prim t =
   | PDbl -> Prim.mk Prim.Dbl.any
   | PClx -> Prim.mk Prim.Clx.any
   | PRaw -> Prim.mk Prim.Raw.any
+  | PSubLgl -> Prim.mk Prim.Lgl.any_sub
+  | PSubChr -> Prim.mk Prim.Chr.any_sub
+  | PSubInt -> Prim.mk Prim.Int.any_sub
+  | PSubDbl -> Prim.mk Prim.Dbl.any_sub
+  | PSubClx -> Prim.mk Prim.Clx.any_sub
+  | PSubRaw -> Prim.mk Prim.Raw.any_sub
   | PHat t -> Ty.cap Prim.any' (build_prim t)
   | PCup (t1, t2) -> Ty.cup (build_prim t1) (build_prim t2)
   | PCap (t1, t2) -> Ty.cap (build_prim t1) (build_prim t2)
@@ -356,6 +365,8 @@ let resolve_prim env t =
       let env', v = tvar !env v in
       env := env' ; PChrVar v
     | PLgl -> PLgl | PChr -> PChr | PInt -> PInt | PDbl -> PDbl | PClx -> PClx | PRaw -> PRaw
+    | PSubLgl -> PSubLgl | PSubChr -> PSubChr | PSubInt -> PSubInt
+    | PSubDbl -> PSubDbl | PSubClx -> PSubClx | PSubRaw -> PSubRaw
     | PHat t -> PHat (aux t)
     | PCup (t1, t2) -> PCup (aux t1, aux t2)
     | PCap (t1, t2) -> PCap (aux t1, aux t2)

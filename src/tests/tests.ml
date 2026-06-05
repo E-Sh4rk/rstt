@@ -21,16 +21,16 @@ let%expect_test "tests" =
     tuple1: tuple0
     tuple2: true
     norm1: any
-    norm2: chr | clx | dbl | int | lgl | raw
-    norm3: chr | clx | dbl | lgl | raw
-    vec1: int1 | lgl | raw1
+    norm2: CHR | CLX | DBL | INT | LGL | raw
+    norm3: CHR | CLX | DBL | LGL | raw
+    vec1: INT1 | LGL | raw1
     vec2: true
     vec3: v1('b)
-    vec4: v(int('a))
-    vec5: v(^int('a))
-    vec6: v(chr('a))
-    vec7: v(^chr('a))
-    vec8: (int & ~int1 | vec & ~int -> c_false) & (int1 -> c_true)
+    vec4: v(INT('a))
+    vec5: v(^INT('a))
+    vec6: v(CHR('a))
+    vec7: v(^CHR('a))
+    vec8: (INT & ~INT1 | vec & ~INT -> c_false) & (INT1 -> c_true)
     vec9: true
     vec10: true
     lst1: true
@@ -39,7 +39,7 @@ let%expect_test "tests" =
     lst4: true
     lst5: { a: 42, any }
     lst6: { a: ff }
-    lst7: { a: "brrr", int }
+    lst7: { a: "brrr", INT }
     lst8: { `r } -> { a: 42, `r }
     eptr1: externalptr
     eptr2: externalptr \ externalptr(empty)
@@ -51,9 +51,9 @@ let%expect_test "tests" =
             'A: 'A \ prim
           ]
           [
-            'A: 'A \ p(chr | clx | dbl | lgl | raw) ;
-            'B: 'B & lgl ;
-            'C: 'C & int ;
+            'A: 'A \ p(CHR | CLX | DBL | LGL | RAW) ;
+            'B: 'B & LGL ;
+            'C: 'C & INT ;
             `R: { b : `R ; c : `R ; d : 'D | `R ;; empty? | `R }
           ]
           [
@@ -65,19 +65,19 @@ let%expect_test "tests" =
           [
             'D: empty
           ]
-    arg6: ( a: int, b: dbl ; any )
-    arg7: @( int, b: dbl ; any )
-    arg8: ( a: int, b: dbl ; int ; named: raw)
-    arg9: @( int, b: dbl ; int )
+    arg6: ( a: INT, b: DBL ; any )
+    arg7: @( INT, b: DBL ; any )
+    arg8: ( a: INT, b: DBL ; INT ; named: raw)
+    arg9: @( INT, b: DBL ; INT )
     arg10: true
     arg11: @( a: <class1> )
-    arg12: @( int?, lgl ; int )
-    arg13: @( lgl, int? ; int )
-    arg14: ( a: int ; absent, `r )
-    arr1: int --> int
-    arr2: int -> int
-    arr3: int -> int
-    arr4: int -> int
+    arg12: @( INT?, LGL ; INT )
+    arg13: @( LGL, INT? ; INT )
+    arg14: ( a: INT ; absent, `r )
+    arr1: INT --> INT
+    arr2: INT -> INT
+    arr3: INT -> INT
+    arr4: INT -> INT
     class1: <class1>
     class2: <class1, `c>
     class3: [
@@ -85,14 +85,14 @@ let%expect_test "tests" =
             ]
     class4: <class1, class2>
     class5: <class1, ...>
-    class6: int<class1, ...>
+    class6: INT<class1, ...>
     class7: <class1, ?class3>
     class8: <class1, ~class2, ...>
     class9: <~class2, ?class3, *>
     class10: <data.frame>
-    attr1: int with { dim: int, any }
-    attr2: int with { dim: int }
-    attr3: int with ({ dim: int, any } & ~{ dim: int })
+    attr1: INT with { dim: INT, any }
+    attr2: INT with { dim: INT }
+    attr3: INT with ({ dim: INT, any } & ~{ dim: INT })
     attr4: true
     attr5: true
     c1: c_int_na \ (c(..41) | c(43..)) | c_string \ c("abc")

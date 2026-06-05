@@ -43,12 +43,12 @@ module P = struct
     let print_lit prec assoc fmt t =
       match t with
       | Utils.P (true, content) -> aux prec assoc fmt content
-      | P (false, []) -> Format.fprintf fmt "chr"
-      | P (false, content) -> Prec.print_binary_op' (Prec.print_atomic_str "chr") aux
+      | P (false, []) -> Format.fprintf fmt "CHR"
+      | P (false, content) -> Prec.print_binary_op' (Prec.print_atomic_str "CHR") aux
           prec assoc Diff fmt () content
-      | V v -> Format.fprintf fmt "chr(%a)" Var.pp v
+      | V v -> Format.fprintf fmt "CHR(%a)" Var.pp v
     in
-    Pp.print_non_empty_dnf ~any:"chr" ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
+    Pp.print_non_empty_dnf ~any:"CHR" ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
 end
 
 include Na.MakeCompWithNa(P)

@@ -51,17 +51,17 @@ module P = struct
 
   let map _f v = v
   let print prec assoc fmt lines =
-    let aux = Pp.print_cup ~cmp:Stdlib.compare (Utils.print_interval "int") in
+    let aux = Pp.print_cup ~cmp:Stdlib.compare (Utils.print_interval "INT") in
     let dnf = Utils.t_to_dnf lines in
     let print_lit prec assoc fmt t =
       match t with
       | Utils.P (true, ints) -> aux prec assoc fmt ints
-      | P (false, []) -> Format.fprintf fmt "int"
-      | P (false, ints) -> Prec.print_binary_op' (Prec.print_atomic_str "int") aux
+      | P (false, []) -> Format.fprintf fmt "INT"
+      | P (false, ints) -> Prec.print_binary_op' (Prec.print_atomic_str "INT") aux
           prec assoc Diff fmt () ints
-      | V v -> Format.fprintf fmt "int(%a)" Var.pp v
+      | V v -> Format.fprintf fmt "INT(%a)" Var.pp v
     in
-    Pp.print_non_empty_dnf ~any:"int" ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
+    Pp.print_non_empty_dnf ~any:"INT" ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
 end
 
 include Na.MakeCompWithNa(P)

@@ -9,7 +9,9 @@ type 'v cconst =
 type 'v prim =
 | PInt' of Utils.interval | PChr' of string | PLgl' of bool
 | PIntVar of 'v | PChrVar of 'v
-| PLgl | PChr | PInt | PDbl | PClx | PRaw | PAny | PHat of 'v prim | PVar of 'v
+| PLgl | PChr | PInt | PDbl | PClx | PRaw
+| PSubLgl | PSubChr | PSubInt | PSubDbl | PSubClx | PSubRaw
+| PAny | PHat of 'v prim | PVar of 'v
 | PCup of 'v prim * 'v prim | PCap of 'v prim * 'v prim | PDiff of 'v prim * 'v prim | PNeg of 'v prim
 
 and ('v,'r,'i) t =

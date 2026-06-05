@@ -33,12 +33,18 @@ let parse_builtin_prim str =
     match str with
     | "any" -> PAny
     | "vec" -> PAny
-    | "lgl" -> PLgl
-    | "chr" -> PChr
-    | "int" -> PInt
-    | "dbl" -> PDbl
-    | "clx" -> PClx
-    | "raw" -> PRaw
+    | "lgl" -> PSubLgl
+    | "chr" -> PSubChr
+    | "int" -> PSubInt
+    | "dbl" -> PSubDbl
+    | "clx" -> PSubClx
+    | "raw" -> PSubRaw
+    | "LGL" -> PLgl
+    | "CHR" -> PChr
+    | "INT" -> PInt
+    | "DBL" -> PDbl
+    | "CLX" -> PClx
+    | "RAW" -> PRaw
     | str -> raise (Errors.E_Parser ("Unknown primitive builtin "^str))
 
 let assert_one i =

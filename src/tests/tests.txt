@@ -5,71 +5,71 @@
 "base4": any\attr ;;
 
 "tuple1": t() ;;
-"tuple2": t(p(42),p(73)) <= t(p(int),p(int)) ;;
+"tuple2": t(p(42),p(73)) <= t(p(INT),p(INT)) ;;
 
 "norm1": ![ any ] ;;
 "norm2": ![ vec ] ;;
-"norm3": ![ vec \ int ] ;;
+"norm3": ![ vec \ INT ] ;;
 
-"vec1": int1 | lgl | v1(raw) ;;
+"vec1": INT1 | LGL | v1(RAW) ;;
 "vec2": v(^any) = ^vec ;;
 "vec3": v1('b) ;;
-"vec4": v(int('a)) ;;
-"vec5": v(^int('a)) ;;
-"vec6": v(chr('a)) ;;
-"vec7": v(^chr('a)) ;;
-"vec8": ((int1) -> c_true) & ((int) -> c_bool) & ((int\int1) | (vec & ~int) -> c_false) ;;
+"vec4": v(INT('a)) ;;
+"vec5": v(^INT('a)) ;;
+"vec6": v(CHR('a)) ;;
+"vec7": v(^CHR('a)) ;;
+"vec8": ((INT1) -> c_true) & ((INT) -> c_bool) & ((INT\INT1) | (vec & ~INT) -> c_false) ;;
 "vec9": 42 = v1(^42) ;;
-"vec10": tt|ff = ^lgl1 ;;
+"vec10": tt|ff = ^LGL1 ;;
 
-"lst1": { v(int) } <= { any } ;;
-"lst2": { a:v(42), b:v(43), v(int) } <= { v(int) } ;;
-"lst3": { a:v(42), b:v(ff), v(int) } <= { v(int) } ;;
-"lst4": { a:v(42), b:v(ff), v(int) } <= { b:v(ff), v(int) } ;;
+"lst1": { v(INT) } <= { any } ;;
+"lst2": { a:v(42), b:v(43), v(INT) } <= { v(INT) } ;;
+"lst3": { a:v(42), b:v(ff), v(INT) } <= { v(INT) } ;;
+"lst4": { a:v(42), b:v(ff), v(INT) } <= { b:v(ff), v(INT) } ;;
 "lst5": { a:42, any } ;;
 "lst6": { a:ff } ;;
-"lst7": { a:"brrr", int } ;;
+"lst7": { a:"brrr", INT } ;;
 "lst8": { `r } -> { a:v1(^42), `r } ;;
 
 "eptr1": externalptr ;;
 "eptr2": externalptr \ externalptr(empty) ;;
 
-"arg1": @(v(int), v(lgl)) <= (a:v(int), b:v(lgl)) ;;
-"arg2": @(v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
-"arg3": @(a:v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
-"arg4": @(a:v(int), b:v(lgl)) <= (a:v(int), b:v(lgl)) ;;
-"arg5": [ @(v('A), b:'B, c:'C, d:'D) <= (a:v(int), b:v(lgl) ; absent,`R ; c:v(int)) ] ;;
-"arg6": ( a:int, b:dbl ; any ) ;;
-"arg7": @( int, b:dbl ; any ) ;;
-"arg8": ( a:int, b:dbl ; int ; named:raw ) ;;
-"arg9": @( int, b:dbl ; int ) ;;
+"arg1": @(v(INT), v(LGL)) <= (a:v(INT), b:v(LGL)) ;;
+"arg2": @(v(INT), b:v(LGL)) <= (a:v(INT), b:v(LGL)) ;;
+"arg3": @(a:v(INT), b:v(LGL)) <= (a:v(INT), b:v(LGL)) ;;
+"arg4": @(a:v(INT), b:v(LGL)) <= (a:v(INT), b:v(LGL)) ;;
+"arg5": [ @(v('A), b:'B, c:'C, d:'D) <= (a:v(INT), b:v(LGL) ; absent,`R ; c:v(INT)) ] ;;
+"arg6": ( a:INT, b:DBL ; any ) ;;
+"arg7": @( INT, b:DBL ; any ) ;;
+"arg8": ( a:INT, b:DBL ; INT ; named:RAW ) ;;
+"arg9": @( INT, b:DBL ; INT ) ;;
 "arg10": @(a:<class1>) <= (a:<class1>) ;;
 "arg11": @(a:<class1>) & (a:<class1>) ;;
-"arg12": @( int?, lgl ; int ) ;;
-"arg13": @( lgl, int? ; int ) ;;
-"arg14": (a:int ; absent, `r) ;;
+"arg12": @( INT?, LGL ; INT ) ;;
+"arg13": @( LGL, INT? ; INT ) ;;
+"arg14": (a:INT ; absent, `r) ;;
 
-"arr1": int --> int ;;
-"arr2": int -> int ;;
-"arr3": (int --> int)<...> ;;
-"arr4": (int -> int)<...> ;;
+"arr1": INT --> INT ;;
+"arr2": INT -> INT ;;
+"arr3": (INT --> INT)<...> ;;
+"arr4": (INT -> INT)<...> ;;
 
 "class1": <class1> ;;
 "class2": <class1, `c> ;;
 "class3": [ <class1,class2> <= <class1,`C> ];;
 "class4": <class1,`C> [ <class1,class2> <= <class1,`C> ];;
 "class5": <class1, ...> ;;
-"class6": int<class1,`C> [ int <= int<`C> ];;
+"class6": INT<class1,`C> [ INT <= INT<`C> ];;
 "class7": <class1,~class2,?class3> ;;
 "class8": <class1,~class2,?class3, ...> ;;
 "class9": <class1,~class2,?class3, *> ;;
 "class10": <data.frame> ;;
 
-"attr1": int with { dim:int, any } ;;
-"attr2": int with { dim:int } ;;
-"attr3": int with { dim:int, any } \ int with { dim:int } ;;
-"attr4": 42<> with {  } <= int ;;
-"attr5": int <= int with { any } ;;
+"attr1": INT with { dim:INT, any } ;;
+"attr2": INT with { dim:INT } ;;
+"attr3": INT with { dim:INT, any } \ INT with { dim:INT } ;;
+"attr4": 42<> with {  } <= INT ;;
+"attr5": INT <= INT with { any } ;;
 
 "c1": c_string\c("abc") | c(42) | c_na ;;
 "c2": c_bool & c_true ;;

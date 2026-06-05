@@ -11,7 +11,7 @@ module P = struct
   let is_singleton _ = false
 
   let map _f v = v
-  let print _ _ fmt () = Format.fprintf fmt "raw"
+  let print _ _ fmt () = Format.fprintf fmt "RAW"
 end
 
 include Na.MakeCompWithNa(P)
