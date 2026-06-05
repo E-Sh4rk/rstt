@@ -38,3 +38,4 @@ let tt, ff = mk P.tt, mk P.ff
 let tt', ff' = mk' P.tt, mk' P.ff
 let bool b = mk (P.bool b)
 let bool' b = mk' (P.bool b)
+let any_sub, any_sub' = Ty.cup any Raw.any_sub, Ty.cup any' Raw.any_sub'

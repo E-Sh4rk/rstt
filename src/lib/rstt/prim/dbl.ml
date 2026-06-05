@@ -15,6 +15,7 @@ module P = struct
 end
 
 include Na.MakeCompWithNa(P)
+let any_sub, any_sub' = Ty.cup any Int.any_sub, Ty.cup any' Int.any_sub'
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}

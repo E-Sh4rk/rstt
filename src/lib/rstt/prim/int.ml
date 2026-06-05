@@ -83,3 +83,4 @@ let destruct ty =
   | Na -> true, []
   | WithNa ty -> true, P.destruct ty
   | WithoutNa ty -> false, P.destruct ty
+let any_sub, any_sub' = Ty.cup any Lgl.any_sub, Ty.cup any' Lgl.any_sub'

@@ -30,7 +30,7 @@ let%expect_test "tests" =
     vec5: v(^int('a))
     vec6: v(chr('a))
     vec7: v(^chr('a))
-    vec8: (int1 -> c_true) & (vec & ~int1 -> c_false)
+    vec8: (int & ~int1 | vec & ~int -> c_false) & (int1 -> c_true)
     vec9: true
     vec10: true
     lst1: true
