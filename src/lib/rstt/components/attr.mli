@@ -9,7 +9,6 @@ val mk : (Ty.t, Ty.t) atom -> Ty.t
 val mk_content : Ty.t -> Ty.t
 val mk_content_noattr : Ty.t -> Ty.t
 val any : Ty.t
-val partition : Ty.t list
 
 val destruct : Ty.t -> (Ty.t, Ty.t) t
 val proj_content : Ty.t -> Ty.t

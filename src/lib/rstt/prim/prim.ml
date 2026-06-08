@@ -64,7 +64,6 @@ let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}
 let () = Pp.add_printer_param printer_params
 
-let partition = comps |> List.map (fun (any,_) -> mk any)
 let simpl_comps =
   let (a1, a2), (a3, a4) = List.split comps, List.split comps' in
   List.concat [a1;a2;a3;a4] |> List.map mk

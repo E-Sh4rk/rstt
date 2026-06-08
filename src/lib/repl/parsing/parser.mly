@@ -108,7 +108,7 @@ let split_classes_elts lst =
 %token C VP (*VB*) P T S HAT ARROW CARROW STAR WITH
 %token PI PC PCI PCINA PCS
 %token TT FF EPTR_ANY EPTR
-%token QUESTION_MARK EXCL_MARK DPOINT
+%token QUESTION_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
 %token LEQ GEQ LT GT
 %token TOR TAND TNEG TDIFF
@@ -154,8 +154,6 @@ simpl_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
 | ty=ty { CTy ty }
-| EXCL_MARK LBRACKET e=expr_nocmp RBRACKET { CPartition e }
-| QUESTION_MARK LBRACKET e=expr_nocmp RBRACKET { CRegroup e }
 | LBRACKET e=expr_nocmp RBRACKET { e }
 
 op:

@@ -76,9 +76,6 @@ let to_t ctx comp =
 let destruct ty =
   ty |> proj_tag |> extract
 
-let partition =
-  Prim.partition |> List.map (fun ty -> mk (Vector ty))
-
 let print prec assoc fmt t =
   let cmp v1 v2 =
     match v1, v2 with

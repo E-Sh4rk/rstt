@@ -30,7 +30,6 @@ let any_d =
     Reserved.attrs, Ty.F.mk_descr (Ty.O.required Lst.any) ] in
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
-let partition = (mk_content (Ty.neg Vec.any))::(Vec.partition |> List.map mk_content)
 
 let map_atom f fc { content ; classes ; attrs } = { content=f content ; classes=fc classes ; attrs=f attrs }
 let map_line f fc (ps,ns) = (List.map (map_atom f fc) ps, List.map (map_atom f fc) ns)

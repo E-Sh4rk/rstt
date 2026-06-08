@@ -6,7 +6,6 @@ val any' : Ty.t
 val mk : Ty.t -> Ty.t
 val destruct : Ty.t -> Ty.t
 
-val partition : Ty.t list (* TODO: remove *)
 val is_simple : Ty.t -> bool
 val is_singleton : Ty.t -> bool
 val is_whole : Ty.t -> bool

@@ -7,14 +7,6 @@
 "tuple1": t() ;;
 "tuple2": t(p(42),p(73)) <= t(p(INT),p(INT)) ;;
 
-"part1": ![ any ] ;;
-"part2": ![ vec ] ;;
-"part3": ![ vec \ INT ] ;;
-"part4": ![ int ] ;;
-"regroup1": ?[ RAW | LGL ] ;;
-"regroup2": ?[ RAW | LGL | INT ] ;;
-"regroup3": ?[ RAW | LGL | INT | CHR ] ;;
-
 "vec1": INT1 | LGL | v1(RAW) ;;
 "vec2": v1(^any) = ^vec1 ;;
 "vec3": v1(any) ;;
@@ -25,6 +17,10 @@
 "vec8": ((INT1) -> c_true) & ((INT) -> c_bool) & ((INT\INT1) | (vec & ~INT) -> c_false) ;;
 "vec9": 42 = v1(^42) ;;
 "vec10": tt|ff = ^LGL1 ;;
+"vec11": RAW | LGL ;;
+"vec12": RAW | LGL | INT ;;
+"vec13": RAW | LGL | INT | CHR ;;
+"vec14": vec \ CHR ;;
 
 "lst1": { v(INT) } <= { any } ;;
 "lst2": { a:v1(42), b:v1(43), v(INT) } <= { v(INT) } ;;
