@@ -34,6 +34,7 @@ let%expect_test "tests" =
     vec12: INT | LGL | raw
     vec13: CHR | INT | LGL | raw
     vec14: clx
+    vec15: "test" | 42 | CHR1 \ ^CHR1 | INT1 \ ^INT1
     lst1: true
     lst2: true
     lst3: false

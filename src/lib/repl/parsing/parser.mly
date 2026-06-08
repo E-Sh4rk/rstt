@@ -302,3 +302,5 @@ prim_singl:
 | FF { PLgl' false }
 | str=STRING { PChr' str }
 | i=INT { let i = Z.to_int i in PInt' (Some i, Some i) }
+// TODO: we should probably allow intervals here too
+// TODO: PIntVar and PChrVar
