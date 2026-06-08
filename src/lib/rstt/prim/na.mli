@@ -1,12 +1,7 @@
 open Sstt
 open Printer
 
-module Hat : sig
-    val sym : unit -> ('a, 'b, 'c, 'd, 'd, 'a) format6
-    val prec : int
-    val assoc : Prec.assoc
-    val opinfo : unit -> (('a, 'b, 'c, 'd, 'd, 'a) format6 * int * Prec.assoc)
-end
+val hat : string
 module type PrimComp = sig
     val tag_name : string
     val any : Ty.t
@@ -14,7 +9,9 @@ module type PrimComp = sig
     val any_t : t
     val to_t : build_ctx -> Ty.t -> t option
     val map : (descr -> descr) -> t -> t
-    val print : (int -> Prec.assoc -> Format.formatter -> t -> unit)
+    val print : string (* any prefix *) -> string (* any suffix *)
+    -> int -> Prec.assoc -> Format.formatter -> t -> unit
+    val is_finite : t -> bool
     val is_singleton : Ty.t -> bool
 end
 module MakeCompWithNa(P:PrimComp) : sig
@@ -29,4 +26,5 @@ module MakeCompWithNa(P:PrimComp) : sig
     val map : (descr -> descr) -> P.t t -> P.t t
     val print : (int -> Prec.assoc -> Format.formatter -> P.t t -> unit)
     val is_singleton : Ty.t -> bool
+    val is_simple : Ty.t -> bool
 end

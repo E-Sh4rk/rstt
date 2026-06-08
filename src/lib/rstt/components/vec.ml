@@ -12,6 +12,8 @@ let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
 let proj_tag ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
 
+(* TODO: forbid tl type variables, enlarge prim for vectors *)
+(* TODO: encoding such that v(a|b) = v(a)|v(b) *)
 let mk a =
   let open Records.Atom in
   let elt0, tail =
@@ -79,32 +81,11 @@ let print prec assoc fmt t =
     | Scalar v1, Scalar v2 -> Pp.Compare.descr v1 v2
     | Vector _, _ -> -1 | _, Vector _ -> 1
   in
-  let print_prim_descr = Pp.print_prim_descr_ctx Prec.min_prec Prec.NoAssoc in
-  let shortcut_v v =
-    let str = Format.asprintf "%a" print_prim_descr v in
-    let prefix = Format.asprintf "%(%)" (Na.Hat.sym ()) in
-    if String.starts_with ~prefix str
-    then
-      let n = String.length prefix in
-      String.sub str n (String.length str - n)
-    else str
-  in
-  let print_v ~len fmt v =
-    if Ty.leq Prim.any v.Printer.ty then
-      Format.fprintf fmt "vec%s" len
-    else if Ty.equiv Prim.any' v.ty then
-      Format.fprintf fmt "%(%)vec%s" (Na.Hat.sym ()) len
-    else if Prim.is_simple v.ty then
-      Format.fprintf fmt "%a%s" print_prim_descr v len
-    else
-      let v = Utils.prune_printer_descr ~any:Prim.any v in
-      Format.fprintf fmt "%a%s(%a)" Tag.pp tag len print_prim_descr v
-  in
-  let print_atom _prec _assoc fmt = function
-    | Vector v -> Format.fprintf fmt "%a" (print_v ~len:"") v
-    | Scalar v when Prim.is_singleton v.Printer.ty ->
-      Format.fprintf fmt "%s" (shortcut_v v)
-    | Scalar v -> Format.fprintf fmt "%a" (print_v ~len:"1") v
+  let print_vec = Pp.print_descr_ctx' (Prim "") in
+  let print_scalar = Pp.print_descr_ctx' (Prim "1") in
+  let print_atom prec assoc fmt = function
+    | Vector v -> print_vec prec assoc fmt v
+    | Scalar v -> print_scalar prec assoc fmt v
   in
   let t = t |> List.map (fun (p,ns) -> [p],ns) in
   Pp.print_non_empty_dnf ~cmp ~any:"vec" print_atom prec assoc fmt t

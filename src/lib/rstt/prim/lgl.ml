@@ -11,6 +11,7 @@ module P = struct
   let any_t = { t=true; f=true }
 
   let is_singleton ty = Ty.equiv ty tt || Ty.equiv ty ff
+  let is_finite {t; f} = not t || not f
 
   let to_t _ ty =
     if Ty.leq ty any then
@@ -20,10 +21,10 @@ module P = struct
     else None
 
   let map _f v = v
-  let print _ _ fmt {t; f} =
+  let print prefix suffix _ _ fmt {t; f} =
     match t, f with
     | false, false -> assert false
-    | true, true -> Format.fprintf fmt "LGL"
+    | true, true -> Format.fprintf fmt "%sLGL%s" prefix suffix
     | true, false -> Format.fprintf fmt "tt"
     | false, true -> Format.fprintf fmt "ff"
 end

@@ -25,10 +25,11 @@ val print_dnf : empty:string -> any:string -> cmp:('a -> 'a -> int) ->
     (int -> Prec.assoc -> Format.formatter -> 'a -> unit) ->
     int -> Prec.assoc -> Format.formatter -> ('a list * 'a list) list -> unit
 
-type printing_pos = Tl | Struct | Prim
+type printing_pos = Tl | Struct | Prim of string (* suffix *)
 val current_pos : unit -> printing_pos
 val print_descr_ctx' : printing_pos -> int -> assoc -> Format.formatter -> descr -> unit
 val print_descr_ctx : int -> assoc -> Format.formatter -> descr -> unit
+val print_tl_descr_ctx : int -> assoc -> Format.formatter -> descr -> unit
 val print_struct_descr_ctx : int -> assoc -> Format.formatter -> descr -> unit
 val print_prim_descr_ctx : int -> assoc -> Format.formatter -> descr -> unit
 

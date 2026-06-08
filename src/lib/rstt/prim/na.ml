@@ -1,14 +1,8 @@
 open Sstt
 
+let hat = "^"
 let na = Enum.mk "na"
 let na_ty = Descr.mk_enum na |> Ty.mk_descr
-
-module Hat = struct
-  let sym () = format_of_string "^"
-  let prec = 5
-  let assoc = Prec.NoAssoc
-  let opinfo () = (sym (), prec, assoc)
-end
 
 module type PrimComp = sig
     open Printer
@@ -18,7 +12,9 @@ module type PrimComp = sig
     val any_t : t
     val to_t : build_ctx -> Ty.t -> t option
     val map : (descr -> descr) -> t -> t
-    val print : (int -> Prec.assoc -> Format.formatter -> t -> unit)
+    val print : string (* any prefix *) -> string (* any suffix *)
+    -> int -> Prec.assoc -> Format.formatter -> t -> unit
+    val is_finite : t -> bool
     val is_singleton : Ty.t -> bool
 end
 module MakeCompWithNa(P:PrimComp) = struct
@@ -46,6 +42,8 @@ module MakeCompWithNa(P:PrimComp) = struct
     match destruct ty with
     | WithNa _ | Na -> false
     | WithoutNa ty -> P.is_singleton ty
+  let is_simple ty =
+    Ty.equiv ty any || Ty.equal ty any'
 
   let map f = function Na -> Na | WithNa t -> WithNa (P.map f t) | WithoutNa t -> WithoutNa (P.map f t)
   let to_t ctx comp =
@@ -53,19 +51,25 @@ module MakeCompWithNa(P:PrimComp) = struct
     if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty) then
       let pty, na = Ty.diff pty na_ty, Ty.leq na_ty pty in
       if Ty.is_empty pty then Some Na
-      else if na then P.to_t ctx pty |> Option.map (fun t -> WithNa t)
-      else P.to_t ctx pty |> Option.map (fun t -> WithoutNa t)
+      else if na then
+        P.to_t ctx pty |> Option.map (fun t -> WithNa t)
+      else
+        P.to_t ctx pty |> Option.map (fun t -> WithoutNa t)
     else
       None
 
   let print prec assoc fmt t =
-    let print_without_na prec assoc fmt t =
-      Prec.print_unary P.print prec assoc (Hat.opinfo ()) fmt t
-    in
+    let suffix = match Pp.current_pos () with Pp.Prim s -> s | _ -> "" in
+    let print_without_na = P.print hat suffix in
+    let print_with_na = P.print "" suffix in
+    let print_na prec assoc fmt () =
+      Prec.print_binary_op' print_with_na print_without_na
+        prec assoc Diff fmt P.any_t P.any_t in
     match t with
-    | WithNa t -> P.print prec assoc fmt t
+    | WithNa t when P.is_finite t ->
+      Prec.print_binary' print_na print_with_na
+        prec assoc (Prec.varop_info Cup) fmt () t
+    | WithNa t -> print_with_na prec assoc fmt t
     | WithoutNa t -> print_without_na prec assoc fmt t
-    | Na ->
-      Prec.print_binary_op' P.print print_without_na
-        prec assoc Diff fmt P.any_t P.any_t
+    | Na -> print_na prec assoc fmt ()
 end

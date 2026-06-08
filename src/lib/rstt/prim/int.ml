@@ -36,9 +36,9 @@ module P = struct
   let extract ty =
     Ty.def ty |> VDescr.dnf |> List.map extract_line
 
-  let any_t = Utils.any_prim_t
+  let any_t = Utils.any_atomic_t
 
-  type t = Utils.interval Utils.prim_t
+  type t = Utils.interval Utils.atomic_t
   let to_t _ ty =
     let pty = proj_tag ty in
     if Ty.leq pty any_p
@@ -48,20 +48,24 @@ module P = struct
   let is_singleton ty =
     let aux = function (Some i1, Some i2) -> Stdlib.Int.equal i1 i2 | _ -> false in
     destruct ty |> Utils.is_singleton aux
+  let is_finite t =
+    let aux = function (None, None) -> false | _ -> true in
+    Utils.is_finite aux t
 
   let map _f v = v
-  let print prec assoc fmt lines =
-    let aux = Pp.print_cup ~cmp:Stdlib.compare (Utils.print_interval "INT") in
+  let print prefix suffix prec assoc fmt lines =
+    let any = prefix^"INT"^suffix in
+    let aux = Pp.print_cup ~cmp:Stdlib.compare (Utils.print_interval any) in
     let dnf = Utils.t_to_dnf lines in
     let print_lit prec assoc fmt t =
       match t with
       | Utils.P (true, ints) -> aux prec assoc fmt ints
-      | P (false, []) -> Format.fprintf fmt "INT"
-      | P (false, ints) -> Prec.print_binary_op' (Prec.print_atomic_str "INT") aux
+      | P (false, []) -> Format.fprintf fmt "%s" any
+      | P (false, ints) -> Prec.print_binary_op' (Prec.print_atomic_str any) aux
           prec assoc Diff fmt () ints
-      | V v -> Format.fprintf fmt "INT(%a)" Var.pp v
+      | V v -> Format.fprintf fmt "%s(%a)" any Var.pp v
     in
-    Pp.print_non_empty_dnf ~any:"INT" ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
+    Pp.print_non_empty_dnf ~any ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
 end
 
 include Na.MakeCompWithNa(P)

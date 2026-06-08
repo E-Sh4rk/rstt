@@ -9,9 +9,10 @@ module P = struct
   let to_t _ ty =
     if Ty.leq ty any then Some () else None
   let is_singleton _ = false
+  let is_finite _ = false
 
   let map _f v = v
-  let print _ _ fmt () = Format.fprintf fmt "DBL"
+  let print prefix suffix _ _ fmt () = Format.fprintf fmt "%sDBL%s" prefix suffix
 end
 
 include Na.MakeCompWithNa(P)

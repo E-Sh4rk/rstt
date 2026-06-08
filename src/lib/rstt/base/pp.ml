@@ -116,7 +116,7 @@ let print_dnf ~empty ~any ~cmp f prec assoc fmt dnf =
 
 (* ===== Descr printer ===== *)
 
-type printing_pos = Tl | Struct | Prim
+type printing_pos = Tl | Struct | Prim of string (* suffix *)
 open Effect.Deep
 open Effect
 type _ Effect.t += GetPos: printing_pos t
@@ -171,26 +171,28 @@ let rec print_descr_ctx' pos prec assoc fmt d =
     | Varop (Cap,ds) -> print_cap ~cmp:Compare.descr aux prec assoc fmt ds
     | Varop (Tuple,ds) ->
       let tpl fmt ds =
-        Prec.print_nary_op print_descr_ctx Prec.min_prec Prec.NoAssoc Tuple fmt ds
+        Prec.print_nary_op print_tl_descr_ctx Prec.min_prec Prec.NoAssoc Tuple fmt ds
       in
       Format.fprintf fmt "t(%a)" tpl ds
     | Binop (Diff,d1,d2) -> Prec.print_binary_op aux prec assoc Diff fmt d1 d2
     | Binop (Arrow,d1,d2) when pos=Struct ->
-      Prec.print_binary_op print_descr_ctx prec assoc Arrow fmt d1 d2
+      Prec.print_binary_op print_tl_descr_ctx prec assoc Arrow fmt d1 d2
     | Binop (Arrow,d1,d2) ->
       let _,prec,assoc = Prec.binop_info Arrow in
-      Prec.print_binary print_descr_ctx prec assoc
+      Prec.print_binary print_tl_descr_ctx prec assoc
         (Prec.fs "@ -->@ ",prec,assoc) fmt d1 d2
     | Unop (Neg,d) -> Prec.print_unary_op aux prec assoc Neg fmt d
   in
   with_pos pos (aux prec assoc fmt) d
 
 and print_descr_ctx prec assoc fmt d =
-  print_descr_ctx' Tl prec assoc fmt d
+  print_descr_ctx' (current_pos ()) prec assoc fmt d
+and print_tl_descr_ctx prec assoc fmt d =
+  print_descr_ctx' Tl prec assoc fmt d  
 and print_struct_descr_ctx prec assoc fmt d =
   print_descr_ctx' Struct prec assoc fmt d
 and print_prim_descr_ctx prec assoc fmt d =
-  print_descr_ctx' Prim prec assoc fmt d
+  print_descr_ctx' (Prim "") prec assoc fmt d
 
 and print_fop prec assoc fmt fop =
   let rec aux prec assoc fmt fop =
@@ -198,9 +200,9 @@ and print_fop prec assoc fmt fop =
     | Printer.FRowVar v -> Format.fprintf fmt "%a" RowVar.pp v
     | FTy (d, opt) ->
       if opt then
-        Format.fprintf fmt "%a?" (print_descr_ctx Prec.max_prec NoAssoc) d
+        Format.fprintf fmt "%a?" (print_tl_descr_ctx Prec.max_prec NoAssoc) d
       else
-        print_descr_ctx prec assoc fmt d
+        print_tl_descr_ctx prec assoc fmt d
     | FVarop (FCup,ds) -> print_cup ~cmp:(Compare.fop Compare.descr) aux prec assoc fmt ds
     | FVarop (FCap,ds) -> print_cap ~cmp:(Compare.fop Compare.descr) aux prec assoc fmt ds
     | FBinop (b,fop1,fop2) -> Prec.print_binary_fop aux prec assoc b fmt fop1 fop2
@@ -214,9 +216,9 @@ and print_tail fmt tail =
   | FTy ({ op=Builtin Empty ; _ }, true) -> Format.fprintf fmt ""
   | _ -> Format.fprintf fmt ";;@ %a@ " print_fop' tail
 
-and print_descr fmt d = print_descr_ctx Prec.min_prec NoAssoc fmt d
+and print_descr fmt d = print_tl_descr_ctx Prec.min_prec NoAssoc fmt d
 and print_fop' fmt fop = print_fop Prec.min_prec NoAssoc fmt fop
-let print_descr_atomic = print_descr_ctx Prec.max_prec Prec.NoAssoc
+let print_descr_atomic = print_tl_descr_ctx Prec.max_prec Prec.NoAssoc
 let print_field_ctx = print_fop
 
 
@@ -230,16 +232,12 @@ let print fmt t =
     Format.fprintf fmt "@ where@ %a" (Prec.print_seq print_def "@ and@ ") defs
 
 
-let pp_struct_tag f prec assoc fmt t =
-  match current_pos () with
-  | Tl -> Format.fprintf fmt "s(%a)" (f Prec.min_prec Prec.NoAssoc) t
-  | Struct -> f prec assoc fmt t
-  | Prim -> invalid_arg "Cannot print struct in prim position."
+let pp_struct_tag f _ _ fmt t =
+  Format.fprintf fmt "s(%a)" (f Prec.min_prec Prec.NoAssoc) t
 
-let pp_prim_tag f prec assoc fmt t =
-  match current_pos () with
-  | Tl | Struct -> Format.fprintf fmt "p(%a)" (f Prec.min_prec Prec.NoAssoc) t
-  | Prim -> f prec assoc fmt t 
+let pp_prim_tag f _ _ fmt t =
+  Format.fprintf fmt "p(%a)" (f Prec.min_prec Prec.NoAssoc) t
+
 
 (* ========================= *)
 

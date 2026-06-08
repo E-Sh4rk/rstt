@@ -13,8 +13,8 @@ module P = struct
   let var v = Ty.mk_var v |> Ty.cap any_p |> add_tag
   let any = add_tag any_p
 
-  type t = string Utils.prim_t
-  let any_t = Utils.any_prim_t
+  type t = string Utils.atomic_t
+  let any_t = Utils.any_atomic_t
   let extract_line (pvs, nvs, d) =
     let pos, enums = d |> Descr.get_enums |> Enums.destruct in
     let strs = enums |> List.map Strings.string |> List.sort String.compare in
@@ -34,21 +34,25 @@ module P = struct
     let aux = Fun.const true in
     destruct ty |> Utils.is_singleton aux
 
+  let is_finite t =
+    let aux = Fun.const true in
+    Utils.is_finite aux t
   let map _ v = v
 
-  let print prec assoc fmt lines =
+  let print prefix suffix prec assoc fmt lines =
+    let any = prefix^"CHR"^suffix in
     let pp_string _prec _assoc fmt str = Format.fprintf fmt "%S" str in
     let aux = Pp.print_cup ~cmp:String.compare pp_string in
     let dnf = Utils.t_to_dnf lines in
     let print_lit prec assoc fmt t =
       match t with
       | Utils.P (true, content) -> aux prec assoc fmt content
-      | P (false, []) -> Format.fprintf fmt "CHR"
-      | P (false, content) -> Prec.print_binary_op' (Prec.print_atomic_str "CHR") aux
+      | P (false, []) -> Format.fprintf fmt "%s" any
+      | P (false, content) -> Prec.print_binary_op' (Prec.print_atomic_str any) aux
           prec assoc Diff fmt () content
-      | V v -> Format.fprintf fmt "CHR(%a)" Var.pp v
+      | V v -> Format.fprintf fmt "%s(%a)" any Var.pp v
     in
-    Pp.print_non_empty_dnf ~any:"CHR" ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
+    Pp.print_non_empty_dnf ~any ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
 end
 
 include Na.MakeCompWithNa(P)

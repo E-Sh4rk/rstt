@@ -40,10 +40,10 @@ let to_t ctx comp =
 let destruct ty = ty |> proj_tag |> extract
 let print prec assoc fmt { nullable ; target ; str } =
   let pp_target prec assoc fmt target =
-    Prec.print_unary Pp.print_descr_ctx prec assoc (PtrStar.opinfo ()) fmt
+    Prec.print_unary Pp.print_tl_descr_ctx prec assoc (PtrStar.opinfo ()) fmt
       (Utils.prune_printer_descr ~any:(Ty.neg Cstring.any) target)
   in
-  let pp_str = Pp.print_descr_ctx in
+  let pp_str = Pp.print_tl_descr_ctx in
   let target_is_empty, str_is_empty =
     Ty.is_empty target.Printer.ty, Ty.is_empty str.Printer.ty
   in

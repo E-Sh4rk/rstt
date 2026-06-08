@@ -16,7 +16,7 @@ let any_p' = [Int.any' ; Chr.any' ; Dbl.any' ; Raw.any' ; Clx.any' ; Lgl.any'] |
 let any = any_p |> add_tag
 let any' = any_p' |> add_tag
 let mk p = add_tag (Ty.cap p any_p)
-let destruct = proj_tag
+let destruct p = proj_tag p
 let comps =
   [ Int.any, Int.any_sub ; Chr.any, Chr.any_sub ; Dbl.any, Dbl.any_sub ;
     Raw.any, Raw.any_sub ; Clx.any, Clx.any_sub ; Lgl.any, Lgl.any_sub ]
@@ -43,17 +43,22 @@ let to_t ctx comp =
 let map f = function TAny -> TAny | TAny' -> TAny'
   | TComp d -> TComp (f d) | TSubComp d -> TSubComp (f d)
 let print prec assoc fmt t =
-  let pos = Pp.current_pos () in
+  let prim_ctx, suffix =
+    match Pp.current_pos () with Prim s -> true, s | _ -> false, ""
+  in
   match t with
-  | TAny when pos=Prim -> Format.fprintf fmt "any"
+  | TAny when prim_ctx -> Format.fprintf fmt "vec%s" suffix
   | TAny -> Format.fprintf fmt "prim"
-  | TAny' when pos=Prim -> Format.fprintf fmt "%(%)any" (Na.Hat.sym ())
-  | TAny' -> Format.fprintf fmt "%(%)prim" (Na.Hat.sym ())
-  | TComp d -> Format.fprintf fmt "%a"
-    (Pp.pp_prim_tag Pp.print_descr_ctx prec assoc) d
-  | TSubComp d -> 
-    let str = Format.asprintf "%a" (Pp.pp_prim_tag Pp.print_descr_ctx prec assoc) d in
-    Format.fprintf fmt "%s" (String.lowercase_ascii str)
+  | TAny' when prim_ctx -> Format.fprintf fmt "%svec%s" Na.hat suffix
+  | TAny' -> Format.fprintf fmt "%sprim" Na.hat
+  | TComp d when prim_ctx -> Pp.print_descr_ctx prec assoc fmt d
+  | TComp d -> Pp.pp_prim_tag Pp.print_descr_ctx prec assoc fmt d
+  | TSubComp d ->
+    let str = Format.asprintf "%a" (Pp.print_descr_ctx Prec.min_prec Prec.NoAssoc) d in
+    let pp _ _ fmt () = Format.fprintf fmt "%s" (String.lowercase_ascii str) in
+    if prim_ctx
+    then pp prec assoc fmt ()
+    else Pp.pp_prim_tag pp prec assoc fmt ()
 
 let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}
