@@ -1,5 +1,6 @@
 open Sstt
 
+(* TODO: update to match new vector types (singletons have no NA, no more tvar, etc.) *)
 type 'v cconst =
 | CDouble | CString | CChar | CVoid | CNull
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa | CPtr
