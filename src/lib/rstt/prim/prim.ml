@@ -70,9 +70,18 @@ let simpl_comps =
   List.concat [a1;a2;a3;a4] |> List.map mk
 let is_simple ty =
   simpl_comps |> List.exists (Ty.equiv ty)
+
 let is_singleton ty =
   Ty.vars_toplevel ty |> VarSet.is_empty &&
   let ty = proj_tag ty in
   comps |> List.exists (fun (any, _) -> Ty.leq ty any) &&
   (Int.is_singleton ty || Chr.is_singleton ty || Dbl.is_singleton ty ||
    Raw.is_singleton ty || Clx.is_singleton ty || Lgl.is_singleton ty)
+
+let whole_comps = List.map fst comps
+let is_whole ty =
+  Ty.vars_toplevel ty |> VarSet.is_empty &&
+  let ty = proj_tag ty in
+  whole_comps |> List.for_all (fun any ->
+    Ty.disjoint any ty || Ty.leq any ty
+    )

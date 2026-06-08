@@ -12,24 +12,29 @@ let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
 let proj_tag ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
 
-(* TODO: forbid tl type variables, enlarge prim for vectors *)
-(* TODO: encoding such that v(a|b) = v(a)|v(b) *)
 let mk a =
   let open Records.Atom in
-  let elt0, tail =
-  match a with
-  | Vector c ->
-    let c = Ty.cap c Prim.any in
-    let elt0 = Ty.O.required c |> Ty.F.mk_descr in
-    let tail = Ty.O.optional c |> Ty.F.mk_descr in
-    elt0, tail
-  | Scalar c ->
-    let c = Ty.cap c Prim.any in
-    let elt0 = Ty.O.required c |> Ty.F.mk_descr in
-    let tail = Ty.O.absent |> Ty.F.mk_descr in
-    elt0, tail
+  let norm_content c =
+    if Ty.vars_toplevel c |> VarSet.is_empty |> not
+    then invalid_arg "Vector content cannot feature top-level type variables" ;
+    Ty.cap c Prim.any
   in
-  let bindings = LabelMap.singleton Reserved.elt0 elt0 in
+  let elt, tail =
+    match a with
+    | Vector c ->
+      let c = norm_content c in
+      if Prim.is_whole c |> not
+      then invalid_arg "Non-scalar vectors cannot feature singleton types" ;
+      let elt = Ty.O.required c |> Ty.F.mk_descr in
+      let tail = Ty.O.any |> Ty.F.mk_descr in
+      elt, tail
+    | Scalar c ->
+      let c = norm_content c in
+      let elt = Ty.O.required c |> Ty.F.mk_descr in
+      let tail = Ty.O.absent |> Ty.F.mk_descr in
+      elt, tail
+  in
+  let bindings = LabelMap.singleton Reserved.elt elt in
   Descr.mk_record { bindings ; tail } |> Ty.mk_descr |> add_tag
 let mk_line (p, ns) =
   let p = mk p in
@@ -45,10 +50,10 @@ let map f (l : 'a t) = l |> List.map (map_line f)
 
 let extract atom =
   let open Records.Atom in
-  let elt0 = find Reserved.elt0 atom |> Ty.F.get_descr |> Ty.O.get |> Ty.O.Atom.get in
+  let elt = find Reserved.elt atom |> Ty.F.get_descr |> Ty.O.get |> Ty.O.Atom.get in
   let tail = atom.tail |> Ty.F.get_descr |> Ty.O.get |> Ty.O.Atom.get in
   if Ty.is_empty tail
-  then Scalar elt0 else Vector elt0
+  then Scalar elt else Vector elt
 let merge_atoms a1 a2 =
   match a1, a2 with
   | Vector c1, Scalar c2 | Scalar c1, Vector c2 | Scalar c1, Scalar c2

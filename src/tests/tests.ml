@@ -29,11 +29,11 @@ let%expect_test "tests" =
     regroup3: CHR | INT | LGL | raw
     vec1: INT1 | LGL | raw1
     vec2: true
-    vec3: v1('b)
-    vec4: v(INT('a))
-    vec5: v(^INT('a))
-    vec6: v(CHR('a))
-    vec7: v(^CHR('a))
+    vec3: vec1
+    vec4: INT1('a)
+    vec5: ^INT1('a)
+    vec6: CHR1('a)
+    vec7: ^CHR1('a)
     vec8: (INT1 -> c_true) & (vec & ~INT1 -> c_false)
     vec9: true
     vec10: true
@@ -52,10 +52,10 @@ let%expect_test "tests" =
     arg3: true
     arg4: true
     arg5: [
-            'A: 'A \ prim
+            'A: empty
           ]
           [
-            'A: 'A \ p(CHR | CLX | DBL | LGL | RAW) ;
+            'A: 'A & INT ;
             'B: 'B & LGL ;
             'C: 'C & INT ;
             `R: { b : `R ; c : `R ; d : 'D | `R ;; empty? | `R }
