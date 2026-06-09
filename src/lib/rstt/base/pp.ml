@@ -173,7 +173,7 @@ let rec print_descr_ctx' pos prec assoc fmt d =
       let tpl fmt ds =
         Prec.print_nary_op print_tl_descr_ctx Prec.min_prec Prec.NoAssoc Tuple fmt ds
       in
-      Format.fprintf fmt "t(%a)" tpl ds
+      Format.fprintf fmt "[%a]" tpl ds
     | Binop (Diff,d1,d2) -> Prec.print_binary_op aux prec assoc Diff fmt d1 d2
     | Binop (Arrow,d1,d2) when pos=Struct ->
       Prec.print_binary_op print_tl_descr_ctx prec assoc Arrow fmt d1 d2
@@ -246,5 +246,5 @@ let ty' aliases fmt t =
   print fmt t
 let ty = ty' []
 let subst' aliases fmt s =
-  Printer.print_subst (printer_params' aliases) fmt s
+  Printer.print_subst (printer_params' aliases) fmt s (* TODO *)
 let subst = subst' []

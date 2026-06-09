@@ -4,8 +4,9 @@
 "base3": attr ;;
 "base4": any\attr ;;
 
-"tuple1": t() ;;
-"tuple2": t(p(42),p(73)) <= t(p(INT),p(INT)) ;;
+"tuple1": [] ;;
+"tuple2": [p(42),p(73)] <= [p(INT),p(INT)] ;;
+"tuple3": [int,lgl] ;;
 
 "vec1": INT1 | LGL | v1(RAW) ;;
 "vec2": v1(^vec) = ^vec1 ;;
@@ -39,7 +40,7 @@
 "arg2": @(v(INT), b:v(LGL)) <= (a:v(INT), b:v(LGL)) ;;
 "arg3": @(a:v(INT), b:v(LGL)) <= (a:v(INT), b:v(LGL)) ;;
 "arg4": @(a:v(INT), b:v(LGL)) <= (a:v(INT), b:v(LGL)) ;;
-"arg5": [ @('A, b:'B, c:'C, d:'D) <= (a:v(INT), b:v(LGL) ; absent,`R ; c:v(INT)) ] ;;
+"arg5": [[ @('A, b:'B, c:'C, d:'D) <= (a:v(INT), b:v(LGL) ; absent,`R ; c:v(INT)) ]] ;;
 "arg6": ( a:INT, b:DBL ; any ) ;;
 "arg7": @( INT, b:DBL ; any ) ;;
 "arg8": ( a:INT, b:DBL ; INT ; named:RAW ) ;;
@@ -57,10 +58,10 @@
 
 "class1": <class1> ;;
 "class2": <class1, `c> ;;
-"class3": [ <class1,class2> <= <class1,`C> ];;
-"class4": <class1,`C> [ <class1,class2> <= <class1,`C> ];;
+"class3": [[ <class1,class2> <= <class1,`C> ]];;
+"class4": <class1,`C> [[ <class1,class2> <= <class1,`C> ]];;
 "class5": <class1, ...> ;;
-"class6": INT<class1,`C> [ INT <= INT<`C> ];;
+"class6": INT<class1,`C> [[ INT <= INT<`C> ]];;
 "class7": <class1,~class2,?class3> ;;
 "class8": <class1,~class2,?class3, ...> ;;
 "class9": <class1,~class2,?class3, *> ;;

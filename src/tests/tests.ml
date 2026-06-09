@@ -20,6 +20,7 @@ let%expect_test "tests" =
     base4: ~<...>
     tuple1: tuple0
     tuple2: true
+    tuple3: [int, lgl]
     vec1: LGL | (INT1 | RAW1)
     vec2: true
     vec3: vec1

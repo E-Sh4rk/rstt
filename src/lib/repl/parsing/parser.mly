@@ -105,11 +105,12 @@ let split_classes_elts lst =
 %token<string*Z.t> SLEN
 %token TYPE
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
-%token C VP (*VB*) P T S HAT ARROW CARROW STAR WITH
+%token C VP (*VB*) P S HAT ARROW CARROW STAR WITH
 %token PI PC PCI PCINA PCS
 %token TT FF EPTR_ANY EPTR
 %token QUESTION_MARK DPOINT
-%token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET ALPAREN
+%token LPAREN RPAREN LBRACE RBRACE ALPAREN
+%token LBRACKET RBRACKET LLBRACKET RRBRACKET
 %token LEQ GEQ LT GT
 %token TOR TAND TNEG TDIFF
 %token EOF
@@ -154,19 +155,19 @@ simpl_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
 | ty=ty { CTy ty }
-| LBRACKET e=expr_nocmp RBRACKET { e }
+| LLBRACKET e=expr_nocmp RRBRACKET { e }
 
 op:
 | LEQ { LEQ } | EQUAL { EQ } | GEQ { GEQ }
 
 tsubst:
-| LBRACKET bindings=separated_list(SEMICOLON, subst_binding) RBRACKET { bindings }
+| LLBRACKET bindings=separated_list(SEMICOLON, subst_binding) RRBRACKET { bindings }
 
 %inline subst_binding:
 | v=VARID COLON ty=ty { (v, ty) }
 
 tally:
-| LBRACKET cs=separated_nonempty_list(SEMICOLON, tally_binding) RBRACKET { cs }
+| LLBRACKET cs=separated_nonempty_list(SEMICOLON, tally_binding) RRBRACKET { cs }
 
 %inline tally_binding:
 | ty1=ty op=op ty2=ty { (ty1, op, ty2) }
@@ -238,7 +239,7 @@ atomic_ty:
     let pos_tl,named_tl = tl in
     TArg { pos_named ; pos_tl ; named ; named_tl }
 }
-| T lst=separated_list(COMMA, simple_ty) RPAREN { TTuple lst }
+| LBRACKET lst=separated_list(COMMA, simple_ty) RBRACKET { TTuple lst }
 (* C stuff *)
 | STAR t=atomic_ty { TCPtr t }
 | C i=cint RPAREN { TCConst i }

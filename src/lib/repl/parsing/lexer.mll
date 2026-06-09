@@ -35,7 +35,7 @@ rule token = parse
 | "type" { TYPE }
 | int as i { INT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
-| "v("  { VP } | s as str { SHORT str } | "p("  { P } | "t(" { T } | "s(" { S } | "c(" { C }
+| "v("  { VP } | s as str { SHORT str } | "p("  { P } | "s(" { S } | "c(" { C }
 | "INT(" { PI } | "CHR(" { PC } | "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS }
 | "tt" { TT } | "ff" { FF }
 | "externalptr(" { EPTR } | "externalptr" { EPTR_ANY }
@@ -53,7 +53,7 @@ rule token = parse
 | "..." { ELLIPSIS } | ".." { DPOINT } | '*' { STAR }
 | "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW } | "-->" { CARROW }
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE } | "@(" { ALPAREN }
-| "[" { LBRACKET } | "]" { RBRACKET }
+| "[" { LBRACKET } | "]" { RBRACKET } | "[[" { LLBRACKET } | "]]" { RRBRACKET }
 | "<=" { LEQ } | ">=" { GEQ } | "<" { LT } | ">" { GT }
 | '|' { TOR } | '&' { TAND } | '~' { TNEG } | '\\' { TDIFF }
 | eof { EOF }
