@@ -20,7 +20,7 @@ let%expect_test "tests" =
     base4: ~<...>
     tuple1: tuple0
     tuple2: true
-    vec1: INT1 | LGL | raw1
+    vec1: LGL | (INT1 | RAW1)
     vec2: true
     vec3: vec1
     vec4: INT1('a)
@@ -30,11 +30,11 @@ let%expect_test "tests" =
     vec8: (INT1 -> c_true) & (vec & ~INT1 -> c_false)
     vec9: true
     vec10: true
-    vec11: LGL | raw
-    vec12: INT | LGL | raw
-    vec13: CHR | INT | LGL | raw
+    vec11: lgl
+    vec12: int
+    vec13: CHR | INT | LGL | RAW
     vec14: clx
-    vec15: "test" | 42 | CHR1 \ ^CHR1 | INT1 \ ^INT1
+    vec15: ("test" | 42) | CHR1 \ ^CHR1 | INT1 \ ^INT1
     lst1: true
     lst2: true
     lst3: false
