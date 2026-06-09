@@ -43,5 +43,7 @@ val pp_prim_tag : (int -> assoc -> Format.formatter -> 'a -> unit) -> int -> ass
 
 val ty : Format.formatter -> Ty.t -> unit
 val ty' : (Ty.t * string) list -> Format.formatter -> Ty.t -> unit
+val row : Format.formatter -> Row.t -> unit
+val row' : (Ty.t * string) list -> Format.formatter -> Row.t -> unit
 val subst : Format.formatter -> Subst.t -> unit
 val subst' : (Ty.t * string) list -> Format.formatter -> Subst.t -> unit

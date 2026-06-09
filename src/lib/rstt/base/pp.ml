@@ -245,6 +245,34 @@ let ty' aliases fmt t =
   let t = Printer.get ~factorize:false (printer_params' aliases) t in
   print fmt t
 let ty = ty' []
+
+let row' aliases fmt r =
+  let bindings, tail = Row.bindings r, Row.tail r in
+  let tail, fields, defs =
+    match Printer.get_field' (printer_params' aliases) (tail::List.map snd bindings) with
+    | { main=tl::bindings ; defs } -> tl, bindings, defs
+    | _ -> assert false
+  in
+  let bindings = List.combine (List.map fst bindings) fields in
+  let ast = { Printer.main={ Printer.ty=Ty.any ; op=Record (bindings, tail) } ; defs } in
+  print fmt ast
+let row = row' []
+
 let subst' aliases fmt s =
-  Printer.print_subst (printer_params' aliases) fmt s (* TODO *)
+  let print_ty, print_row = ty' aliases, row' aliases in
+  let pp_binding1 fmt (v,ty) =
+    Format.fprintf fmt "@,@[<hov>%a: %a@]" Var.pp v print_ty ty
+  in
+  let pp_binding2 fmt (v,r) =
+    Format.fprintf fmt "@,@[<hov>%a: %a@]" RowVar.pp v print_row r
+  in
+  let pp_binding' fmt b =
+    match b with
+    | `T (v,ty) -> pp_binding1 fmt (v,ty)
+    | `R (v,r) -> pp_binding2 fmt (v,r)
+  in
+  let b1 = Subst.bindings1 s |> List.map (fun b -> `T b) in
+  let b2 = Subst.bindings2 s |> List.map (fun b -> `R b) in
+  Format.fprintf fmt "@[<v 0>[[@[<v 1>%a@]@,]]@]"
+    (Prec.print_seq pp_binding' " ;") (b1@b2)
 let subst = subst' []
