@@ -25,8 +25,8 @@
 "vec15": "test" | CHR1 \ ^CHR1 | INT1 \ ^INT1 | (42..) | tt | LGL1 \ ^LGL1 ;;
 "vec16": [[ 'A <= p(LGL|CHR|42) ; 'A >= p(tt) ]] ;;
 "vec17": [[ 'A <= p(RAW | tt) ; 'A >= p(RAW | tt) ]] ;;
-"vec18": [[ 'A = LGL ]] ;;
-"vec19": [[ 'A = tt ]] ;;
+"vec18": [[ 'A = p(LGL) ]] ;;
+"vec19": [[ 'A = p(tt) ]] ;;
 
 "lst1": { v(INT) } <= { any } ;;
 "lst2": { a:v1(42), b:v1(43), v(INT) } <= { v(INT) } ;;

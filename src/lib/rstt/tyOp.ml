@@ -54,9 +54,36 @@ let simplify t = Transform.simplify ~extra t
 
 (* ===== TALLY ===== *)
 
+let factorize (pvs, nvs) t =
+  let dnf = Ty.def t |> VDescr.dnf in
+  let factor (pvs',nvs',descr) =
+    let pvs', nvs' = VarSet.of_list pvs', VarSet.of_list nvs' in
+    if VarSet.subset pvs pvs' then
+      let pvs', nvs' = VarSet.diff pvs' pvs, VarSet.diff nvs' nvs in
+      Some (VarSet.elements pvs', VarSet.elements nvs', descr)
+    else
+      None
+  in
+  let fact = dnf |> List.filter_map factor in
+  let nfact = dnf |> List.filter (fun line -> factor line = None) in
+  VDescr.of_dnf fact |> Ty.of_def, VDescr.of_dnf nfact |> Ty.of_def
+
 let normalize_subst s =
-  (* TODO *)
-  Some s
+  let rec aux s =
+    let bindings = Subst.bindings1 s in
+    match List.find_opt (fun (_,ty) -> Prim.is_whole ty |> not) bindings with
+    | None -> Some s
+    | Some (v,ty) ->
+      let factor, remaining = factorize (VarSet.singleton v, VarSet.empty) ty in
+      let ub, lb = Prim.reduce factor, Prim.enlarge remaining in
+      if Ty.leq lb ub
+      then
+        let ty = Ty.cap (Ty.mk_var v) ub |> Ty.cup lb in
+        let s' = Subst.singleton1 v ty in
+        aux (Subst.compose s' s)
+      else None
+  in
+  aux s
 
 let tally delta cs =
   Tallying.tally delta cs
