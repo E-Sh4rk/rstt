@@ -1,6 +1,6 @@
 open Sstt
 
-(* TODO: update to match new vector types (singletons have no NA, no more tvar, etc.) *)
+(* TODO: update to match new vector types (no more tvar, etc.) *)
 type 'v cconst =
 | CDouble | CString | CChar | CVoid | CNull
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa | CPtr
@@ -183,9 +183,9 @@ let rec build_prim t =
   | PCap (t1, t2) -> Ty.cap (build_prim t1) (build_prim t2)
   | PDiff (t1, t2) -> Ty.diff (build_prim t1) (build_prim t2)
   | PNeg t -> Ty.diff Prim.any (build_prim t)
-  | PInt' (b1,b2) -> Prim.Int.interval (b1,b2) |> Prim.mk
-  | PChr' str -> Prim.Chr.str str |> Prim.mk
-  | PLgl' b -> Prim.Lgl.bool b |> Prim.mk
+  | PInt' (b1,b2) -> Prim.Int.interval' (b1,b2) |> Prim.mk
+  | PChr' str -> Prim.Chr.str' str |> Prim.mk
+  | PLgl' b -> Prim.Lgl.bool' b |> Prim.mk
   | PIntVar v -> Prim.Int.var v |> Prim.mk
   | PChrVar v -> Prim.Chr.var v |> Prim.mk
 
