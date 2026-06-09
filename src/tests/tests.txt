@@ -1,6 +1,6 @@
 
 "base1": any ;;
-"base2": v(any) ;;
+"base2": v(vec) ;;
 "base3": attr ;;
 "base4": any\attr ;;
 
@@ -8,8 +8,8 @@
 "tuple2": t(p(42),p(73)) <= t(p(INT),p(INT)) ;;
 
 "vec1": INT1 | LGL | v1(RAW) ;;
-"vec2": v1(^any) = ^vec1 ;;
-"vec3": v1(any) ;;
+"vec2": v1(^vec) = ^vec1 ;;
+"vec3": v1(vec) ;;
 "vec4": v1(INT('a)) ;;
 "vec5": v1(^INT('a)) ;;
 "vec6": v1(CHR('a)) ;;
@@ -21,7 +21,7 @@
 "vec12": RAW | LGL | INT ;;
 "vec13": RAW | LGL | INT | CHR ;;
 "vec14": vec \ CHR ;;
-"vec15": "test" | CHR1 \ ^CHR1 | INT1 \ ^INT1 | 42 | tt | LGL1 \ ^LGL1 ;;
+"vec15": "test" | CHR1 \ ^CHR1 | INT1 \ ^INT1 | (42..) | tt | LGL1 \ ^LGL1 ;;
 
 "lst1": { v(INT) } <= { any } ;;
 "lst2": { a:v1(42), b:v1(43), v(INT) } <= { v(INT) } ;;

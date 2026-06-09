@@ -13,6 +13,7 @@ let parse_id_or_builtin str =
     | "env" -> TEnv
     | "sym" -> TSym
     | "lang" -> TLang
+    | "prim" -> TPrim PAny
     | "list" -> TList{bindings=[];sym=[];tl=TOption TAny}
     (* C stuff  *)
     | "c_double" -> TCConst CDouble
@@ -31,7 +32,6 @@ let parse_id_or_builtin str =
 
 let parse_builtin_prim str =
     match str with
-    | "any" -> PAny
     | "vec" -> PAny
     | "lgl" -> PSubLgl
     | "chr" -> PSubChr
@@ -216,13 +216,13 @@ atomic_ty:
 | VP p=prim RPAREN { TVec (Vector p) }
 | s=SHORT { TVec (Vector (parse_builtin_prim s)) }
 | HAT s=SHORT { TVec (Vector (PHat (parse_builtin_prim s))) }
+| s=SLEN { let (s,i) = s in assert_one i ; TVec (Scalar (parse_builtin_prim s)) }
+| HAT s=SLEN { let (s,i) = s in assert_one i ; TVec (Scalar (PHat (parse_builtin_prim s))) }
 // | VB l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
 // | s=SBRACKET l=prim RBRACKET {TVec (VarLength (l,parse_builtin_prim s)) }
 // | HAT s=SBRACKET l=prim RBRACKET { TVec (VarLength (l,PHat (parse_builtin_prim s))) }
 | i=VLEN LPAREN p=prim RPAREN { assert_one i ; TVec (Scalar (p)) }
-| s=SLEN { let (s,i) = s in assert_one i ; TVec (Scalar (parse_builtin_prim s)) }
-| HAT s=SLEN { let (s,i) = s in assert_one i ; TVec (Scalar (PHat (parse_builtin_prim s))) }
-| s=prim_singl { TVec (Scalar (PHat s)) }
+| s=prim_atom { TVec (Scalar s) }
 (* Containers (lists, args, tuples, externalptr) *)
 | EPTR_ANY { TExtPtr } | EPTR ty=ty RPAREN { TExtPtr' ty }
 | LBRACE elts=separated_list(COMMA, lst_elt) RBRACE
@@ -284,23 +284,20 @@ label:
 prim:
 | LPAREN p=prim RPAREN { p }
 | id=VARID { PVar (id) }
-| id=ID { parse_builtin_prim id }
 | s=SHORT { parse_builtin_prim s }
-| s=prim_singl { s }
+| s=prim_atom { s }
 | p1=prim TOR p2=prim { PCup (p1, p2) }
 | p1=prim TDIFF p2=prim { PDiff (p1, p2) }
 | p1=prim TAND p2=prim { PCap (p1, p2) }
 | TNEG p=prim { PNeg p }
 | HAT p=prim { PHat p }
-| PC id=VARID RPAREN { PChrVar id }
-| LPAREN i1=INT? DPOINT i2=INT? RPAREN
-{ let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in PInt' (i1,i2) }
-| PI id=VARID RPAREN { PIntVar id }
 
-prim_singl:
+prim_atom:
 | TT { PLgl' true }
 | FF { PLgl' false }
 | str=STRING { PChr' str }
 | i=INT { let i = Z.to_int i in PInt' (Some i, Some i) }
-// TODO: we should probably allow intervals here too
-// TODO: PIntVar and PChrVar
+| LPAREN i1=INT? DPOINT i2=INT? RPAREN
+{ let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in PInt' (i1,i2) }
+| PC id=VARID RPAREN { PChrVar id }
+| PI id=VARID RPAREN { PIntVar id }
