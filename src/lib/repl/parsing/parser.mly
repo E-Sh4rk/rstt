@@ -149,12 +149,18 @@ expr:
 expr_nocmp:
 | e=simpl_expr { e }
 | e1=expr_nocmp SEMICOLON e2=simpl_expr { CCat (e1, e2) }
-| e1=expr_nocmp e2=simpl_expr { CApp (e1, e2) }
+| e1=expr_nocmp e2=atomic_expr { CApp (e1, e2) }
 
 simpl_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
 | ty=ty { CTy ty }
+| LLBRACKET e=expr_nocmp RRBRACKET { e }
+
+atomic_expr:
+| s=tsubst { CSubst s }
+| t=tally { CTally t }
+| ty=atomic_ty { CTy ty }
 | LLBRACKET e=expr_nocmp RRBRACKET { e }
 
 op:
