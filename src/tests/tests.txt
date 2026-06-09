@@ -10,7 +10,7 @@
 
 "vec1": INT1 | LGL | v1(RAW) ;;
 "vec2": v1(^vec) = ^vec1 ;;
-"vec3": v1(vec) ;;
+"vec3": v1('a) | v('b) ;;
 "vec4": v1(INT('a)) ;;
 "vec5": v1(^INT('a)) ;;
 "vec6": v1(CHR('a)) ;;

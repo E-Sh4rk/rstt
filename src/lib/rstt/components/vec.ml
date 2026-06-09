@@ -14,11 +14,7 @@ let proj_tag ty =
 
 let mk a =
   let open Records.Atom in
-  let norm_content c =
-    if Ty.vars_toplevel c |> VarSet.is_empty |> not
-    then invalid_arg "Vector content cannot feature top-level type variables" ;
-    Ty.cap c Prim.any
-  in
+  let norm_content c = Ty.cap c Prim.any in
   let elt, tail =
     match a with
     | Vector c ->

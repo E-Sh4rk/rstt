@@ -152,7 +152,11 @@ let rec print_descr_ctx' pos prec assoc fmt d =
     | Alias str -> fprintf fmt "%s" str
     | Node n -> fprintf fmt "%a" Printer.NodeId.pp n
     | Builtin b -> print_builtin fmt b
-    | Var v -> fprintf fmt "%a" Var.pp v
+    | Var v ->
+      begin match pos with
+      | Prim suffix -> fprintf fmt "v%s(%a)" suffix Var.pp v
+      | _ -> fprintf fmt "%a" Var.pp v
+      end
     | Enum a -> fprintf fmt "%a" Enum.pp a
     | Tag (t,d) ->
       fprintf fmt "%a(%a)"

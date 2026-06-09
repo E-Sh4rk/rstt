@@ -15,7 +15,10 @@ let any_p = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any] |> Ty.di
 let any_p' = [Int.any' ; Chr.any' ; Dbl.any' ; Raw.any' ; Clx.any' ; Lgl.any'] |> Ty.disj
 let any = any_p |> add_tag
 let any' = any_p' |> add_tag
-let mk p = add_tag (Ty.cap p any_p)
+let mk p =
+  if Ty.vars_toplevel p |> VarSet.is_empty |> not
+  then invalid_arg "Primitive type cannot feature top-level type variables" ;
+  add_tag (Ty.cap p any_p)
 let destruct p = proj_tag p
 let comps =
   [ Int.any, Int.any_sub ; Chr.any, Chr.any_sub ; Dbl.any, Dbl.any_sub ;
