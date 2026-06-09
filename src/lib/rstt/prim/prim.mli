@@ -11,6 +11,9 @@ val is_singleton : Ty.t -> bool
 val is_whole : Ty.t -> bool
 (* return true if an only if the primitive type is only composed of [any] components *)
 
+val enlarge : Ty.t -> Ty.t
+val reduce : Ty.t -> Ty.t
+
 module Int = Int
 module Chr = Chr
 module Dbl = Dbl

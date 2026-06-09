@@ -79,8 +79,26 @@ let is_singleton ty =
 
 let whole_comps = List.map fst comps
 let is_whole ty =
-  Ty.vars_toplevel ty |> VarSet.is_empty &&
   let ty = proj_tag ty in
   whole_comps |> List.for_all (fun any ->
     Ty.disjoint any ty || Ty.leq any ty
     )
+
+let enlarge ty =
+  let ty = proj_tag ty in
+  let partition = whole_comps |>
+    List.map (fun any ->
+      let ty = Ty.cap ty any in
+      if Ty.is_empty ty then Ty.empty else any
+      )
+  in
+  Ty.disj partition |> add_tag
+let reduce ty =
+  let ty = proj_tag ty in
+  let partition = whole_comps |>
+    List.map (fun any ->
+      let ty = Ty.cap ty any in
+      if Ty.leq any ty then any else Ty.empty
+      )
+  in
+  Ty.disj partition |> add_tag

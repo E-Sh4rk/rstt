@@ -23,6 +23,7 @@
 "vec13": RAW | LGL | INT | CHR ;;
 "vec14": vec \ CHR ;;
 "vec15": "test" | CHR1 \ ^CHR1 | INT1 \ ^INT1 | (42..) | tt | LGL1 \ ^LGL1 ;;
+"vec16": [[ 'A <= p(lgl|42) ; 'A >= p(tt) ]] ;;
 
 "lst1": { v(INT) } <= { any } ;;
 "lst2": { a:v1(42), b:v1(43), v(INT) } <= { v(INT) } ;;

@@ -1,4 +1,4 @@
-# r-types
+# RSTT
 
 Work-in-progress set-theoretic type algebra for the R language.
 
