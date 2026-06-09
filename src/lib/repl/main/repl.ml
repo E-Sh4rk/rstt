@@ -17,7 +17,7 @@ let is_mono_rvar v =
 let poly_leq t1 t2 =
   let delta = MixVarSet.union (Ty.all_vars t1) (Ty.all_vars t2)
     |> MixVarSet.filter is_mono_var is_mono_rvar in
-  Tallying.tally delta [ t1, t2 ] |> List.is_empty |> not
+  TyOp.tally delta [ t1, t2 ] |> List.is_empty |> not
 
 let rec compute_expr env e =
   match e with
@@ -33,7 +33,7 @@ let rec compute_expr env e =
     let delta = List.fold_left (fun acc c -> MixVarSet.union acc (vars_of_constr c))
       MixVarSet.empty cs
       |> MixVarSet.filter is_mono_var is_mono_rvar in
-    RSubst (Tallying.tally delta cs), env
+    RSubst (TyOp.tally delta cs), env
   | CCat (e1, e2) ->
     let r1, env = compute_expr env e1 in
     let r2, env = compute_expr env e2 in
@@ -74,7 +74,7 @@ let simplify_res e =
   match e with
   | RBool bs -> RBool bs
   | RSubst ss -> RSubst ss
-  | RTy tys -> RTy (List.map Simplify.simplify tys)
+  | RTy tys -> RTy (List.map TyOp.simplify tys)
 
 let aliases _env = [] (* TODO *)
 

@@ -1,5 +1,7 @@
 open Sstt
 
+(* ===== SIMPLIFY ===== *)
+
 let simpl_tags c =
   let tag = TagComp.tag c in
   if Tag.equal tag Attr.tag
@@ -49,3 +51,13 @@ let simpl_descr d =
     construct (b, comps)
 let extra vd = VDescr.map simpl_descr vd
 let simplify t = Transform.simplify ~extra t
+
+(* ===== TALLY ===== *)
+
+let normalize_subst s =
+  (* TODO *)
+  Some s
+
+let tally delta cs =
+  Tallying.tally delta cs
+  |> List.filter_map normalize_subst

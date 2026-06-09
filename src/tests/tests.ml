@@ -50,24 +50,24 @@ let%expect_test "tests" =
     arg2: true
     arg3: true
     arg4: true
-    arg5: [
-            'A: empty
-          ]
-          [
-            'A: 'A & INT ;
-            'B: 'B & LGL ;
-            'C: 'C & INT ;
-            `R: { b : `R ; c : `R ; d : 'D | `R ;; empty? | `R }
-          ]
-          [
-            'B: empty
-          ]
-          [
-            'C: empty
-          ]
-          [
-            'D: empty
-          ]
+    arg5: [[
+             'A: empty
+          ]]
+          [[
+             'A: INT & 'A ;
+             'B: LGL & 'B ;
+             'C: INT & 'C ;
+             `R: { b : `R ; c : `R ; d : 'D | `R ;; empty? | `R }
+          ]]
+          [[
+             'B: empty
+          ]]
+          [[
+             'C: empty
+          ]]
+          [[
+             'D: empty
+          ]]
     arg6: ( a: INT, b: DBL ; any )
     arg7: @( INT, b: DBL ; any )
     arg8: ( a: INT, b: DBL ; INT ; named: raw)
@@ -83,9 +83,9 @@ let%expect_test "tests" =
     arr4: INT -> INT
     class1: <class1>
     class2: <class1, `c>
-    class3: [
-              `C: { class1 : `C ; class2 : tt | `C ;; ff | `C }
-            ]
+    class3: [[
+               `C: { class1 : `C ; class2 : tt | `C ;; ff | `C }
+            ]]
     class4: <class1, class2>
     class5: <class1, ...>
     class6: INT<class1, ...>

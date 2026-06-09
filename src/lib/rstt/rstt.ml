@@ -1,7 +1,7 @@
 
 include Sstt
 module Builder = Builder
-module Simplify = Simplify
+module TyOp = TyOp
 module Labels = Labels
 
 (* R components *)
