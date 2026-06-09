@@ -36,6 +36,18 @@ let%expect_test "tests" =
     vec13: CHR | INT | LGL | RAW
     vec14: clx
     vec15: ("test" | (42..) | tt) | CHR1 \ ^CHR1 | INT1 \ ^INT1 | LGL1 \ ^LGL1
+    vec16: [[
+              'A: p(tt) | p(42 | CHR | LGL) & 'A
+           ]]
+    vec17: [[
+              'A: p(RAW | tt)
+           ]]
+    vec18: [[
+              'A: LGL
+           ]]
+    vec19: [[
+              'A: tt
+           ]]
     lst1: true
     lst2: true
     lst3: false
