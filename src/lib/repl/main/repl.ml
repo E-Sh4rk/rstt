@@ -17,7 +17,7 @@ let is_mono_rvar v =
 let poly_leq t1 t2 =
   let delta = MixVarSet.union (Ty.all_vars t1) (Ty.all_vars t2)
     |> MixVarSet.filter is_mono_var is_mono_rvar in
-  TyOp.tally delta [ t1, t2 ] |> List.is_empty |> not
+  Tallying.tally delta [ t1, t2 ] |> List.is_empty |> not
 
 let rec compute_expr env e =
   match e with
