@@ -44,6 +44,14 @@ let%expect_test "tests" =
               'A: p(LGL)
            ]]
     vec19:
+    vec20: [[
+              'A: p(LGL) | p(CHR | LGL) & 'A | p(CHR | LGL) & 'B ;
+              'B: p(CHR | LGL) & 'B
+           ]]
+    vec21: [[
+              'A: p(LGL) & 'A | p(CHR | LGL) & 'A & 'B ;
+              'B: p(LGL) | p(CHR | LGL) & 'B
+           ]]
     lst1: true
     lst2: true
     lst3: false

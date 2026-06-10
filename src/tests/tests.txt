@@ -27,6 +27,8 @@
 "vec17": [[ 'A <= p(RAW | tt) ; 'A >= p(RAW | tt) ]] ;;
 "vec18": [[ 'A = p(LGL) ]] ;;
 "vec19": [[ 'A = p(tt) ]] ;;
+"vec20": [[ 'A <= p(LGL|CHR|42) ; 'A >= p(tt) ; 'B <= 'A ]] ;;
+"vec21": [[ 'A <= 'B ; 'B <= p(LGL|CHR|42) ; 'B >= p(tt) ]] ;;
 
 "lst1": { v(INT) } <= { any } ;;
 "lst2": { a:v1(42), b:v1(43), v(INT) } <= { v(INT) } ;;

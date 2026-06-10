@@ -70,7 +70,7 @@ let factorize (pvs, nvs) t =
 
 let normalize_subst s =
   let rec aux s =
-    let bindings = Subst.bindings1 s in
+    let bindings = Subst.bindings1 s |> List.rev in
     match List.find_opt (fun (_,ty) -> Prim.is_whole ty |> not) bindings with
     | None -> Some s
     | Some (v,ty) ->
