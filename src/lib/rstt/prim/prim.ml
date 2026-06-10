@@ -90,23 +90,24 @@ let is_whole ty =
 
 let enlarge ty =
   Ty.def ty |> VDescr.map (fun d ->
-    let ty = proj_tag_descr d in
-    let partition = whole_comps |>
-      List.map (fun any ->
-        let ty = Ty.cap ty any in
-        if Ty.is_empty ty then Ty.empty else any
-        )
-    in
-    Ty.disj partition |> add_tag_descr
+    Utils.map_tag_content (fun ty ->
+      whole_comps
+      |> List.map (fun any ->
+            let ty = Ty.cap ty any in
+            if Ty.is_empty ty then Ty.empty else any
+          )
+      |> Ty.disj
+    ) tag d
   ) |> Ty.of_def
+
 let reduce ty =
   Ty.def ty |> VDescr.map (fun d ->
-    let ty = proj_tag_descr d in
-    let partition = whole_comps |>
-      List.map (fun any ->
-        let ty = Ty.cap ty any in
-        if Ty.leq any ty then any else Ty.empty
-        )
-    in
-    Ty.disj partition |> add_tag_descr
+    Utils.map_tag_content (fun ty ->
+      whole_comps
+      |> List.map (fun any ->
+            let ty = Ty.cap ty any in
+            if Ty.leq any ty then any else Ty.empty
+          )
+      |> Ty.disj
+    ) tag d
   ) |> Ty.of_def

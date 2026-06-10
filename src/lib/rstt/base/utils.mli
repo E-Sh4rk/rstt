@@ -1,5 +1,8 @@
 open Sstt
 
+val map_tags : (Tags.t -> Tags.t) -> Descr.t -> Descr.t
+val map_tag_content : (Ty.t -> Ty.t) -> Tag.t -> Descr.t -> Descr.t
+
 val prune_printer_descr : any:Ty.t -> Printer.descr -> Printer.descr
 val prune_option_fop : Printer.descr Printer.fop -> Printer.descr Printer.fop
 val add_option : Ty.F.t -> Ty.F.t

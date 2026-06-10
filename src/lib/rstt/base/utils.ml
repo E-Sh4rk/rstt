@@ -1,5 +1,26 @@
 open Sstt
 
+let map_tags f d =
+  let open Descr in
+  let b, comps = destruct d in
+  let comps = comps |> List.map (function
+      | Intervals i -> Intervals i
+      | Enums e -> Enums e
+      | Tags t -> Tags (f t)
+      | Arrows a -> Arrows a
+      | Tuples t -> Tuples t
+      | Records r -> Records r
+    ) in
+  construct (b, comps)
+let map_tag_content f tag d =
+  let f tc =
+    if Tag.equal (TagComp.tag tc) tag
+    then TagComp.mk (tag, f (Op.TagComp.as_atom tc |> snd))
+    else tc
+  in
+  let f t = Tags.map f t in
+  map_tags f d
+
 let prune_printer_descr ~any d =
   let rec aux d =
     let any_d = {Printer.ty=any ; op=Printer.Builtin Printer.Any} in

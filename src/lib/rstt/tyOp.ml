@@ -37,18 +37,7 @@ let simpl_tags t =
     let b, comps = Tags.destruct t in
     let comps = List.map simpl_tags comps in
     Tags.construct (b,comps)
-let simpl_descr d =
-  let open Descr in
-  let b, comps = destruct d in
-  let comps = comps |> List.map (function
-      | Intervals i -> Intervals i
-      | Enums e -> Enums e
-      | Tags t -> Tags (simpl_tags t)
-      | Arrows a -> Arrows a
-      | Tuples t -> Tuples t
-      | Records r -> Records r
-    ) in
-    construct (b, comps)
+let simpl_descr d = Utils.map_tags simpl_tags d
 let extra vd = VDescr.map simpl_descr vd
 let simplify t = Transform.simplify ~extra t
 
