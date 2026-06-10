@@ -26,5 +26,4 @@ module MakeCompWithNa(P:PrimComp) : sig
     val map : (descr -> descr) -> P.t t -> P.t t
     val print : (int -> Prec.assoc -> Format.formatter -> P.t t -> unit)
     val is_singleton : Ty.t -> bool
-    val is_simple : Ty.t -> bool
 end

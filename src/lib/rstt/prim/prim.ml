@@ -8,9 +8,11 @@ module Clx = Clx
 module Lgl = Lgl
 
 let tag = Tag.mk "prim"
-let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
-let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
+let add_tag_descr ty = (tag, ty) |> Descr.mk_tag
+let add_tag ty = add_tag_descr ty |> Ty.mk_descr
+let proj_tag_descr d = d |> Descr.get_tags |> Tags.get tag
                   |> Op.TagComp.as_atom |> snd
+let proj_tag ty = ty |> Ty.get_descr |> proj_tag_descr
 let any_p = [Int.any ; Chr.any ; Dbl.any ; Raw.any ; Clx.any ; Lgl.any] |> Ty.disj
 let any_p' = [Int.any' ; Chr.any' ; Dbl.any' ; Raw.any' ; Clx.any' ; Lgl.any'] |> Ty.disj
 let any = any_p |> add_tag
@@ -67,12 +69,6 @@ let printer_builder = Printer.builder ~to_t ~map ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}
 let () = Pp.add_printer_param printer_params
 
-let simpl_comps =
-  let (a1, a2), (a3, a4) = List.split comps, List.split comps' in
-  List.concat [a1;a2;a3;a4] |> List.map mk
-let is_simple ty =
-  simpl_comps |> List.exists (Ty.equiv ty)
-
 let is_singleton ty =
   Ty.vars_toplevel ty |> VarSet.is_empty &&
   let ty = proj_tag ty in
@@ -82,26 +78,35 @@ let is_singleton ty =
 
 let whole_comps = List.map fst comps
 let is_whole ty =
-  let ty = proj_tag ty in
-  whole_comps |> List.for_all (fun any ->
-    Ty.disjoint any ty || Ty.leq any ty
-    )
+  try
+    Ty.def ty |> VDescr.map (fun d ->
+      let ty = proj_tag_descr d in
+      whole_comps |> List.iter (fun any ->
+        if not (Ty.disjoint any ty || Ty.leq any ty)
+        then raise Exit
+        ) ; d
+    ) |> ignore ; true
+  with Exit -> false
 
 let enlarge ty =
-  let ty = proj_tag ty in
-  let partition = whole_comps |>
-    List.map (fun any ->
-      let ty = Ty.cap ty any in
-      if Ty.is_empty ty then Ty.empty else any
-      )
-  in
-  Ty.disj partition |> add_tag
+  Ty.def ty |> VDescr.map (fun d ->
+    let ty = proj_tag_descr d in
+    let partition = whole_comps |>
+      List.map (fun any ->
+        let ty = Ty.cap ty any in
+        if Ty.is_empty ty then Ty.empty else any
+        )
+    in
+    Ty.disj partition |> add_tag_descr
+  ) |> Ty.of_def
 let reduce ty =
-  let ty = proj_tag ty in
-  let partition = whole_comps |>
-    List.map (fun any ->
-      let ty = Ty.cap ty any in
-      if Ty.leq any ty then any else Ty.empty
-      )
-  in
-  Ty.disj partition |> add_tag
+  Ty.def ty |> VDescr.map (fun d ->
+    let ty = proj_tag_descr d in
+    let partition = whole_comps |>
+      List.map (fun any ->
+        let ty = Ty.cap ty any in
+        if Ty.leq any ty then any else Ty.empty
+        )
+    in
+    Ty.disj partition |> add_tag_descr
+  ) |> Ty.of_def

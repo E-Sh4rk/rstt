@@ -42,8 +42,6 @@ module MakeCompWithNa(P:PrimComp) = struct
     match destruct ty with
     | WithNa _ | Na -> false
     | WithoutNa ty -> P.is_singleton ty
-  let is_simple ty =
-    Ty.equiv ty any || Ty.equal ty any'
 
   let map f = function Na -> Na | WithNa t -> WithNa (P.map f t) | WithoutNa t -> WithoutNa (P.map f t)
   let to_t ctx comp =
