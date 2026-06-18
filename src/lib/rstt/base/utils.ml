@@ -13,7 +13,7 @@ let rec partition_map3 f lst =
 
 let map_tags f d =
   let open Descr in
-  let b, comps = destruct d in
+  let comps, b = components d in
   let comps = comps |> List.map (function
       | Intervals i -> Intervals i
       | Enums e -> Enums e
@@ -22,7 +22,7 @@ let map_tags f d =
       | Tuples t -> Tuples t
       | Records r -> Records r
     ) in
-  construct (b, comps)
+  of_components (comps, b)
 let map_tag_content f tag d =
   let f tc =
     if Tag.equal (TagComp.tag tc) tag

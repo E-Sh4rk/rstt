@@ -2,7 +2,6 @@ open Sstt
 
 val partition_map3 : ('e -> [< `A of 'a | `B of 'b | `C of 'c]) -> 'e list -> 'a list * 'b list * 'c list
 
-val map_tags : (Tags.t -> Tags.t) -> Descr.t -> Descr.t
 val map_tag_content : (Ty.t -> Ty.t) -> Tag.t -> Descr.t -> Descr.t
 
 val prune_printer_descr : any:Ty.t -> Printer.descr -> Printer.descr
