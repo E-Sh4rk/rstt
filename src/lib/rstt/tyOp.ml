@@ -7,27 +7,26 @@ let simpl_tags c =
   if Tag.equal tag Attr.tag
   then
     let ty = Tags.mk_comp c |> Descr.mk_tags |> Ty.mk_descr in
-    let anyattr, others = Attr.destruct ty |> List.partition_map (fun (ps,ns) ->
+    let anyattr, noattr, others = Attr.destruct ty |> Utils.partition_map3 (fun (ps,ns) ->
       let content = List.map (fun x -> x.Attr.content) ps |> Ty.conj in
       let classes = List.map (fun x -> x.Attr.classes) ps |> Ty.conj in
       let attrs = List.map (fun x -> x.Attr.attrs) ps |> Ty.conj in
       let p = {Attr.content;classes;attrs} in
-      if List.is_empty ns && Ty.equiv (Attr.mk p) (Attr.mk_content content)
-      then Either.left content
-      else Either.right (Attr.mk_line ([p],ns))
+      if List.is_empty ns && Ty.equiv (Attr.mk p) (Attr.mk_content content) then `A content
+      else if List.is_empty ns && Ty.equiv (Attr.mk p) (Attr.mk_content_noattr content) then `B content
+      else `C (Attr.mk_line ([p],ns))
       ) in
     let anyattr = Ty.disj anyattr |> Attr.mk_content in
-    Ty.disj (anyattr::others) |> Ty.get_descr |> Descr.get_tags |> Tags.get Attr.tag
+    let noattr = Ty.disj noattr |> Attr.mk_content_noattr in
+    Ty.disj (anyattr::noattr::others) |> Ty.get_descr |> Descr.get_tags |> Tags.get Attr.tag
   else if Tag.equal tag Vec.tag
   then
     let ty = Tags.mk_comp c |> Descr.mk_tags |> Ty.mk_descr in
-    let solo, others = Vec.destruct ty |> List.partition_map (fun (p,ns) ->
+    let solo_vec, solo_scal, others = Vec.destruct ty |> Utils.partition_map3 (fun (p,ns) ->
       if List.is_empty ns
-      then Either.left p
-      else Either.right (Vec.mk_line (p,ns))
+      then match p with Vec.Vector c -> `A c | Vec.Scalar c -> `B c
+      else `C (Vec.mk_line (p,ns))
       ) in
-    let solo_vec, solo_scal = solo |> List.partition_map
-      (function Vec.Vector c -> Either.left c | Vec.Scalar c -> Either.right c) in
     let solo_vec = Vec.Vector (Ty.disj solo_vec) |> Vec.mk in
     let solo_scal = Vec.Scalar (Ty.disj solo_scal) |> Vec.mk in
     Ty.disj (solo_vec::solo_scal::others) |> Ty.get_descr |> Descr.get_tags |> Tags.get Vec.tag

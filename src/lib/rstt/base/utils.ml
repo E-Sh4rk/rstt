@@ -1,5 +1,16 @@
 open Sstt
 
+let rec partition_map3 f lst =
+  match lst with
+  | [] -> [],[],[]
+  | e::lst ->
+    let l1,l2,l3 = partition_map3 f lst in
+    begin match f e with
+    | `A a -> a::l1,l2,l3
+    | `B b -> l1,b::l2,l3
+    | `C c -> l1,l2,c::l3
+    end
+
 let map_tags f d =
   let open Descr in
   let b, comps = destruct d in
