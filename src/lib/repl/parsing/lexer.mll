@@ -36,7 +36,7 @@ rule token = parse
 | int as i { INT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
 | "v("  { VP } | s as str { SHORT str } | "p("  { P } | "s(" { S } | "c(" { C }
-| "INT(" { PI } | "CHR(" { PC } | "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS }
+| "INT1(" { PI } | "CHR1(" { PC } | "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS }
 | "tt" { TT } | "ff" { FF }
 | "externalptr(" { EPTR } | "externalptr" { EPTR_ANY }
 | "with" { WITH } | "where" { WHERE } | "and" { AND }
