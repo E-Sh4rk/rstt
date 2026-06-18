@@ -35,9 +35,11 @@ rule token = parse
 | "type" { TYPE }
 | int as i { INT (Z.of_string i) }
 | (int as i)"L" { LINT (Z.of_string i) }
+| (int as i)"." { DINT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
 | "v("  { VP } | s as str { SHORT str } | "p("  { P } | "s(" { S } | "c(" { C }
-| "INT1(" { PI } | "INT(" { PI } | "CHR1(" { PC } | "CHR(" { PC }
+| "INT1(" { PI } | "DBL1(" { PD } | "CHR1(" { PC }
+| "INT("  { PI } | "DBL("  { PD } | "CHR("  { PC }
 | "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS }
 | "tt" { TT } | "ff" { FF }
 | "externalptr(" { EPTR } | "externalptr" { EPTR_ANY }

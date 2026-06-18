@@ -7,8 +7,8 @@ type 'v cconst =
 | CStrSingl of string | CStrVar of 'v
 
 type 'v prim =
-| PInt' of Utils.interval | PChr' of string | PLgl' of bool
-| PIntVar of 'v | PChrVar of 'v
+| PDbl' of Utils.interval | PInt' of Utils.interval | PChr' of string | PLgl' of bool
+| PIntVar of 'v | PDblVar of 'v | PChrVar of 'v
 | PLgl | PChr | PInt | PDbl | PClx | PRaw
 | PSubLgl | PSubChr | PSubInt | PSubDbl | PSubClx | PSubRaw
 | PAny | PHat of 'v prim | PVar of 'v

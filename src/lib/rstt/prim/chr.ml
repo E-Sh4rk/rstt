@@ -41,6 +41,7 @@ module P = struct
 
   let print prefix suffix prec assoc fmt lines =
     let any = prefix^"CHR"^suffix in
+    let var = any in
     let pp_string _prec _assoc fmt str = Format.fprintf fmt "%S" str in
     let aux = Pp.print_cup ~cmp:String.compare pp_string in
     let dnf = Utils.t_to_dnf lines in
@@ -50,7 +51,7 @@ module P = struct
       | P (false, []) -> Format.fprintf fmt "%s" any
       | P (false, content) -> Prec.print_binary_op' (Prec.print_atomic_str any) aux
           prec assoc Diff fmt () content
-      | V v -> Format.fprintf fmt "%s(%a)" any Var.pp v
+      | V v -> Format.fprintf fmt "%s(%a)" var Var.pp v
     in
     Pp.print_non_empty_dnf ~any ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
 end

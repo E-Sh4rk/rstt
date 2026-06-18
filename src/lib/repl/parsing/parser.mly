@@ -100,13 +100,13 @@ let split_classes_elts lst =
 %}
 
 %token<string> STRING, SHORT(*, SBRACKET*)
-%token<Z.t> INT, LINT, VLEN
+%token<Z.t> INT, LINT, DINT, VLEN
 %token<string> ID, VARID, RVARID, SYMID
 %token<string*Z.t> SLEN
 %token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP (*VB*) P S HAT ARROW CARROW STAR WITH
-%token PI PC PCI PCINA PCS
+%token PI PD PC PCI PCINA PCS
 %token TT FF EPTR_ANY EPTR
 %token QUESTION_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE ALPAREN
@@ -308,8 +308,16 @@ prim_atom:
 | TT { PLgl' true }
 | FF { PLgl' false }
 | str=STRING { PChr' str }
+| i=DINT { let i = Z.to_int i in PDbl' (Some i, Some i) }
+| LPAREN i1=dint_opt DPOINT i2=dint_opt RPAREN
+{ let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in PDbl' (i1,i2) }
 | i=LINT { let i = Z.to_int i in PInt' (Some i, Some i) }
-| LPAREN i1=LINT? DPOINT i2=LINT? RPAREN
-{ let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in PInt' (i1,i2) }
+| LPAREN i1=LINT DPOINT i2=LINT? RPAREN
+{ let i1,i2 = Some (Z.to_int i1), Option.map Z.to_int i2 in PInt' (i1,i2) }
+| LPAREN DPOINT i2=LINT RPAREN
+{ let i1,i2 = None, Some (Z.to_int i2) in PInt' (i1,i2) }
 | PC id=VARID RPAREN { PChrVar id }
 | PI id=VARID RPAREN { PIntVar id }
+| PD id=VARID RPAREN { PDblVar id }
+
+%inline dint_opt: { None } | i=DINT { Some i }

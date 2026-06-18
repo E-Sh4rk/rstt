@@ -7,8 +7,8 @@ type 'v cconst =
 | CStrSingl of string | CStrVar of 'v
 
 type 'v prim =
-| PInt' of Utils.interval | PChr' of string | PLgl' of bool
-| PIntVar of 'v | PChrVar of 'v
+| PDbl' of Utils.interval | PInt' of Utils.interval | PChr' of string | PLgl' of bool
+| PIntVar of 'v | PDblVar of 'v | PChrVar of 'v
 | PLgl | PChr | PInt | PDbl | PClx | PRaw
 | PSubLgl | PSubChr | PSubInt | PSubDbl | PSubClx | PSubRaw
 | PAny | PHat of 'v prim | PVar of 'v
@@ -48,10 +48,10 @@ and 'r classes =
 let map_prim f p =
   let rec aux p =
     let p = match p with
-    | PInt' _ | PChr' _ | PLgl' _
+    | PDbl' _ | PInt' _ | PChr' _ | PLgl' _
     | PLgl | PChr | PInt | PDbl | PClx | PRaw
     | PSubLgl | PSubChr | PSubInt | PSubDbl | PSubClx | PSubRaw
-    | PAny | PVar _ | PIntVar _ | PChrVar _ -> p
+    | PAny | PVar _ | PIntVar _ | PDblVar _ | PChrVar _ -> p
     | PHat p -> PHat (aux p)
     | PCup (p1, p2) -> PCup (aux p1, aux p2)
     | PCap (p1, p2) -> PCap (aux p1, aux p2)
@@ -183,9 +183,11 @@ let rec build_prim t =
   | PDiff (t1, t2) -> Ty.diff (build_prim t1) (build_prim t2)
   | PNeg t -> Ty.diff Prim.any (build_prim t)
   | PInt' (b1,b2) -> Prim.Int.interval' (b1,b2) |> Prim.mk
+  | PDbl' (b1,b2) -> Prim.Dbl.interval' (b1,b2) |> Prim.mk
   | PChr' str -> Prim.Chr.str' str |> Prim.mk
   | PLgl' b -> Prim.Lgl.bool' b |> Prim.mk
   | PIntVar v -> Prim.Int.var v |> Prim.mk
+  | PDblVar v -> Prim.Dbl.var v |> Prim.mk
   | PChrVar v -> Prim.Chr.var v |> Prim.mk
 
 let build_classes t =
@@ -361,6 +363,9 @@ let resolve_prim env t =
     | PIntVar v ->
       let env', v = tvar !env v in
       env := env' ; PIntVar v
+    | PDblVar v ->
+      let env', v = tvar !env v in
+      env := env' ; PDblVar v
     | PChrVar v ->
       let env', v = tvar !env v in
       env := env' ; PChrVar v
@@ -372,7 +377,8 @@ let resolve_prim env t =
     | PCap (t1, t2) -> PCap (aux t1, aux t2)
     | PDiff (t1, t2) -> PDiff (aux t1, aux t2)
     | PNeg t -> PNeg (aux t)
-    | PInt' (b1,b2) -> PInt' (b1,b2) | PChr' str -> PChr' str | PLgl' b -> PLgl' b
+    | PInt' (b1,b2) -> PInt' (b1,b2) | PChr' str -> PChr' str
+    | PLgl' b -> PLgl' b | PDbl' (b1,b2) -> PDbl' (b1,b2)
   in
   aux t
 
