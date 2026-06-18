@@ -35,7 +35,7 @@ let%expect_test "tests" =
     vec12: int
     vec13: CHR | INT | LGL | RAW
     vec14: clx
-    vec15: ("test" | (42..) | tt) | CHR1 \ ^CHR1 | INT1 \ ^INT1 | LGL1 \ ^LGL1
+    vec15: ("test" | (42L..) | tt) | CHR1 \ ^CHR1 | INT1 \ ^INT1 | LGL1 \ ^LGL1
     vec16: [[
               'A: p(LGL) | p(CHR | LGL) & 'A
            ]]
@@ -56,10 +56,10 @@ let%expect_test "tests" =
     lst2: true
     lst3: false
     lst4: true
-    lst5: { a: 42, any }
+    lst5: { a: 42L, any }
     lst6: { a: ff }
     lst7: { a: "brrr", INT }
-    lst8: { `r } -> { a: 42, `r }
+    lst8: { `r } -> { a: 42L, `r }
     eptr1: externalptr
     eptr2: externalptr \ externalptr(empty)
     arg1: true

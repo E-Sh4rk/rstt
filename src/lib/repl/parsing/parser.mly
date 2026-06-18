@@ -100,7 +100,7 @@ let split_classes_elts lst =
 %}
 
 %token<string> STRING, SHORT(*, SBRACKET*)
-%token<Z.t> INT, VLEN
+%token<Z.t> INT, LINT, VLEN
 %token<string> ID, VARID, RVARID, SYMID
 %token<string*Z.t> SLEN
 %token TYPE WHERE AND
@@ -308,8 +308,8 @@ prim_atom:
 | TT { PLgl' true }
 | FF { PLgl' false }
 | str=STRING { PChr' str }
-| i=INT { let i = Z.to_int i in PInt' (Some i, Some i) }
-| LPAREN i1=INT? DPOINT i2=INT? RPAREN
+| i=LINT { let i = Z.to_int i in PInt' (Some i, Some i) }
+| LPAREN i1=LINT? DPOINT i2=LINT? RPAREN
 { let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in PInt' (i1,i2) }
 | PC id=VARID RPAREN { PChrVar id }
 | PI id=VARID RPAREN { PIntVar id }

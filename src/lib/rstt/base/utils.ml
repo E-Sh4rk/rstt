@@ -71,17 +71,17 @@ let add_option fty =
   fty |> Ty.F.map add_option'
 
 type interval = int option * int option
-let print_interval any _prec _assoc fmt (lb,ub) =
+let print_interval any f _prec _assoc fmt (lb,ub) =
   match lb, ub with
   | None, None -> Format.fprintf fmt "%s" any
   | Some lb, Some ub when Stdlib.Int.equal lb ub ->
-    Format.fprintf fmt "%i" lb
+    Format.fprintf fmt "%a" f lb
   | Some lb, Some ub ->
-    Format.fprintf fmt "(%i..%i)" lb ub
+    Format.fprintf fmt "(%a..%a)" f lb f ub
   | None, Some ub ->
-    Format.fprintf fmt "(..%i)" ub
+    Format.fprintf fmt "(..%a)" f ub
   | Some lb, None ->
-    Format.fprintf fmt "(%i..)" lb
+    Format.fprintf fmt "(%a..)" f lb
 
 let struct_print f prec assoc fmt t =
   if Pp.current_pos () = Pp.Struct

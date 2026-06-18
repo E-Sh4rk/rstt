@@ -34,6 +34,7 @@ let sbracket = s '['
 rule token = parse
 | "type" { TYPE }
 | int as i { INT (Z.of_string i) }
+| (int as i)"L" { LINT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
 | "v("  { VP } | s as str { SHORT str } | "p("  { P } | "s(" { S } | "c(" { C }
 | "INT1(" { PI } | "INT(" { PI } | "CHR1(" { PC } | "CHR(" { PC }

@@ -55,7 +55,9 @@ module P = struct
   let map _f v = v
   let print prefix suffix prec assoc fmt lines =
     let any = prefix^"INT"^suffix in
-    let aux = Pp.print_cup ~cmp:Stdlib.compare (Utils.print_interval any) in
+    let pp_int fmt i = Format.fprintf fmt "%iL" i in 
+    let aux = Pp.print_cup ~cmp:Stdlib.compare
+      (Utils.print_interval any pp_int) in
     let dnf = Utils.t_to_dnf lines in
     let print_lit prec assoc fmt t =
       match t with
