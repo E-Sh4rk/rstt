@@ -79,6 +79,10 @@
 "attr4": 42<> with {  } <= INT ;;
 "attr5": INT <= INT with { any } ;;
 
+"rec1": a where a = { a } | dbl ;;
+"rec2": a where a = { a } | dbl <= a where a = { a } | int ;;
+"rec3": a where a = { a } | int <= a where a = { a } | dbl ;;
+
 "c1": c_string\c("abc") | c(42) | c_na ;;
 "c2": c_bool & c_true ;;
 "c3": c_int_na \ c_na ;;

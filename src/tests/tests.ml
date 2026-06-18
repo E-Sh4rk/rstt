@@ -114,6 +114,9 @@ let%expect_test "tests" =
     attr3: INT with ({ dim: INT, any } & ~{ dim: INT })
     attr4: true
     attr5: true
+    rec1: x1 where x1 = dbl | { x1 }
+    rec2: false
+    rec3: true
     c1: c_int_na \ (c(..41) | c(43..)) | c_string \ c("abc")
     c2: c_true
     c3: c_int

@@ -103,7 +103,7 @@ let split_classes_elts lst =
 %token<Z.t> INT, VLEN
 %token<string> ID, VARID, RVARID, SYMID
 %token<string*Z.t> SLEN
-%token TYPE
+%token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP (*VB*) P S HAT ARROW CARROW STAR WITH
 %token PI PC PCI PCINA PCS
@@ -196,6 +196,11 @@ classes:
 
 ty:
 | ty=simple_ty { ty }
+| ty=simple_ty WHERE ts=separated_nonempty_list(AND, param_type_def)
+  { TWhere (ty, ts) }
+
+%inline param_type_def:
+| name=ID EQUAL t=simple_ty { (name, t) }
 
 simple_ty:
 | ty=atomic_ty classes=classes { TAttr {content=ty;classes=CClasses classes;attrs=TAny} }
