@@ -28,7 +28,8 @@ let%expect_test "tests" =
     vec5: ^INT1('a)
     vec6: CHR1('a)
     vec7: ^CHR1('a)
-    vec8: (INT1 -> c_true) & (vec & ~INT1 -> c_false)
+    vec8: ((CHR | CLX | DBL | LGL | RAW) | INT & ~INT1 -> c_false) & (INT1 ->
+          c_true)
     vec9: true
     vec10: true
     vec11: lgl
@@ -58,6 +59,9 @@ let%expect_test "tests" =
     vec25: DBL1 \ ((..) & ~DBL1('a))
     vec26: ^DBL1 \ ((..) & ~^DBL1('a))
     vec27: (..) & ~^DBL1('a)
+    vec28: NUM1 \ 42
+    vec29: LGL1 | RAW1 | ^DBL1 \ (..)
+    vec30: lgl1
     lst1: true
     lst2: true
     lst3: false

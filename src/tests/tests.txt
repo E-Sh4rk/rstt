@@ -35,6 +35,9 @@
 "vec25": v1(DBL('a)) ;;
 "vec26": v1(^DBL('a)) ;;
 "vec27": v1(^DBL\^DBL('a)) ;;
+"vec28": NUM1 \ 42 ;;
+"vec29": dbl1 \ NUM1 ;;
+"vec30": int1 \ NUM1 ;;
 
 "lst1": { v(INT) } <= { any } ;;
 "lst2": { a:v1(42L), b:v1(43L), v(INT) } <= { v(INT) } ;;

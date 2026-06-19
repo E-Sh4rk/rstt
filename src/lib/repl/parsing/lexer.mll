@@ -26,7 +26,7 @@ let symid = '#'['a'-'z''A'-'Z''0'-'9''_''\'']*
 
 let int = ('+'|'-')? ['0'-'9']+ ('_'+ ['0'-'9']+)*
 let s = "vec" | "lgl" | "chr" | "int" | "dbl" | "clx" | "raw"
-              | "LGL" | "CHR" | "INT" | "DBL" | "CLX" | "RAW"
+              | "LGL" | "CHR" | "INT" | "DBL" | "CLX" | "RAW" | "NUM"
 let vlen = 'v'['0'-'9']+
 let slen = s ['0'-'9']+
 let sbracket = s '['

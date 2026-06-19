@@ -38,5 +38,5 @@ let interval i = Ty.cup (Int.interval i) (Dbl.interval i)
 let interval' i = Ty.cup (Int.interval' i) (Dbl.interval' i)
 let bounded i = Ty.cup (Int.bounded i) (Dbl.bounded i)
 let bounded' i = Ty.cup (Int.bounded' i) (Dbl.bounded' i)
-let any = Ty.cup Int.any Dbl.any
-let any' = Ty.cup Int.any' Dbl.any'
+let any = Ty.cup Int.any (Dbl.interval (None, None))
+let any' = Ty.cup Int.any' (Dbl.interval' (None, None))
