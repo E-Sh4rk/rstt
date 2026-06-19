@@ -14,7 +14,7 @@ module type PrimComp = sig
     val map : (descr -> descr) -> t -> t
     val print : string (* any prefix *) -> string (* any suffix *)
     -> int -> Prec.assoc -> Format.formatter -> t -> unit
-    val is_finite : t -> bool
+    val may_not_feature_any : t -> bool
     val is_singleton : Ty.t -> bool
 end
 module MakeCompWithNa(P:PrimComp) = struct
@@ -64,7 +64,7 @@ module MakeCompWithNa(P:PrimComp) = struct
       Prec.print_binary_op' print_with_na print_without_na
         prec assoc Diff fmt P.any_t P.any_t in
     match t with
-    | WithNa t when P.is_finite t ->
+    | WithNa t when P.may_not_feature_any t ->
       Prec.print_binary' print_na print_with_na
         prec assoc (Prec.varop_info Cup) fmt () t
     | WithNa t -> print_with_na prec assoc fmt t

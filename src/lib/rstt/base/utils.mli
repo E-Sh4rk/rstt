@@ -19,7 +19,7 @@ type 'a atomic_line = { pos:bool ; prim:'a list ; pvs:Var.t list ; nvs:Var.t lis
 type 'a atomic_t = 'a atomic_line list
 type 'a atom = P of (bool * 'a list) | V of Var.t
 val any_atomic_t : 'a atomic_t
-val is_finite : ('a -> bool) -> 'a atomic_t -> bool
+val may_not_feature_any : ('a -> bool) -> 'a atomic_t -> bool
 val is_singleton : ('a -> bool) -> 'a atomic_t -> bool
 val line_to_atoms : 'a atomic_line -> 'a atom list * 'a atom list
 val t_to_dnf : 'a atomic_t -> ('a atom list * 'a atom list) list

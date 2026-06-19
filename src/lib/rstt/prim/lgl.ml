@@ -11,7 +11,7 @@ module P = struct
   let any_t = { t=true; f=true }
 
   let is_singleton ty = Ty.equiv ty tt || Ty.equiv ty ff
-  let is_finite {t; f} = not t || not f
+  let may_not_feature_any {t; f} = not t || not f
 
   let to_t _ ty =
     if Ty.leq ty any then

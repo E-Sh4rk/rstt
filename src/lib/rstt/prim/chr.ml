@@ -34,9 +34,9 @@ module P = struct
     let aux = Fun.const true in
     destruct ty |> Utils.is_singleton aux
 
-  let is_finite t =
+  let may_not_feature_any t =
     let aux = Fun.const true in
-    Utils.is_finite aux t
+    Utils.may_not_feature_any aux t
   let map _ v = v
 
   let print prefix suffix prec assoc fmt lines =

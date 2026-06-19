@@ -11,7 +11,7 @@ module type PrimComp = sig
     val map : (descr -> descr) -> t -> t
     val print : string (* any prefix *) -> string (* any suffix *)
     -> int -> Prec.assoc -> Format.formatter -> t -> unit
-    val is_finite : t -> bool
+    val may_not_feature_any : t -> bool
     val is_singleton : Ty.t -> bool
 end
 module MakeCompWithNa(P:PrimComp) : sig

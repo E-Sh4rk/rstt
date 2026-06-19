@@ -48,9 +48,9 @@ module P = struct
   let is_singleton ty =
     let aux = function (Some i1, Some i2) -> Stdlib.Int.equal i1 i2 | _ -> false in
     destruct ty |> Utils.is_singleton aux
-  let is_finite t =
+  let may_not_feature_any t =
     let aux = function (None, None) -> false | _ -> true in
-    Utils.is_finite aux t
+    Utils.may_not_feature_any aux t
 
   let map _f v = v
   let print prefix suffix prec assoc fmt lines =

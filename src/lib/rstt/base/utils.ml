@@ -96,10 +96,11 @@ let is_singleton f t =
   match t with
   | [{pos=true;prim=[p];pvs=[];nvs=[]}] -> f p
   | _ -> false
-let is_finite f t =
-  match t with
-  | [{pos=true;prim;_}] -> List.for_all f prim
-  | _ -> false
+let may_not_feature_any f t =
+  t |> List.exists (function
+    | {pos=true;prim;_} -> List.for_all f prim
+    | {pos=false;_} -> false
+  )
 
 let line_to_atoms { pos ; prim ; pvs ; nvs } =
   let hd = if not pos && prim = [] && pvs <> [] then [] else [P (pos, prim)] in
