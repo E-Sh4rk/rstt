@@ -5,7 +5,7 @@
 "base4": any\attr ;;
 
 "tuple1": [] ;;
-"tuple2": [p(42),p(73)] <= [p(INT),p(INT)] ;;
+"tuple2": [p(42L),p(73L)] <= [p(INT),p(INT)] ;;
 "tuple3": [int,lgl] ;;
 
 "vec1": INT1 | LGL | v1(RAW) ;;
@@ -16,28 +16,37 @@
 "vec6": v1(CHR('a)) ;;
 "vec7": v1(^CHR('a)) ;;
 "vec8": ((INT1) -> c_true) & ((INT) -> c_bool) & ((INT\INT1) | (vec & ~INT) -> c_false) ;;
-"vec9": 42 = v1(^42) ;;
+"vec9": 42L = v1(^42L) ;;
 "vec10": tt|ff = ^LGL1 ;;
 "vec11": RAW | LGL ;;
 "vec12": RAW | LGL | INT ;;
 "vec13": RAW | LGL | INT | CHR ;;
 "vec14": vec \ CHR ;;
-"vec15": "test" | CHR1 \ ^CHR1 | INT1 \ ^INT1 | (42..) | tt | LGL1 \ ^LGL1 ;;
-"vec16": [[ 'A <= p(LGL|CHR|42) ; 'A >= p(tt) ]] ;;
+"vec15": "test" | CHR1 \ ^CHR1 | INT1 \ ^INT1 | (42L..) | tt | LGL1 \ ^LGL1 ;;
+"vec16": [[ 'A <= p(LGL|CHR|42L) ; 'A >= p(tt) ]] ;;
 "vec17": [[ 'A <= p(RAW | tt) ; 'A >= p(RAW | tt) ]] ;;
 "vec18": [[ 'A = p(LGL) ]] ;;
 "vec19": [[ 'A = p(tt) ]] ;;
-"vec20": [[ 'A <= p(LGL|CHR|42) ; 'A >= p(tt) ; 'B <= 'A ]] ;;
-"vec21": [[ 'A <= 'B ; 'B <= p(LGL|CHR|42) ; 'B >= p(tt) ]] ;;
+"vec20": [[ 'A <= p(LGL|CHR|42L) ; 'A >= p(tt) ; 'B <= 'A ]] ;;
+"vec21": [[ 'A <= 'B ; 'B <= p(LGL|CHR|42L) ; 'B >= p(tt) ]] ;;
+"vec22": 42L | 42. ;;
+"vec23": DBL1 \ (..) ;;
+"vec24": DBL1 \ 42. ;;
+"vec25": v1(DBL('a)) ;;
+"vec26": v1(^DBL('a)) ;;
+"vec27": v1(^DBL\^DBL('a)) ;;
+"vec28": NUM1 \ 42 ;;
+"vec29": dbl1 \ NUM1 ;;
+"vec30": int1 \ NUM1 ;;
 
 "lst1": { v(INT) } <= { any } ;;
-"lst2": { a:v1(42), b:v1(43), v(INT) } <= { v(INT) } ;;
-"lst3": { a:v1(42), b:v1(ff), v(INT) } <= { v(INT) } ;;
-"lst4": { a:v1(42), b:v1(ff), v(INT) } <= { b:v1(ff), v(INT) } ;;
-"lst5": { a:42, any } ;;
+"lst2": { a:v1(42L), b:v1(43L), v(INT) } <= { v(INT) } ;;
+"lst3": { a:v1(42L), b:v1(ff), v(INT) } <= { v(INT) } ;;
+"lst4": { a:v1(42L), b:v1(ff), v(INT) } <= { b:v1(ff), v(INT) } ;;
+"lst5": { a:42L, any } ;;
 "lst6": { a:ff } ;;
 "lst7": { a:"brrr", INT } ;;
-"lst8": { `r } -> { a:v1(^42), `r } ;;
+"lst8": { `r } -> { a:v1(^42L), `r } ;;
 
 "eptr1": externalptr ;;
 "eptr2": externalptr \ externalptr(empty) ;;
@@ -76,7 +85,7 @@
 "attr1": INT with { dim:INT, any } ;;
 "attr2": INT with { dim:INT } ;;
 "attr3": INT with { dim:INT, any } \ INT with { dim:INT } ;;
-"attr4": 42<> with {  } <= INT ;;
+"attr4": 42L<> with {  } <= INT ;;
 "attr5": INT <= INT with { any } ;;
 
 "rec1": a where a = { a } | dbl ;;

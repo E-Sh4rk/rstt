@@ -19,3 +19,4 @@ module Dbl = Dbl
 module Raw = Raw
 module Clx = Clx
 module Lgl = Lgl
+module Num = Num

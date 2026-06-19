@@ -7,9 +7,10 @@ type 'v cconst =
 | CStrSingl of string | CStrVar of 'v
 
 type 'v prim =
-| PInt' of Utils.interval | PChr' of string | PLgl' of bool
-| PIntVar of 'v | PChrVar of 'v
-| PLgl | PChr | PInt | PDbl | PClx | PRaw
+| PDbl' of Utils.interval | PInt' of Utils.interval
+| PChr' of string | PLgl' of bool | PNum' of Utils.interval
+| PIntVar of 'v | PDblVar of 'v | PChrVar of 'v | PNumVar of 'v
+| PLgl | PChr | PInt | PDbl | PClx | PRaw | PNum
 | PSubLgl | PSubChr | PSubInt | PSubDbl | PSubClx | PSubRaw
 | PAny | PHat of 'v prim | PVar of 'v
 | PCup of 'v prim * 'v prim | PCap of 'v prim * 'v prim | PDiff of 'v prim * 'v prim | PNeg of 'v prim

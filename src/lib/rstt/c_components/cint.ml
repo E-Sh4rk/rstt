@@ -56,6 +56,7 @@ let to_t _ comp =
 
 let map _f v = v
 let print prec assoc fmt lines =
+  let pp_int fmt i = Format.fprintf fmt "%i" i in 
   let pp_interval _prec _assoc fmt i =
     match i with
     | AnyNa -> Format.fprintf fmt "c_int_na"
@@ -64,8 +65,9 @@ let print prec assoc fmt lines =
     | Bool -> Format.fprintf fmt "c_bool"
     | Tt -> Format.fprintf fmt "c_true"
     | Ff -> Format.fprintf fmt "c_false"
-    | Singl i -> Format.fprintf fmt "c(%i)" i
-    | Interval (i1,i2) -> Format.fprintf fmt "c%a" (Utils.print_interval "(..)" prec assoc) (i1,i2)
+    | Singl i -> Format.fprintf fmt "c(%a)" pp_int i
+    | Interval (i1,i2) -> Format.fprintf fmt "c%a"
+      (Utils.print_interval "(..)" pp_int prec assoc) (i1,i2)
   in
   let aux = Pp.print_cup ~cmp:Stdlib.compare pp_interval in
   let dnf = Utils.t_to_dnf lines in

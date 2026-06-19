@@ -7,9 +7,10 @@ type 'v cconst =
 | CStrSingl of string | CStrVar of 'v
 
 type 'v prim =
-| PInt' of Utils.interval | PChr' of string | PLgl' of bool
-| PIntVar of 'v | PChrVar of 'v
-| PLgl | PChr | PInt | PDbl | PClx | PRaw
+| PDbl' of Utils.interval | PInt' of Utils.interval
+| PChr' of string | PLgl' of bool | PNum' of Utils.interval
+| PIntVar of 'v | PDblVar of 'v | PChrVar of 'v | PNumVar of 'v
+| PLgl | PChr | PInt | PDbl | PClx | PRaw | PNum
 | PSubLgl | PSubChr | PSubInt | PSubDbl | PSubClx | PSubRaw
 | PAny | PHat of 'v prim | PVar of 'v
 | PCup of 'v prim * 'v prim | PCap of 'v prim * 'v prim | PDiff of 'v prim * 'v prim | PNeg of 'v prim
@@ -48,10 +49,10 @@ and 'r classes =
 let map_prim f p =
   let rec aux p =
     let p = match p with
-    | PInt' _ | PChr' _ | PLgl' _
-    | PLgl | PChr | PInt | PDbl | PClx | PRaw
+    | PDbl' _ | PInt' _ | PChr' _ | PLgl' _ | PNum' _
+    | PLgl | PChr | PInt | PDbl | PClx | PRaw | PNum
     | PSubLgl | PSubChr | PSubInt | PSubDbl | PSubClx | PSubRaw
-    | PAny | PVar _ | PIntVar _ | PChrVar _ -> p
+    | PAny | PVar _ | PIntVar _ | PDblVar _ | PChrVar _ | PNumVar _ -> p
     | PHat p -> PHat (aux p)
     | PCup (p1, p2) -> PCup (aux p1, aux p2)
     | PCap (p1, p2) -> PCap (aux p1, aux p2)
@@ -171,6 +172,7 @@ let rec build_prim t =
   | PDbl -> Prim.mk Prim.Dbl.any
   | PClx -> Prim.mk Prim.Clx.any
   | PRaw -> Prim.mk Prim.Raw.any
+  | PNum -> Prim.mk Prim.Num.any
   | PSubLgl -> Prim.mk Prim.Lgl.any_sub
   | PSubChr -> Prim.mk Prim.Chr.any_sub
   | PSubInt -> Prim.mk Prim.Int.any_sub
@@ -183,10 +185,14 @@ let rec build_prim t =
   | PDiff (t1, t2) -> Ty.diff (build_prim t1) (build_prim t2)
   | PNeg t -> Ty.diff Prim.any (build_prim t)
   | PInt' (b1,b2) -> Prim.Int.interval' (b1,b2) |> Prim.mk
+  | PDbl' (b1,b2) -> Prim.Dbl.interval' (b1,b2) |> Prim.mk
   | PChr' str -> Prim.Chr.str' str |> Prim.mk
   | PLgl' b -> Prim.Lgl.bool' b |> Prim.mk
+  | PNum' (b1,b2) -> Prim.Num.interval' (b1,b2) |> Prim.mk
   | PIntVar v -> Prim.Int.var v |> Prim.mk
+  | PDblVar v -> Prim.Dbl.var v |> Prim.mk
   | PChrVar v -> Prim.Chr.var v |> Prim.mk
+  | PNumVar v -> Prim.Num.var v |> Prim.mk
 
 let build_classes t =
   match t with
@@ -361,10 +367,17 @@ let resolve_prim env t =
     | PIntVar v ->
       let env', v = tvar !env v in
       env := env' ; PIntVar v
+    | PDblVar v ->
+      let env', v = tvar !env v in
+      env := env' ; PDblVar v
     | PChrVar v ->
       let env', v = tvar !env v in
       env := env' ; PChrVar v
-    | PLgl -> PLgl | PChr -> PChr | PInt -> PInt | PDbl -> PDbl | PClx -> PClx | PRaw -> PRaw
+    | PNumVar v ->
+      let env', v = tvar !env v in
+      env := env' ; PNumVar v
+    | PLgl -> PLgl | PChr -> PChr | PInt -> PInt | PDbl -> PDbl
+    | PClx -> PClx | PRaw -> PRaw | PNum -> PNum
     | PSubLgl -> PSubLgl | PSubChr -> PSubChr | PSubInt -> PSubInt
     | PSubDbl -> PSubDbl | PSubClx -> PSubClx | PSubRaw -> PSubRaw
     | PHat t -> PHat (aux t)
@@ -372,7 +385,9 @@ let resolve_prim env t =
     | PCap (t1, t2) -> PCap (aux t1, aux t2)
     | PDiff (t1, t2) -> PDiff (aux t1, aux t2)
     | PNeg t -> PNeg (aux t)
-    | PInt' (b1,b2) -> PInt' (b1,b2) | PChr' str -> PChr' str | PLgl' b -> PLgl' b
+    | PInt' (b1,b2) -> PInt' (b1,b2) | PChr' str -> PChr' str
+    | PLgl' b -> PLgl' b | PDbl' (b1,b2) -> PDbl' (b1,b2)
+    | PNum' (b1,b2) -> PNum' (b1,b2)
   in
   aux t
 

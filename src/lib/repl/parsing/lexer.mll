@@ -26,7 +26,7 @@ let symid = '#'['a'-'z''A'-'Z''0'-'9''_''\'']*
 
 let int = ('+'|'-')? ['0'-'9']+ ('_'+ ['0'-'9']+)*
 let s = "vec" | "lgl" | "chr" | "int" | "dbl" | "clx" | "raw"
-              | "LGL" | "CHR" | "INT" | "DBL" | "CLX" | "RAW"
+              | "LGL" | "CHR" | "INT" | "DBL" | "CLX" | "RAW" | "NUM"
 let vlen = 'v'['0'-'9']+
 let slen = s ['0'-'9']+
 let sbracket = s '['
@@ -34,9 +34,12 @@ let sbracket = s '['
 rule token = parse
 | "type" { TYPE }
 | int as i { INT (Z.of_string i) }
+| (int as i)"L" { LINT (Z.of_string i) }
+| (int as i)"." { DINT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
 | "v("  { VP } | s as str { SHORT str } | "p("  { P } | "s(" { S } | "c(" { C }
-| "INT1(" { PI } | "INT(" { PI } | "CHR1(" { PC } | "CHR(" { PC }
+| "INT1(" { PI } | "DBL1(" { PD } | "CHR1(" { PC } | "NUM1(" { PN }
+| "INT("  { PI } | "DBL("  { PD } | "CHR("  { PC } | "NUM("  { PN }
 | "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS }
 | "tt" { TT } | "ff" { FF }
 | "externalptr(" { EPTR } | "externalptr" { EPTR_ANY }

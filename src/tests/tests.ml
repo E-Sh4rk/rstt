@@ -28,14 +28,15 @@ let%expect_test "tests" =
     vec5: ^INT1('a)
     vec6: CHR1('a)
     vec7: ^CHR1('a)
-    vec8: (INT1 -> c_true) & (vec & ~INT1 -> c_false)
+    vec8: ((CHR | CLX | DBL | LGL | RAW) | INT & ~INT1 -> c_false) & (INT1 ->
+          c_true)
     vec9: true
     vec10: true
     vec11: lgl
     vec12: int
     vec13: CHR | INT | LGL | RAW
     vec14: clx
-    vec15: ("test" | (42..) | tt) | CHR1 \ ^CHR1 | INT1 \ ^INT1 | LGL1 \ ^LGL1
+    vec15: ("test" | (42L..) | tt) | CHR1 \ ^CHR1 | INT1 \ ^INT1 | LGL1 \ ^LGL1
     vec16: [[
               'A: p(LGL) | p(CHR | LGL) & 'A
            ]]
@@ -52,14 +53,23 @@ let%expect_test "tests" =
               'A: p(LGL) & 'A | p(CHR | LGL) & 'A & 'B ;
               'B: p(LGL) | p(CHR | LGL) & 'B
            ]]
+    vec22: 42
+    vec23: DBL1 \ (..)
+    vec24: DBL1 \ 42.
+    vec25: DBL1 \ ((..) & ~DBL1('a))
+    vec26: ^DBL1 \ ((..) & ~^DBL1('a))
+    vec27: (..) & ~^DBL1('a)
+    vec28: NUM1 \ 42
+    vec29: LGL1 | RAW1 | ^DBL1 \ (..)
+    vec30: lgl1
     lst1: true
     lst2: true
     lst3: false
     lst4: true
-    lst5: { a: 42, any }
+    lst5: { a: 42L, any }
     lst6: { a: ff }
     lst7: { a: "brrr", INT }
-    lst8: { `r } -> { a: 42, `r }
+    lst8: { `r } -> { a: 42L, `r }
     eptr1: externalptr
     eptr2: externalptr \ externalptr(empty)
     arg1: true

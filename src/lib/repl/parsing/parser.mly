@@ -45,6 +45,7 @@ let parse_builtin_prim str =
     | "DBL" -> PDbl
     | "CLX" -> PClx
     | "RAW" -> PRaw
+    | "NUM" -> PNum
     | str -> raise (Errors.E_Parser ("Unknown primitive builtin "^str))
 
 let assert_one i =
@@ -100,13 +101,13 @@ let split_classes_elts lst =
 %}
 
 %token<string> STRING, SHORT(*, SBRACKET*)
-%token<Z.t> INT, VLEN
+%token<Z.t> INT, LINT, DINT, VLEN
 %token<string> ID, VARID, RVARID, SYMID
 %token<string*Z.t> SLEN
 %token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP (*VB*) P S HAT ARROW CARROW STAR WITH
-%token PI PC PCI PCINA PCS
+%token PI PD PC PN PCI PCINA PCS
 %token TT FF EPTR_ANY EPTR
 %token QUESTION_MARK DPOINT
 %token LPAREN RPAREN LBRACE RBRACE ALPAREN
@@ -305,11 +306,31 @@ prim:
 | HAT p=prim { PHat p }
 
 prim_atom:
+(* Lgl *)
 | TT { PLgl' true }
 | FF { PLgl' false }
+(* Chr *)
 | str=STRING { PChr' str }
-| i=INT { let i = Z.to_int i in PInt' (Some i, Some i) }
-| LPAREN i1=INT? DPOINT i2=INT? RPAREN
-{ let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in PInt' (i1,i2) }
+(* Dbl *)
+| i=DINT { let i = Z.to_int i in PDbl' (Some i, Some i) }
+| LPAREN i1=dint_opt DPOINT i2=dint_opt RPAREN
+{ let i1,i2 = Option.map Z.to_int i1, Option.map Z.to_int i2 in PDbl' (i1,i2) }
+(* Int *)
+| i=LINT { let i = Z.to_int i in PInt' (Some i, Some i) }
+| LPAREN i1=LINT DPOINT i2=LINT? RPAREN
+{ let i1,i2 = Some (Z.to_int i1), Option.map Z.to_int i2 in PInt' (i1,i2) }
+| LPAREN DPOINT i2=LINT RPAREN
+{ let i1,i2 = None, Some (Z.to_int i2) in PInt' (i1,i2) }
+(* Num *)
+| i=INT { let i = Z.to_int i in PNum' (Some i, Some i) }
+| LPAREN i1=INT DPOINT i2=INT? RPAREN
+{ let i1,i2 = Some (Z.to_int i1), Option.map Z.to_int i2 in PNum' (i1,i2) }
+| LPAREN DPOINT i2=INT RPAREN
+{ let i1,i2 = None, Some (Z.to_int i2) in PNum' (i1,i2) }
+(* Vars *)
 | PC id=VARID RPAREN { PChrVar id }
 | PI id=VARID RPAREN { PIntVar id }
+| PD id=VARID RPAREN { PDblVar id }
+| PN id=VARID RPAREN { PNumVar id }
+
+%inline dint_opt: { None } | i=DINT { Some i }
