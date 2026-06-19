@@ -6,6 +6,7 @@ module Dbl = Dbl
 module Raw = Raw
 module Clx = Clx
 module Lgl = Lgl
+module Num = Num
 
 let tag = Tag.mk "prim"
 let add_tag_descr ty = (tag, ty) |> Descr.mk_tag
@@ -34,6 +35,15 @@ let is_sub pty =
   comps@comps' |> List.find_map (fun (any,any_sub) ->
       if Ty.equiv pty any_sub then Some (Ty.cap any pty) else None
     )
+let merge_num pty =
+  Option.bind (Num.of_dbl pty) (fun dbl ->
+    Option.bind (Num.of_int pty) (fun int ->
+        if Ty.equiv dbl int then
+          let pty = Ty.diff pty (Ty.cup Dbl.any Int.any) in
+          Some (Ty.cup pty dbl)
+        else None
+      )
+  )
 let to_t ctx comp =
   let (_, pty) = Op.TagComp.as_atom comp in
   if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty)
@@ -42,7 +52,9 @@ let to_t ctx comp =
     else if Ty.equiv any_p' pty then Some TAny'
     else
       match is_sub pty with
-      | None -> Some (TComp (ctx.Printer.build pty))
+      | None ->
+        let pty = merge_num pty |> Option.value ~default:pty in
+        Some (TComp (ctx.Printer.build pty))
       | Some pty -> Some (TSubComp (ctx.Printer.build pty))
   else None
 let map f = function TAny -> TAny | TAny' -> TAny'

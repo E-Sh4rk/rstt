@@ -38,8 +38,8 @@ rule token = parse
 | (int as i)"." { DINT (Z.of_string i) }
 | '"'      { read_string (Buffer.create 17) lexbuf }
 | "v("  { VP } | s as str { SHORT str } | "p("  { P } | "s(" { S } | "c(" { C }
-| "INT1(" { PI } | "DBL1(" { PD } | "CHR1(" { PC }
-| "INT("  { PI } | "DBL("  { PD } | "CHR("  { PC }
+| "INT1(" { PI } | "DBL1(" { PD } | "CHR1(" { PC } | "NUM1(" { PN }
+| "INT("  { PI } | "DBL("  { PD } | "CHR("  { PC } | "NUM("  { PN }
 | "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS }
 | "tt" { TT } | "ff" { FF }
 | "externalptr(" { EPTR } | "externalptr" { EPTR_ANY }

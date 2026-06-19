@@ -52,7 +52,7 @@ let%expect_test "tests" =
               'A: p(LGL) & 'A | p(CHR | LGL) & 'A & 'B ;
               'B: p(LGL) | p(CHR | LGL) & 'B
            ]]
-    vec22: 42. | 42L
+    vec22: 42
     vec23: DBL1 \ (..)
     vec24: DBL1 \ 42.
     vec25: DBL1 \ ((..) & ~DBL1('a))

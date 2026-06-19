@@ -28,3 +28,15 @@ let of_dbl ty =
 let of_int ty =
   let ty = proj_tag Int.tag ty |> add_tag tag in
   if Ty.leq ty any then Some ty else None
+
+(* Constructors *)
+let int i = Ty.cup (Int.int i) (Dbl.int i)
+let int' i = Ty.cup (Int.int' i) (Dbl.int' i)
+let var v = Ty.cup (Int.var v) (Dbl.var v)
+let var' v = Ty.cup (Int.var' v) (Dbl.var' v)
+let interval i = Ty.cup (Int.interval i) (Dbl.interval i)
+let interval' i = Ty.cup (Int.interval' i) (Dbl.interval' i)
+let bounded i = Ty.cup (Int.bounded i) (Dbl.bounded i)
+let bounded' i = Ty.cup (Int.bounded' i) (Dbl.bounded' i)
+let any = Ty.cup Int.any Dbl.any
+let any' = Ty.cup Int.any' Dbl.any'
