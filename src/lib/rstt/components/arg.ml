@@ -199,49 +199,63 @@ let print prec assoc fmt t =
     | CallSite a1, CallSite a2 -> cmp_call a1 a2
     | DefSite _, _ -> -1 | _, DefSite _ -> 1
   in
+  let is_absent f =
+    match f with
+    | Printer.FTy (t, true) when Ty.is_empty t.Printer.ty -> true
+    | _ -> false
+  in
   let print_field_ty fmt f =
     match f with
-    | Printer.FTy (t, true) when Ty.is_empty t.Printer.ty ->
-      Format.fprintf fmt "absent"
+    | f when is_absent f -> Format.fprintf fmt "absent"
     | f -> Printer.print_field_ctx Prec.min_prec Prec.NoAssoc fmt f
   in
-  let print_field fmt (name,ty) =
-      match name with
-      | None -> Format.fprintf fmt "%a" print_field_ty ty
-      | Some str -> Format.fprintf fmt "%s: %a" str print_field_ty ty
-  in
+  let print_field fmt (name,ty) = Format.fprintf fmt "%s: %a" name print_field_ty ty in
   let print_tail fmt (f',f) =
     match f', f with
     | Printer.FTy (t', true), Printer.FTy (t, true)
-      when Ty.is_empty t'.Printer.ty && Ty.is_empty t.Printer.ty -> ()
-    | Printer.FTy (t', true), Printer.FTy (t, true)
       when Ty.equiv t.Printer.ty t'.Printer.ty ->
-      Format.fprintf fmt "; %a " print_field_ty (Utils.prune_option_fop f')
-    | f', f -> Format.fprintf fmt "; %a, %a "
+      Format.fprintf fmt "...: %a" print_field_ty (Utils.prune_option_fop f')
+    | f', f -> Format.fprintf fmt "...: (%a, %a)"
       print_field_ty (Utils.prune_option_fop f')
       print_field_ty (Utils.prune_option_fop f)
   in
+  let print_elt fmt e =
+    match e with
+    | `PosField ty -> print_field_ty fmt ty
+    | `Field f -> print_field fmt f
+    | `Tail t -> print_tail fmt t
+    | `NamedField f -> print_field fmt f
+  in
   let print_atom _prec _assoc fmt a =
-    let named, pos_named =
-      List.map (fun (str,t) -> Some str, t) a.named,
-      List.map (fun (str,t) -> Some str, t) a.pos_named in
-    Format.fprintf fmt "( %a %a%s%a)" (print_seq print_field ", ")
-      (pos_named) print_tail (a.pos_tl, a.named_tl) (if named = [] then "" else "; ")
-      (print_seq print_field ", ") named
+    let pos_named, tl, named =
+      List.map (fun (str,t) -> `Field (str, t)) a.pos_named,
+      `Tail (a.pos_tl, a.named_tl),
+      List.map (fun (str,t) -> `NamedField (str, t)) a.named in
+    let seq =
+      if List.is_empty named && is_absent a.pos_tl && is_absent a.named_tl
+      then pos_named
+      else pos_named@[tl]@named
+    in
+    Format.fprintf fmt "(%a)" (print_seq print_elt ", ") seq
   in
   let print_atom' _prec _assoc fmt a =
-    let pos, named =
-      List.map (fun t -> None, t) a.pos',
-      List.map (fun (str,t) -> Some str, t) a.named' in
-    Format.fprintf fmt "@( %a %a)" (print_seq print_field ", ")
-      (pos@named) print_tail (a.pos_tl', a.named_tl')
+    let pos, named, tl =
+      List.map (fun t -> `PosField t) a.pos',
+      List.map (fun (str,t) -> `NamedField (str,t)) a.named',
+      `Tail (a.pos_tl', a.named_tl') in
+    let seq =
+      if is_absent a.pos_tl' && is_absent a.named_tl'
+      then pos@named
+      else pos@named@[tl]
+    in
+    Format.fprintf fmt "@(%a)" (print_seq print_elt ", ") seq
   in
-  let print_elt prec assoc fmt elt =
+  let print_any_atom prec assoc fmt elt =
     match elt with
     | DefSite a -> print_atom prec assoc fmt a
     | CallSite a -> print_atom' prec assoc fmt a
   in
-  Pp.print_cup ~cmp print_elt prec assoc fmt t
+  Pp.print_cup ~cmp print_any_atom prec assoc fmt t
 (* let print = Utils.struct_print print *) (* Args are not packed in Attr *)
 
 let printer_builder =

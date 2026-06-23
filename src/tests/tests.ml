@@ -94,15 +94,15 @@ let%expect_test "tests" =
           [[
              'D: empty
           ]]
-    arg6: ( a: INT, b: DBL ; any )
-    arg7: @( INT, b: DBL ; any )
-    arg8: ( a: INT, b: DBL ; INT ; named: raw)
-    arg9: @( INT, b: DBL ; INT )
+    arg6: (a: INT, b: DBL, ...: any)
+    arg7: @(INT, b: DBL, ...: any)
+    arg8: (a: INT, b: DBL, ...: INT, named: raw)
+    arg9: @(INT, b: DBL, ...: INT)
     arg10: true
-    arg11: @( a: <class1> )
-    arg12: @( INT?, LGL ; INT )
-    arg13: @( LGL, INT? ; INT )
-    arg14: ( a: INT ; absent, `r )
+    arg11: @(a: <class1>)
+    arg12: @(INT?, LGL, ...: INT)
+    arg13: @(LGL, INT?, ...: INT)
+    arg14: (a: INT, ...: (absent, `r))
     arr1: INT --> INT
     arr2: INT -> INT
     arr3: INT -> INT
@@ -144,5 +144,5 @@ let%expect_test "tests" =
     c15: c_ptr
     c16: c_int_na & c_int_na('a)
     c17: c_int_na \ c_int & c_int_na('a)
-    sym: ( a: { #(b,2): 'a }, b: any? ) -> 'a
+    sym: (a: { #(b,2): 'a }, b: any?) -> 'a
     |}]

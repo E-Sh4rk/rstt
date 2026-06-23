@@ -52,8 +52,8 @@ let assert_one i =
     if Z.equal i Z.one |> not
     then raise (Errors.E_Parser ("Cannot specify a size other than 1 for a vector"))
 
-type field = Pos of ty | Named of string * ty
-let split_fields lst =
+type arg_elt = Pos of ty | Named of string * ty | Tail of ty * ty
+let split_arg_elt' lst =
     let rec pos_fields lst =
         match lst with
         | (Pos t)::lst ->
@@ -61,12 +61,41 @@ let split_fields lst =
             (t::ts), lst
         | _ -> [], lst
     in
+    let rec named_fields lst =
+        match lst with
+        | (Named (str,ty))::lst ->
+            let fs, lst = named_fields lst in
+            ((str,ty)::fs), lst
+        | _ -> [], lst
+    in
+    let tail_field lst =
+        match lst with
+        | [] -> TOption TEmpty, TOption TEmpty
+        | [Tail (t1,t2)] -> t1, t2
+        | _ -> raise (Errors.E_Parser ("Unexpected field"))
+    in
     let pos, lst = pos_fields lst in
-    let named = lst |> List.map (function
-        | Named (str,t) -> (str,t)
-        | Pos _ -> raise (Errors.E_Parser ("Unexpected positional field"))
-    ) in
-    pos, named
+    let named, lst = named_fields lst in
+    pos, named, tail_field lst
+let split_arg_elt lst =
+    let rec named_fields lst =
+        match lst with
+        | (Named (str,ty))::lst ->
+            let fs, lst = named_fields lst in
+            ((str,ty)::fs), lst
+        | _ -> [], lst
+    in
+    let tail_field lst =
+        match lst with
+        | (Tail (t1,t2))::lst -> (t1, t2), lst
+        | lst -> (TOption TEmpty, TOption TEmpty), lst
+    in
+    let pos_named, lst = named_fields lst in
+    let tl, lst = tail_field lst in
+    let named, lst = named_fields lst in
+    if List.is_empty lst
+    then pos_named, tl, named
+    else raise (Errors.E_Parser ("Unexpected field"))
 
 let split_lst_elts lst =
     let lst, tl = match List.rev lst with
@@ -240,14 +269,15 @@ atomic_ty:
 | EPTR_ANY { TExtPtr } | EPTR ty=ty RPAREN { TExtPtr' ty }
 | LBRACE elts=separated_list(COMMA, lst_elt) RBRACE
 { let bindings,sym,tl = split_lst_elts elts in TList {bindings;sym;tl} }
-| ALPAREN fs=separated_list(COMMA, ty_non_sym_field) tl=tail RPAREN
+| ALPAREN elts=separated_list(COMMA, arg_elt2) RPAREN
 {
-    let pos',named' = split_fields fs in
-    let pos_tl',named_tl' = tl in
+    let pos',named',tl' = split_arg_elt' elts in
+    let pos_tl',named_tl' = tl' in
     TArg' { pos' ; named' ; pos_tl' ; named_tl' }
 }
-| LPAREN pos_named=separated_list(COMMA, ty_named_field) tl=tail named=extra_named RPAREN
+| LPAREN elts=separated_list(COMMA, arg_elt) RPAREN
 {
+    let pos_named,tl,named = split_arg_elt elts in
     let pos_tl,named_tl = tl in
     TArg { pos_named ; pos_tl ; named ; named_tl }
 }
@@ -268,31 +298,26 @@ cint:
 cstr:
 | str=STRING { CStrSingl str }
 
-%inline tail:
-| SEMICOLON ty=simple_ty { ty, ty }
-| SEMICOLON ty1=simple_ty COMMA ty2=simple_ty { ty1, ty2 }
-| { TOption TEmpty, TOption TEmpty }
-
 %inline lst_elt:
 | lbl=SYMID COLON t=simple_ty { `LstSym (lbl, t) }
 | lbl=label COLON t=simple_ty { `LstNamed (lbl, t) }
 | ty=simple_ty { `LstTl ty }
 
-%inline extra_named:
-| SEMICOLON named=separated_list(COMMA, ty_named_field) { named }
-| { [] }
-
 label:
 | id=ID { id }
 | s=SHORT { s }
 
-%inline ty_non_sym_field:
+arg_elt2:
 | lbl=label COLON t=simple_ty { Named (lbl, t) }
 | t=simple_ty { Pos t }
+| ELLIPSIS COLON ty=simple_ty { Tail (ty, ty) }
+| ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { Tail (ty1, ty2) }
 
-%inline ty_named_field:
-| lbl=label COLON t=simple_ty { (lbl, t) }
-| lbl=label EQUAL id=SYMID { (lbl, TSymLabel (id)) }
+arg_elt:
+| lbl=label COLON t=simple_ty { Named (lbl, t) }
+| lbl=label EQUAL id=SYMID { Named (lbl, TSymLabel (id)) }
+| ELLIPSIS COLON ty=simple_ty { Tail (ty, ty) }
+| ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { Tail (ty1, ty2) }
 
 prim:
 | LPAREN p=prim RPAREN { p }

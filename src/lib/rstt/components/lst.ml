@@ -67,16 +67,20 @@ let print prec assoc fmt t =
     Pp.Compare.fop Pp.Compare.descr t1 t2 |> ccmp cmp_sym_bindings s1 s2
     |> ccmp cmp_bindings b1 b2
   in
+  let is_absent f =
+    match f with
+    | Printer.FTy (t, true) when Ty.is_empty t.Printer.ty -> true
+    | _ -> false
+  in
+  let print_field_ty fmt f =
+    match f with
+    | f when is_absent f -> Format.fprintf fmt "absent"
+    | f -> Printer.print_field_ctx Prec.min_prec Prec.NoAssoc fmt f
+  in
+  let print_field suffix fmt (str,ty) =
+    Format.fprintf fmt "%s: %a%s" str print_field_ty ty suffix
+  in
   let print_atom _prec _assoc fmt {bindings;sym;tl} =
-    let print_field_ty fmt f =
-      match f with
-      | Printer.FTy (t, true) when Ty.is_empty t.Printer.ty ->
-        Format.fprintf fmt "absent"
-      | f -> Printer.print_field_ctx Prec.min_prec Prec.NoAssoc fmt f
-    in
-    let print_field suffix fmt (str,ty) =
-      Format.fprintf fmt "%s: %a%s" str print_field_ty ty suffix
-    in
     let sym = List.map (fun (str,t) -> Labels.name (Sym str), t) sym in
     match tl with
     | Printer.FTy (t, true) when Ty.leq t.Printer.ty Ty.empty ->
