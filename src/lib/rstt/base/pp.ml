@@ -4,27 +4,6 @@ module Compare = struct
   open Printer
   open Prec
 
-  let rec fop : 'a. ('a -> 'a -> int) -> 'a fop -> 'a fop -> int =
-    fun cmp_d a b ->
-    match a, b with
-    | FVarop (fv1, l1), FVarop (fv2, l2) ->
-      (match Stdlib.compare fv1 fv2 with
-       | 0 -> List.compare (fop cmp_d) l1 l2
-       | i -> i)
-    | FBinop (fb1, a1, b1), FBinop (fb2, a2, b2) ->
-      (match Stdlib.compare fb1 fb2 with
-       | 0 -> (match fop cmp_d a1 a2 with 0 -> fop cmp_d b1 b2 | i -> i)
-       | i -> i)
-    | FUnop (fu1, a1), FUnop (fu2, a2) ->
-      (match Stdlib.compare fu1 fu2 with 0 -> fop cmp_d a1 a2 | i -> i)
-    | FTy (d1, b1), FTy (d2, b2) ->
-      (match cmp_d d1 d2 with 0 -> Bool.compare b1 b2 | i -> i)
-    | FRowVar r1, FRowVar r2 -> RowVar.compare r1 r2
-    | FVarop _, _ -> -1 | _, FVarop _ -> 1
-    | FBinop _, _ -> -1 | _, FBinop _ -> 1
-    | FUnop _, _ -> -1 | _, FUnop _ -> 1
-    | FTy _, _ -> -1 | _, FTy _ -> 1
-
   let builtin a b =
     match a, b with
     | AnyTupleComp i1, AnyTupleComp i2 -> Stdlib.compare i1 i2
@@ -32,7 +11,6 @@ module Compare = struct
     | _ -> Stdlib.compare a b
 
   let rec descr a b = op a.op b.op
-
   and op a b =
     match a, b with
     | Extension e1, Extension e2 ->
@@ -52,10 +30,10 @@ module Compare = struct
        | i -> i)
     | Record (fields1, rest1), Record (fields2, rest2) ->
       let cmp_field (l1, f1) (l2, f2) =
-        match Label.compare l1 l2 with 0 -> fop descr f1 f2 | i -> i
+        match Label.compare l1 l2 with 0 -> fdescr f1 f2 | i -> i
       in
       (match List.compare cmp_field fields1 fields2 with
-       | 0 -> fop descr rest1 rest2
+       | 0 -> fdescr rest1 rest2
        | i -> i)
     | Varop (v1, ds1), Varop (v2, ds2) ->
       (match Stdlib.compare v1 v2 with
@@ -78,6 +56,26 @@ module Compare = struct
     | Record _, _ -> -1 | _, Record _ -> 1
     | Varop _, _ -> -1 | _, Varop _ -> 1
     | Binop _, _ -> -1 | _, Binop _ -> 1
+  and fdescr a b = fop a.fop b.fop
+  and fop a b =
+    match a, b with
+    | FVarop (fv1, l1), FVarop (fv2, l2) ->
+      (match Stdlib.compare fv1 fv2 with
+       | 0 -> List.compare fdescr l1 l2
+       | i -> i)
+    | FBinop (fb1, a1, b1), FBinop (fb2, a2, b2) ->
+      (match Stdlib.compare fb1 fb2 with
+       | 0 -> (match fdescr a1 a2 with 0 -> fdescr b1 b2 | i -> i)
+       | i -> i)
+    | FUnop (fu1, a1), FUnop (fu2, a2) ->
+      (match Stdlib.compare fu1 fu2 with 0 -> fdescr a1 a2 | i -> i)
+    | FTy (d1, b1), FTy (d2, b2) ->
+      (match descr d1 d2 with 0 -> Bool.compare b1 b2 | i -> i)
+    | FRowVar r1, FRowVar r2 -> RowVar.compare r1 r2
+    | FVarop _, _ -> -1 | _, FVarop _ -> 1
+    | FBinop _, _ -> -1 | _, FBinop _ -> 1
+    | FUnop _, _ -> -1 | _, FUnop _ -> 1
+    | FTy _, _ -> -1 | _, FTy _ -> 1
 end
 
 let pparams = ref Printer.empty_params
@@ -166,7 +164,7 @@ let rec print_descr_ctx' pos prec assoc fmt d =
       let print_binding fmt (l,f) =
         Format.fprintf fmt "%a :@ %a"
           Label.pp l
-          print_fop' f
+          print_fdescr' f
       in
       Format.fprintf fmt "{@ %a@ %a}"
         (Prec.print_seq print_binding " ;@ ") bindings
@@ -198,32 +196,32 @@ and print_struct_descr_ctx prec assoc fmt d =
 and print_prim_descr_ctx prec assoc fmt d =
   print_descr_ctx' (Prim "") prec assoc fmt d
 
-and print_fop prec assoc fmt fop =
-  let rec aux prec assoc fmt fop =
-    match fop with
-    | Printer.FRowVar v -> Format.fprintf fmt "%a" RowVar.pp v
+and print_fdescr prec assoc fmt fd =
+  let rec aux prec assoc fmt fd =
+    match fd.Printer.fop with
+    | FRowVar v -> Format.fprintf fmt "%a" RowVar.pp v
     | FTy (d, opt) ->
       if opt then
         Format.fprintf fmt "%a?" (print_tl_descr_ctx Prec.max_prec NoAssoc) d
       else
         print_tl_descr_ctx prec assoc fmt d
-    | FVarop (FCup,ds) -> print_cup ~cmp:(Compare.fop Compare.descr) aux prec assoc fmt ds
-    | FVarop (FCap,ds) -> print_cap ~cmp:(Compare.fop Compare.descr) aux prec assoc fmt ds
+    | FVarop (FCup,ds) -> print_cup ~cmp:Compare.fdescr aux prec assoc fmt ds
+    | FVarop (FCap,ds) -> print_cap ~cmp:Compare.fdescr aux prec assoc fmt ds
     | FBinop (b,fop1,fop2) -> Prec.print_binary_fop aux prec assoc b fmt fop1 fop2
     | FUnop (u,fop) -> Prec.print_unary_fop aux prec assoc u fmt fop
   in
-  aux prec assoc fmt fop
+  aux prec assoc fmt fd
 
 and print_tail fmt tail =
   match tail with
-  | FTy ({ op=Builtin Any ; _ }, true) -> Format.fprintf fmt ".."
-  | FTy ({ op=Builtin Empty ; _ }, true) -> Format.fprintf fmt ""
-  | _ -> Format.fprintf fmt ";;@ %a@ " print_fop' tail
+  | {fty ; _} when Ty.F.equiv fty Ty.F.any -> Format.fprintf fmt ".."
+  | {fty ; _} when Ty.F.equiv fty (Ty.F.mk_descr Ty.O.absent) -> Format.fprintf fmt ""
+  | _ -> Format.fprintf fmt ";;@ %a@ " print_fdescr' tail
 
 and print_descr fmt d = print_tl_descr_ctx Prec.min_prec NoAssoc fmt d
-and print_fop' fmt fop = print_fop Prec.min_prec NoAssoc fmt fop
+and print_fdescr' fmt fd = print_fdescr Prec.min_prec NoAssoc fmt fd
 let print_descr_atomic = print_tl_descr_ctx Prec.max_prec Prec.NoAssoc
-let print_field_ctx = print_fop
+let print_field_ctx = print_fdescr
 
 
 let print_def fmt (n,d) =

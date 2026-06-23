@@ -4,10 +4,11 @@ open Prec
 
 module Compare : sig
     open Printer
-    val fop : ('d -> 'd -> int) -> 'd fop -> 'd fop -> int
     val builtin : builtin -> builtin -> int
     val descr : descr -> descr -> int
+    val fdescr : fdescr -> fdescr -> int
     val op : op -> op -> int
+    val fop : fop -> fop -> int
 end
 
 val add_printer_param : Printer.params -> unit
@@ -35,7 +36,7 @@ val print_prim_descr_ctx : int -> assoc -> Format.formatter -> descr -> unit
 
 val print_descr : Format.formatter -> descr -> unit
 val print_descr_atomic : Format.formatter -> descr -> unit
-val print_field_ctx : int -> assoc -> Format.formatter -> descr fop -> unit
+val print_field_ctx : int -> assoc -> Format.formatter -> fdescr -> unit
 val print : Format.formatter -> descr t -> unit
 
 val pp_struct_tag : (int -> assoc -> Format.formatter -> 'a -> unit) -> int -> assoc -> Format.formatter -> 'a -> unit

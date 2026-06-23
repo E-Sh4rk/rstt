@@ -48,7 +48,7 @@ let extract t : Ty.F.t t =
     (fun (ps, ns) -> List.map record_to_atom ps, List.map record_to_atom ns)
 let to_t ctx comp =
   let ty = Op.TagComp.as_atom comp |> snd in
-  if Ty.leq ty any_d then Some (extract ty |> map ctx.Printer.build_fop)
+  if Ty.leq ty any_d then Some (extract ty |> map ctx.Printer.build_field)
   else None
 
 let destruct ty = proj_tag ty |> Ty.cap any_d |> extract
@@ -57,21 +57,17 @@ let print prec assoc fmt t =
   let cmp {bindings=b1;sym=s1;tl=t1} {bindings=b2;sym=s2;tl=t2} =
     let open Rstt_utils in
     let cmp_field (str1,f1) (str2,f2) =
-      String.compare str1 str2 |> ccmp (Pp.Compare.fop Pp.Compare.descr) f1 f2
+      String.compare str1 str2 |> ccmp Pp.Compare.fdescr f1 f2
     in
     let cmp_sym_field (lbl1,f1) (lbl2,f2) =
-      Stdlib.compare lbl1 lbl2 |> ccmp (Pp.Compare.fop Pp.Compare.descr) f1 f2
+      Stdlib.compare lbl1 lbl2 |> ccmp Pp.Compare.fdescr f1 f2
     in
     let cmp_bindings b1 b2 = List.compare cmp_field b1 b2 in
     let cmp_sym_bindings b1 b2 = List.compare cmp_sym_field b1 b2 in
-    Pp.Compare.fop Pp.Compare.descr t1 t2 |> ccmp cmp_sym_bindings s1 s2
+    Pp.Compare.fdescr t1 t2 |> ccmp cmp_sym_bindings s1 s2
     |> ccmp cmp_bindings b1 b2
   in
-  let is_absent f =
-    match f with
-    | Printer.FTy (t, true) when Ty.is_empty t.Printer.ty -> true
-    | _ -> false
-  in
+  let is_absent fd = Ty.F.equiv fd.Printer.fty (Ty.F.mk_descr Ty.O.absent) in
   let print_field_ty fmt f =
     match f with
     | f when is_absent f -> Format.fprintf fmt "absent"
@@ -83,16 +79,19 @@ let print prec assoc fmt t =
   let print_atom _prec _assoc fmt {bindings;sym;tl} =
     let sym = List.map (fun (str,t) -> Labels.name (Sym str), t) sym in
     match tl with
-    | Printer.FTy (t, true) when Ty.leq t.Printer.ty Ty.empty ->
+    | tl when is_absent tl ->
       Format.fprintf fmt "{ %a }" (print_seq (print_field "") ", ") (bindings@sym)
     | _ ->
       Format.fprintf fmt "{ %a%a }" (print_seq (print_field ", ") "") (bindings@sym)
-        print_field_ty (Utils.prune_option_fop tl)
+        print_field_ty (Utils.prune_option_fdescr tl)
   in
   Pp.print_non_empty_dnf ~cmp ~any:"list" print_atom prec assoc fmt t
 let print = Utils.struct_print print
 
 let printer_builder =
-  Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print
+  Printer.builder
+    ~to_t:to_t
+    ~map:(fun f -> map (Printer.map_fdescr (fun d -> (f d).op) (fun fd -> fd.fop)))
+    ~print:print
 let printer_params = Printer.{ aliases = []; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params

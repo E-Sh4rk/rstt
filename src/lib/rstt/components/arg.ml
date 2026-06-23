@@ -151,7 +151,7 @@ let extract ty : Ty.F.t t =
 let to_t ctx comp =
   let ty = Op.TagComp.as_atom comp |> snd in
   if Ty.leq ty any_d
-  then Some (extract ty |> map ctx.Printer.build_fop)
+  then Some (extract ty |> map ctx.Printer.build_field)
   else None
 
 let destruct ty =
@@ -177,20 +177,20 @@ let ids_of ty =
 let print prec assoc fmt t =
   let cmp t1 t2 =
     let open Rstt_utils in
-    let cmp_pos_bindings = List.compare (Pp.Compare.fop Pp.Compare.descr) in
+    let cmp_pos_bindings = List.compare Pp.Compare.fdescr in
     let cmp_field (str1,f1) (str2,f2) =
-      String.compare str1 str2 |> ccmp (Pp.Compare.fop Pp.Compare.descr) f1 f2
+      String.compare str1 str2 |> ccmp Pp.Compare.fdescr f1 f2
     in
     let cmp_bindings b1 b2 = List.compare cmp_field b1 b2 in
     let cmp_def a1 a2 =
-      Pp.Compare.fop Pp.Compare.descr a1.pos_tl a2.pos_tl |> ccmp
-      (Pp.Compare.fop Pp.Compare.descr) a1.named_tl a2.named_tl |> ccmp
+      Pp.Compare.fdescr a1.pos_tl a2.pos_tl |> ccmp
+      Pp.Compare.fdescr a1.named_tl a2.named_tl |> ccmp
       cmp_bindings a1.pos_named a2.pos_named |> ccmp
       cmp_bindings a1.named a2.named
     in
     let cmp_call a1 a2 =
-      Pp.Compare.fop Pp.Compare.descr a1.pos_tl' a2.pos_tl' |> ccmp
-      (Pp.Compare.fop Pp.Compare.descr) a1.named_tl' a2.named_tl' |> ccmp
+      Pp.Compare.fdescr a1.pos_tl' a2.pos_tl' |> ccmp
+      Pp.Compare.fdescr a1.named_tl' a2.named_tl' |> ccmp
       cmp_pos_bindings a1.pos' a2.pos' |> ccmp
       cmp_bindings a1.named' a2.named'
     in
@@ -199,11 +199,7 @@ let print prec assoc fmt t =
     | CallSite a1, CallSite a2 -> cmp_call a1 a2
     | DefSite _, _ -> -1 | _, DefSite _ -> 1
   in
-  let is_absent f =
-    match f with
-    | Printer.FTy (t, true) when Ty.is_empty t.Printer.ty -> true
-    | _ -> false
-  in
+  let is_absent fd = Ty.F.equiv fd.Printer.fty (Ty.F.mk_descr Ty.O.absent) in
   let print_field_ty fmt f =
     match f with
     | f when is_absent f -> Format.fprintf fmt "absent"
@@ -212,12 +208,11 @@ let print prec assoc fmt t =
   let print_field fmt (name,ty) = Format.fprintf fmt "%s: %a" name print_field_ty ty in
   let print_tail fmt (f',f) =
     match f', f with
-    | Printer.FTy (t', true), Printer.FTy (t, true)
-      when Ty.equiv t.Printer.ty t'.Printer.ty ->
-      Format.fprintf fmt "...: %a" print_field_ty (Utils.prune_option_fop f')
+    | { Printer.fty=fty1 ; _ }, { Printer.fty=fty2 ; _ } when Ty.F.equiv fty1 fty2 ->
+      Format.fprintf fmt "...: %a" print_field_ty (Utils.prune_option_fdescr f')
     | f', f -> Format.fprintf fmt "...: (%a, %a)"
-      print_field_ty (Utils.prune_option_fop f')
-      print_field_ty (Utils.prune_option_fop f)
+      print_field_ty (Utils.prune_option_fdescr f')
+      print_field_ty (Utils.prune_option_fdescr f)
   in
   let print_elt fmt e =
     match e with
@@ -259,6 +254,9 @@ let print prec assoc fmt t =
 (* let print = Utils.struct_print print *) (* Args are not packed in Attr *)
 
 let printer_builder =
-  Printer.builder ~to_t:to_t ~map:(fun f -> map (Printer.map_fop f)) ~print:print
+  Printer.builder
+    ~to_t:to_t
+    ~map:(fun f -> map (Printer.map_fdescr (fun d -> (f d).op) (fun fd -> fd.fop)))
+    ~print:print
 let printer_params = Printer.{ aliases = []; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params

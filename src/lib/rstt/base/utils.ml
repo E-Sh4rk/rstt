@@ -52,16 +52,19 @@ let prune_printer_descr ~any d =
     in
     aux d
 
-let prune_option_fop fop =
-  let rec aux = function
-  | Printer.FTy (ty,_) when ty.Printer.ty |> Ty.is_empty |> not -> Printer.FTy (ty,false)
-  | Printer.FTy (ty,o) -> Printer.FTy (ty,o)
-  | FVarop (o,es) -> FVarop (o, List.map aux es)
-  | FBinop (o,e1,e2) -> FBinop (o, aux e1, aux e2)
-  | FUnop (o,e) -> FUnop (o, aux e)
-  | FRowVar v -> FRowVar v
+let prune_option_fdescr fd =
+  let rec aux fd =
+    let fop = match fd.Printer.fop with
+    | FTy (ty,_) when ty.Printer.ty |> Ty.is_empty |> not -> Printer.FTy (ty,false)
+    | FTy (ty,o) -> Printer.FTy (ty,o)
+    | FVarop (o,es) -> FVarop (o, List.map aux es)
+    | FBinop (o,e1,e2) -> FBinop (o, aux e1, aux e2)
+    | FUnop (o,e) -> FUnop (o, aux e)
+    | FRowVar v -> FRowVar v
+    in
+    { fd with fop }
   in
-  aux fop
+  aux fd
 
 let add_option' tyo =
   let ty = Ty.O.get tyo |> Ty.O.Atom.get in

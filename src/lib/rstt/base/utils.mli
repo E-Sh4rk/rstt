@@ -5,7 +5,7 @@ val partition_map3 : ('e -> [< `A of 'a | `B of 'b | `C of 'c]) -> 'e list -> 'a
 val map_tag_content : (Ty.t -> Ty.t) -> Tag.t -> Descr.t -> Descr.t
 
 val prune_printer_descr : any:Ty.t -> Printer.descr -> Printer.descr
-val prune_option_fop : Printer.descr Printer.fop -> Printer.descr Printer.fop
+val prune_option_fdescr : Printer.fdescr -> Printer.fdescr
 val add_option : Ty.F.t -> Ty.F.t
 val add_option' : Ty.O.t -> Ty.O.t
 
