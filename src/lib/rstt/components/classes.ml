@@ -195,6 +195,6 @@ let print _prec _assoc fmt {pos;neg;unk;tail} =
     Format.fprintf fmt "<%a%a>" (print_seq (print ", ") "") bindings print_tail tail
 
 let printer_builder =
-  Printer.builder ~to_t:to_t ~map:(fun _ x -> x) ~print:print
+  Printer.builder ~to_t:to_t ~map:(fun _ _ v -> v) ~print:print
 let printer_params = Printer.{ aliases = []; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params

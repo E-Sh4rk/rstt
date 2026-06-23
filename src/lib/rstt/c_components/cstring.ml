@@ -23,8 +23,6 @@ let to_t _ comp =
     else None
   with Not_found -> None
 
-let map _ v = v
-
 let print prec assoc fmt lines =
   let pp_string _prec _assoc fmt str = Format.fprintf fmt "c(%S)" str in
   let aux = Pp.print_cup ~cmp:String.compare pp_string in
@@ -39,6 +37,6 @@ let print prec assoc fmt lines =
   in
   Pp.print_non_empty_dnf ~any:"c_string" ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
 
-let printer_builder = Printer.builder ~to_t ~map ~print
+let printer_builder = Printer.builder ~to_t ~map:(fun _ _ v -> v) ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params

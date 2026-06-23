@@ -51,7 +51,6 @@ let may_not_feature_any t =
   let aux = function (None, None) -> false | _ -> true in
   Utils.may_not_feature_any aux t
 
-let map _f v = v
 let print ~any ~var ~pp_int prec assoc fmt lines =
   let aux = Pp.print_cup ~cmp:Stdlib.compare
     (Utils.print_interval any pp_int) in

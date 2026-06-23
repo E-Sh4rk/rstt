@@ -10,7 +10,6 @@ val any : Ty.t
 type t = Utils.interval Utils.atomic_t
 val any_t : t
 val may_not_feature_any : t -> bool
-val map : ('a -> 'b) -> t -> t
 val to_t : ?pos:bool -> Ty.t -> t option
 val print : any:string -> var:string -> pp_int:(Format.formatter -> int -> unit)
     -> int -> Prec.assoc -> Format.formatter -> t -> unit

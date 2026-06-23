@@ -54,7 +54,6 @@ let to_t _ comp =
     Some (Ty.def pty |> VDescr.dnf |> List.map aux)
   else None
 
-let map _f v = v
 let print prec assoc fmt lines =
   let pp_int fmt i = Format.fprintf fmt "%i" i in 
   let pp_interval _prec _assoc fmt i =
@@ -81,6 +80,6 @@ let print prec assoc fmt lines =
   in
   Pp.print_non_empty_dnf ~any:"c_int_na" ~cmp:Stdlib.compare print_lit prec assoc fmt dnf
 
-let printer_builder = Printer.builder ~to_t ~map ~print
+let printer_builder = Printer.builder ~to_t ~map:(fun _ _ v -> v) ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params

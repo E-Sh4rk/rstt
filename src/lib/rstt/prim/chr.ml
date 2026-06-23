@@ -37,7 +37,6 @@ module P = struct
   let may_not_feature_any t =
     let aux = Fun.const true in
     Utils.may_not_feature_any aux t
-  let map _ v = v
 
   let print prefix suffix prec assoc fmt lines =
     let any = prefix^"CHR"^suffix in
@@ -58,7 +57,7 @@ end
 
 include Na.MakeCompWithNa(P)
 
-let printer_builder = Printer.builder ~to_t ~map ~print
+let printer_builder = Printer.builder ~to_t ~map:(fun _ _ v -> v) ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params
 

@@ -103,6 +103,6 @@ let print prec assoc fmt t =
   Pp.print_non_empty_dnf ~cmp ~any:"attr" print_atom prec assoc fmt t
 
 let printer_builder =
-  Printer.builder ~to_t:to_t ~map:(fun f -> map f f) ~print:print
+  Printer.builder ~to_t:to_t ~map:(fun f _ -> map f f) ~print:print
 let printer_params = Printer.{ aliases = []; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params

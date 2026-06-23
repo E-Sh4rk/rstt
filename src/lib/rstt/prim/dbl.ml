@@ -16,7 +16,6 @@ module P = struct
   type t = { integers:Utils.interval Utils.atomic_t ; neg:bool }
   let any_t = { integers=[] ; neg=true }
   let may_not_feature_any { neg ; _ } = not neg
-  let map f { integers ; neg } = { integers=map f integers ; neg }
   let to_t _ ty =
     let others = Ty.leq others ty in
     let ty = if others then Ty.diff Integer.any ty else ty in
@@ -44,7 +43,7 @@ end
 
 include Na.MakeCompWithNa(P)
 
-let printer_builder = Printer.builder ~to_t ~map ~print
+let printer_builder = Printer.builder ~to_t ~map:(fun _ _ v -> v) ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params
 

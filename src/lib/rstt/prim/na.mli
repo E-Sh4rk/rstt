@@ -8,7 +8,6 @@ module type PrimComp = sig
     type t
     val any_t : t
     val to_t : build_ctx -> Ty.t -> t option
-    val map : (descr -> descr) -> t -> t
     val print : string (* any prefix *) -> string (* any suffix *)
     -> int -> Prec.assoc -> Format.formatter -> t -> unit
     val may_not_feature_any : t -> bool
@@ -23,7 +22,6 @@ module MakeCompWithNa(P:PrimComp) : sig
     type 'a t = WithNa of 'a | WithoutNa of 'a | Na
     val destruct : Ty.t -> Ty.t t
     val to_t : build_ctx -> TagComp.t -> P.t t option
-    val map : (descr -> descr) -> P.t t -> P.t t
     val print : (int -> Prec.assoc -> Format.formatter -> P.t t -> unit)
     val is_singleton : Ty.t -> bool
 end

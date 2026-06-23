@@ -77,7 +77,7 @@ let print prec assoc fmt t =
     then pp prec assoc fmt ()
     else Pp.pp_prim_tag pp prec assoc fmt ()
 
-let printer_builder = Printer.builder ~to_t ~map ~print
+let printer_builder = Printer.builder ~to_t ~map:(fun f _ v -> map f v) ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}
 let () = Pp.add_printer_param printer_params
 

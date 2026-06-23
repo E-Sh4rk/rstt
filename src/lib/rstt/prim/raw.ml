@@ -11,13 +11,12 @@ module P = struct
   let is_singleton _ = false
   let may_not_feature_any _ = false
 
-  let map _f v = v
   let print prefix suffix _ _ fmt () = Format.fprintf fmt "%sRAW%s" prefix suffix
 end
 
 include Na.MakeCompWithNa(P)
 let any_sub, any_sub' = any, any'
 
-let printer_builder = Printer.builder ~to_t ~map ~print
+let printer_builder = Printer.builder ~to_t ~map:(fun _ _ v -> v) ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}
 let () = Pp.add_printer_param printer_params

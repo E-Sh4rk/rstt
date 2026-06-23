@@ -11,7 +11,6 @@ module type PrimComp = sig
     type t
     val any_t : t
     val to_t : build_ctx -> Ty.t -> t option
-    val map : (descr -> descr) -> t -> t
     val print : string (* any prefix *) -> string (* any suffix *)
     -> int -> Prec.assoc -> Format.formatter -> t -> unit
     val may_not_feature_any : t -> bool
@@ -43,7 +42,6 @@ module MakeCompWithNa(P:PrimComp) = struct
     | WithNa _ | Na -> false
     | WithoutNa ty -> P.is_singleton ty
 
-  let map f = function Na -> Na | WithNa t -> WithNa (P.map f t) | WithoutNa t -> WithoutNa (P.map f t)
   let to_t ctx comp =
     let (_, pty) = Op.TagComp.as_atom comp in
     if Ty.leq pty any_p && (Ty.vars_toplevel pty |> VarSet.is_empty) then

@@ -20,7 +20,6 @@ module P = struct
       Some { t; f }
     else None
 
-  let map _f v = v
   let print prefix suffix _ _ fmt {t; f} =
     match t, f with
     | false, false -> assert false
@@ -31,7 +30,7 @@ end
 
 include Na.MakeCompWithNa(P)
 
-let printer_builder = Printer.builder ~to_t ~map ~print
+let printer_builder = Printer.builder ~to_t ~map:(fun _ _ v -> v) ~print
 let printer_params = Printer.{ aliases = []; extensions = [tag, printer_builder]}
 let () = Pp.add_printer_param printer_params
 

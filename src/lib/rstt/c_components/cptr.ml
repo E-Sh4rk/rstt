@@ -69,6 +69,6 @@ let print prec assoc fmt { nullable ; target ; str } =
       prec assoc Diff fmt (target,str) ()
 
 
-let printer_builder = Printer.builder ~to_t ~map ~print
+let printer_builder = Printer.builder ~to_t ~map:(fun f _ v -> map f v) ~print
 let printer_params = Printer.{aliases =[]; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params

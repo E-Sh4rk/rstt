@@ -90,6 +90,6 @@ let print prec assoc fmt t =
 let print = Utils.struct_print print
 
 let printer_builder =
-  Printer.builder ~to_t:to_t ~map:map ~print:print
+  Printer.builder ~to_t:to_t ~map:(fun f _ v -> map f v) ~print:print
 let printer_params = Printer.{ aliases = []; extensions = [(tag, printer_builder)]}
 let () = Pp.add_printer_param printer_params
