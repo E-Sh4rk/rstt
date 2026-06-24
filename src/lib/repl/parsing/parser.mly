@@ -166,11 +166,14 @@ command:
 
 elt:
 | TYPE ids=separated_nonempty_list(SEMICOLON, ID) EQUAL e=expr_nocmp BREAK { DefineAlias (ids, e) }
-| str=name e=expr BREAK { Expr (str, e) }
+| o=printing_options e=expr BREAK { Expr (o, e) }
 
-%inline name:
-| { None }
-| str=STRING COLON { Some str }
+%inline printing_options:
+|       { { name=None ; raw=false } }
+| COLON { { name=None ; raw=false } }
+| COLON COLON { { name=None ; raw=true } }
+| str=STRING COLON { { name=Some str ; raw=false } }
+| str=STRING COLON COLON { { name=Some str ; raw=true } }
 
 expr:
 | e=expr_nocmp { e }

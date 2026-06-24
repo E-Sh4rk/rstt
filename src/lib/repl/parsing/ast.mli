@@ -11,9 +11,10 @@ type expr =
   | CCat of expr * expr
   | CApp of expr * expr
   | CCmp of expr * op * expr
+type printing_options = { name: string option ; raw: bool }
 type elt =
   | DefineAlias of string list * expr
-  | Expr of string option * expr
+  | Expr of printing_options * expr
 type program = elt list
 type command = Elt of elt | End
 

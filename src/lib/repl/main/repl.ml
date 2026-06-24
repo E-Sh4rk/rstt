@@ -90,6 +90,18 @@ let print_res env fmt res =
     Format.fprintf fmt "@[<v>%a@]"
       (print_seq_cut (Pp.subst' (aliases env))) ss
 
+let print_raw_res _ fmt res =
+  match res with
+  | RBool bs ->
+    let print_bool fmt b = Format.fprintf fmt "%b" b in
+    Format.fprintf fmt "@[%a@]" (print_seq_space print_bool) bs
+  | RTy tys ->
+    Format.fprintf fmt "@[%a@]"
+      (print_seq_cut Sstt.Printer.print_ty') tys
+  | RSubst ss ->
+    Format.fprintf fmt "@[<v>%a@]"
+      (print_seq_cut Sstt.Printer.print_subst') ss
+
 let treat_elt env elt =
   match elt with
   | DefineAlias (ids, e) ->
@@ -100,10 +112,11 @@ let treat_elt env elt =
       failwith "TODO"
     | _ -> failwith "Definitions must be types." 
     end
-  | Expr (str, e) ->
+  | Expr (options, e) ->
     let r, env = compute_expr env e in
     let r = simplify_res r in
-    begin match str with
+    let print_res = if options.raw then print_raw_res else print_res in
+    begin match options.name with
     | None -> print Msg "@[<h 0>%a@]" (print_res env) r
     | Some str -> print Msg "@[%s:@[<h 0> %a@]@]" str (print_res env) r
     end ;
