@@ -180,9 +180,9 @@ let rec print_descr_ctx' pos prec assoc fmt d =
     | Binop (Arrow,d1,d2) when pos=Struct ->
       Prec.print_binary_op print_tl_descr_ctx prec assoc Arrow fmt d1 d2
     | Binop (Arrow,d1,d2) ->
-      let _,prec,assoc = Prec.binop_info Arrow in
+      let _,prec',assoc' = Prec.binop_info Arrow in
       Prec.print_binary print_tl_descr_ctx prec assoc
-        (Prec.fs "@ -->@ ",prec,assoc) fmt d1 d2
+        (Prec.fs "@ -->@ ",prec',assoc') fmt d1 d2
     | Unop (Neg,d) -> Prec.print_unary_op aux prec assoc Neg fmt d
   in
   with_pos pos (aux prec assoc fmt) d
