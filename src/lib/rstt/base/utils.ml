@@ -1,5 +1,9 @@
 open Sstt
 
+let is_alphanum = function 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' -> true | _ -> false
+let slugify = String.map (fun c -> if is_alphanum c then c else '_')
+let slugify str = "_"^(slugify str)
+
 let rec partition_map3 f lst =
   match lst with
   | [] -> [],[],[]

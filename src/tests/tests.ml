@@ -83,7 +83,7 @@ let%expect_test "tests" =
              'A: INT & 'A ;
              'B: LGL & 'B ;
              'C: INT & 'C ;
-             `R: { b : `R ; c : `R ; d : 'D | `R ;; empty? | `R }
+             `R: { _b : `R ; _c : `R ; _d : 'D | `R ;; empty? | `R }
           ]]
           [[
              'B: empty
@@ -111,7 +111,7 @@ let%expect_test "tests" =
     class1: <class1>
     class2: <class1, `c>
     class3: [[
-               `C: { class1 : `C ; class2 : tt | `C ;; ff | `C }
+               `C: { _class1 : `C ; _class2 : tt | `C ;; ff | `C }
             ]]
     class4: <class1, class2>
     class5: <class1, ...>

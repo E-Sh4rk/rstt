@@ -40,7 +40,7 @@ let get t =
   match Hashtbl.find_opt labels t with
   | Some lbl -> lbl
   | None ->
-    let l = Label.mk (name t) in
+    let l = Label.mk (name t |> Utils.slugify) in
     Hashtbl.add labels t l ; Hashtbl.add info l t ; l
 let pos i = get (Pos i)
 let named str = get (Named str)

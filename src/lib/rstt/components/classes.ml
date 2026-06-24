@@ -9,7 +9,7 @@ and line = L of string * attrs
 
 module LabelSet = Set.Make(Label)
 
-type label_info = { sub: LabelSet.t; trans: LabelSet.t }
+type label_info = { name:string; sub: LabelSet.t; trans: LabelSet.t }
 let labels = Hashtbl.create 10
 let infos = Hashtbl.create 10
 let top_classes = ref LabelSet.empty
@@ -26,13 +26,13 @@ let new_class ~name ~subclass =
     List.fold_left LabelSet.union lbls trans
   in
   try
-    let n = Label.mk name in
+    let n = Label.mk (Utils.slugify name) in
     let sub = subclass |> List.map (Hashtbl.find labels) |> LabelSet.of_list in
     let trans = trans_of sub in
     let sub = sub |> LabelSet.filter (fun n ->
         LabelSet.subset trans (LabelSet.remove n sub |> trans_of) |> not) in
     let trans = LabelSet.add n trans in
-    Hashtbl.add infos n { sub ; trans } ; Hashtbl.add labels name n ;
+    Hashtbl.add infos n { name ; sub ; trans } ; Hashtbl.add labels name n ;
     sub |> LabelSet.iter (fun n -> top_classes := LabelSet.remove n !top_classes) ;
     top_classes := LabelSet.add n !top_classes ;
     n
@@ -109,7 +109,7 @@ let record_to_atom r =
     let info = Hashtbl.find infos lbl in
     let sub = LabelSet.to_list info.sub in
     if (LabelSet.mem lbl labels) = pos
-    then [L (Label.name lbl, List.concat_map (aux labels (not pos)) sub)]
+    then [L (info.name, List.concat_map (aux labels (not pos)) sub)]
     else List.concat_map (aux labels pos) sub
   in
   let pos = !top_classes |> LabelSet.to_list |> List.concat_map (aux pos true) in

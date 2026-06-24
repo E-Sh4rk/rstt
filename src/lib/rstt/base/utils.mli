@@ -1,5 +1,7 @@
 open Sstt
 
+val slugify : string -> string
+
 val partition_map3 : ('e -> [< `A of 'a | `B of 'b | `C of 'c]) -> 'e list -> 'a list * 'b list * 'c list
 
 val map_tag_content : (Ty.t -> Ty.t) -> Tag.t -> Descr.t -> Descr.t
