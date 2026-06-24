@@ -53,14 +53,14 @@ let fresh_id =
     Enum.mk (string_of_int !i)
 let mk' ~allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   let record t = t |> Descr.mk_record |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr in
-  let pos_tl' = Ty.F.get_descr pos_tl' |> Ty.O.get in
+  let pos_tl' = Utils.constant_oty_part pos_tl' |> Ty.O.get in
   let id = (match id with None -> Ty.empty | Some id -> Descr.mk_enum id |> Ty.mk_descr)
   |> Ty.O.optional |> Ty.F.mk_descr in
   let allow_more_pos = allow_more_pos && (pos_tl' |> Ty.O.Atom.get |> Ty.is_empty |> not) in
-  let pos_tl' = if allow_more_pos then Ty.O.mk pos_tl' else Ty.O.mk (Ty.empty, snd pos_tl') in
+  let pos_tl' = if allow_more_pos then Ty.O.mk pos_tl' else Ty.O.absent in
   let pos_bindings = pos' |> List.mapi (fun i fty -> Labels.pos i, fty) |> LabelMap.of_list in
   let pos = Reserved.pos, { Records.Atom.bindings=pos_bindings ;
-    tail=Utils.add_option' pos_tl' |> Ty.F.mk_descr } |> record in
+    tail=Ty.F.mk_descr pos_tl' } |> record in
   let named_bindings = named' |> List.map (fun (str, fty) -> Labels.named str, fty) |> LabelMap.of_list in
   let named = Reserved.named,
     { Records.Atom.bindings=named_bindings ; tail=Utils.add_option named_tl' } |> record in
@@ -208,8 +208,9 @@ let print prec assoc fmt t =
   let print_field fmt (name,ty) = Format.fprintf fmt "%s: %a" name print_field_ty ty in
   let print_tail fmt (f',f) =
     match f', f with
-    | { Printer.fty=fty1 ; _ }, { Printer.fty=fty2 ; _ } when Ty.F.equiv fty1 fty2 ->
-      Format.fprintf fmt "...: %a" print_field_ty (Utils.prune_option_fdescr f')
+    | { Printer.fty=fty1 ; _ }, { Printer.fty=fty2 ; _ }
+      when Ty.F.equiv fty1 (Utils.constant_oty_part fty2 |> Ty.F.mk_descr) ->
+      Format.fprintf fmt "...: %a" print_field_ty (Utils.prune_option_fdescr f)
     | f', f -> Format.fprintf fmt "...: (%a, %a)"
       print_field_ty (Utils.prune_option_fdescr f')
       print_field_ty (Utils.prune_option_fdescr f)

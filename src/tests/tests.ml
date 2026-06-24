@@ -102,7 +102,8 @@ let%expect_test "tests" =
     arg11: @(a: <class1>)
     arg12: @(INT?, LGL, ...: INT)
     arg13: @(LGL, INT?, ...: INT)
-    arg14: (a: INT, ...: (absent, `r))
+    arg14: (a: INT, ...: `r)
+    arg15: (a: INT, ...: `r)
     arr1: INT --> INT
     arr2: INT -> INT
     arr3: INT -> INT

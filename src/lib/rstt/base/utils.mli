@@ -7,7 +7,7 @@ val map_tag_content : (Ty.t -> Ty.t) -> Tag.t -> Descr.t -> Descr.t
 val prune_printer_descr : any:Ty.t -> Printer.descr -> Printer.descr
 val prune_option_fdescr : Printer.fdescr -> Printer.fdescr
 val add_option : Ty.F.t -> Ty.F.t
-val add_option' : Ty.O.t -> Ty.O.t
+val constant_oty_part : Ty.F.t -> Ty.O.t
 
 type interval = int option * int option
 val print_interval : string -> (Format.formatter -> int -> unit) -> 

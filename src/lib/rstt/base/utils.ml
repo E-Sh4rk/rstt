@@ -66,12 +66,16 @@ let prune_option_fdescr fd =
   in
   aux fd
 
-let add_option' tyo =
+let add_option tyo =
   let ty = Ty.O.get tyo |> Ty.O.Atom.get in
   if Ty.is_empty ty then tyo else ty |> Ty.O.optional
-
 let add_option fty =
-  fty |> Ty.F.map add_option'
+  fty |> Ty.F.map add_option
+
+let constant_oty_part fty =
+  Ty.F.dnf fty |> List.filter_map (fun (ps,ns,oty) ->
+    if List.is_empty ps && List.is_empty ns then Some oty else None)
+  |> Ty.O.disj |> Ty.O.get |> Ty.O.Atom.get |> Ty.O.optional
 
 type interval = int option * int option
 let print_interval any f _prec _assoc fmt (lb,ub) =

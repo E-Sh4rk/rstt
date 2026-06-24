@@ -65,6 +65,7 @@
 "arg12": @( INT?, LGL, ...: INT ) ;;
 "arg13": @( LGL, INT?, ...: INT ) ;;
 "arg14": (a:INT, ...: (absent, `r)) ;;
+"arg15": (a:INT, ...: `r) ;;
 
 "arr1": INT --> INT ;;
 "arr2": INT -> INT ;;
