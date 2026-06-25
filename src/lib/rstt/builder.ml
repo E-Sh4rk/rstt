@@ -1,5 +1,63 @@
 open Sstt
 
+module Gradual = struct
+  type t = { lb: Ty.t ; ub: Ty.t }
+  let empty = { lb=Ty.empty ; ub=Ty.empty }
+  let any = { lb=Ty.any ; ub=Ty.any }
+  let dyn = { lb=Ty.empty ; ub=Ty.any }
+
+  (* Auxiliary *)
+  let vpol = Var.mk "__pol__" |> Ty.mk_var
+  let polarity v t =
+    let vt = Ty.mk_var v in
+    let to_smaller = Subst.singleton1 v (Ty.cap vt vpol) in
+    let to_larger = Subst.singleton1 v (Ty.cup vt vpol) in
+    let cov = Ty.leq (Subst.apply to_smaller t) t in
+    let contrav = Ty.leq (Subst.apply to_larger t) t in
+    if cov && contrav then `None
+    else if cov then `Pos
+    else if contrav then `Neg
+    else `Both
+  
+  (* Builder (for internal use only) *)
+  let dynvars = ref VarSet.empty
+  let mk () =
+    let v = Var.mk Pp.dyn in
+    dynvars := VarSet.add v !dynvars ;
+    Ty.mk_var v
+
+  let dynvars_of_ty ty =
+    Ty.vars ty |> VarSet.inter !dynvars
+  let dynvars_of_fty ty =
+    let res = ref VarSet.empty in
+    let _ = ty |> Ty.F.map_nodes
+      (fun n -> res := VarSet.union !res (dynvars_of_ty n) ; n) in
+    !res
+
+  let refresh ty =
+    let s = dynvars_of_ty ty |> VarSet.elements
+    |> List.map (fun v -> v, mk ()) |> Subst.of_list1 in
+    Subst.apply s ty
+
+  let build_non_gradual ty =
+    if dynvars_of_ty ty |> VarSet.is_empty then ty
+    else invalid_arg "Unexpected dyn type."
+  let build_non_gradual_field ty =
+    if dynvars_of_fty ty |> VarSet.is_empty then ty
+    else invalid_arg "Unexpected dyn type."
+  let build ty =
+    let sub, slb = dynvars_of_ty ty |> VarSet.elements |> List.map (fun v ->
+      match polarity v ty with
+      | `None -> assert false
+      | `Both -> invalid_arg "Dyn occurs in an invariant position."
+      | `Pos -> (v, Ty.any), (v, Ty.empty)
+      | `Neg -> (v, Ty.empty), (v, Ty.any)
+    ) |> List.split in
+    let ub = Subst.apply (Subst.of_list1 sub) ty in
+    let lb = Subst.apply (Subst.of_list1 slb) ty in
+    { lb ; ub }
+end
+
 type 'v cconst =
 | CDouble | CString | CChar | CVoid | CNull
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa | CPtr
@@ -19,6 +77,7 @@ and ('v,'r,'i) t =
 | TId of 'i
 | TTy of Ty.t
 | TVar of 'v
+| TDyn
 | TRowVar of 'r
 | TAny | TEmpty | TAttrAny (* Attr.any *)
 | TNull | TEnv | TSym | TLang | TExtPtr| TCup of ('v,'r,'i) t * ('v,'r,'i) t
@@ -76,8 +135,8 @@ let map_classes f c =
 let map f fp fc t =
   let rec aux t =
     let t = match t with
-    | TId _ | TTy _ | TVar _ | TRowVar _ | TAny | TEmpty | TAttrAny | TNull
-    | TEnv | TSym | TLang | TExtPtr | TSymLabel _-> t
+    | TId _ | TTy _ | TVar _ | TDyn | TRowVar _ | TAny | TEmpty | TAttrAny
+    | TNull | TEnv | TSym | TLang | TExtPtr | TSymLabel _-> t
     | TCup (t1, t2) -> TCup (aux t1, aux t2)
     | TCap (t1, t2) -> TCap (aux t1, aux t2)
     | TDiff (t1, t2) -> TDiff (aux t1, aux t2)
@@ -202,10 +261,11 @@ let build_classes t =
 
 let rec build_struct sctx env t =
   match t with
-  | TId i -> (try TIdMap.find i env with Not_found ->
+  | TId i -> (try TIdMap.find i env |> Gradual.refresh with Not_found ->
     invalid_arg ("type of "^(string_of_int i)^" not found in the environment"))
   | TTy ty -> ty
   | TVar v -> Ty.mk_var v
+  | TDyn -> Gradual.mk ()
   | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TAny -> Ty.any | TEmpty -> Ty.empty
   | TCup (t1,t2) -> Ty.cup (build_struct sctx env t1) (build_struct sctx env t2)
@@ -241,12 +301,13 @@ let rec build_struct sctx env t =
 
 and build sctx env t =
   match t with
-  | TId i -> (try TIdMap.find i env with Not_found ->
+  | TId i -> (try TIdMap.find i env |> Gradual.refresh with Not_found ->
     invalid_arg ("type of "^(string_of_int i)^" not found in the environment"))
   | TTy ty -> ty
   | TAny -> Ty.any | TEmpty -> Ty.empty | TAttrAny -> Attr.any
   | TNull -> Null.any | TSym -> Sym.any
   | TVar v -> Ty.mk_var v
+  | TDyn -> Gradual.mk ()
   | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TCup (t1,t2) -> Ty.cup (build sctx env t1) (build sctx env t2)
   | TCap (t1,t2) -> Ty.cap (build sctx env t1) (build sctx env t2)
@@ -295,13 +356,16 @@ and build_field sctx env t =
 
 let build_field env t =
   let ctx, t = build_sym_ctx t in
-  build_field ctx env t
+  build_field ctx env t |> Gradual.build_non_gradual_field
 let build_struct env t =
   let ctx, t = build_sym_ctx t in
-  build_struct ctx env t
+  build_struct ctx env t |> Gradual.build_non_gradual
+let build_gradual env t =
+  let ctx, t = build_sym_ctx t in
+  build ctx env t |> Gradual.build
 let build env t =
   let ctx, t = build_sym_ctx t in
-  build ctx env t
+  build ctx env t |> Gradual.build_non_gradual
 
 (* === Resolution of identifiers === *)
 
@@ -415,7 +479,8 @@ let resolve env t =
     | TRowVar v ->
       let env', v = rvar !env v in
       env := env' ; TRowVar v
-    | TAny -> TAny | TEmpty -> TEmpty | TAttrAny -> TAttrAny | TNull -> TNull | TEnv -> TEnv
+    | TAny -> TAny | TEmpty -> TEmpty | TDyn -> TDyn
+    | TAttrAny -> TAttrAny | TNull -> TNull | TEnv -> TEnv
     | TSym -> TSym | TLang -> TLang | TExtPtr -> TExtPtr
     | TCup (t1,t2) -> TCup (aux tids t1, aux tids t2)
     | TCap (t1,t2) -> TCap (aux tids t1, aux tids t2)

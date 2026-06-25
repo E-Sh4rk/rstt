@@ -42,6 +42,8 @@ val print : Format.formatter -> descr t -> unit
 val pp_struct_tag : (int -> assoc -> Format.formatter -> 'a -> unit) -> int -> assoc -> Format.formatter -> 'a -> unit
 val pp_prim_tag : (int -> assoc -> Format.formatter -> 'a -> unit) -> int -> assoc -> Format.formatter -> 'a -> unit
 
+val dyn : string
+
 val ty : Format.formatter -> Ty.t -> unit
 val ty' : (Ty.t * string) list -> Format.formatter -> Ty.t -> unit
 val row : Format.formatter -> Row.t -> unit

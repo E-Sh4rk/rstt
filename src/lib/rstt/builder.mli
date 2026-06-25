@@ -1,5 +1,12 @@
 open Sstt
 
+module Gradual : sig
+  type t = { lb: Ty.t ; ub: Ty.t }
+  val empty : t
+  val any : t
+  val dyn : t
+end
+
 type 'v cconst =
 | CDouble | CString | CChar | CVoid | CNull
 | CBool | CTrue | CFalse | CNa | CInt | CIntNa | CPtr
@@ -19,6 +26,7 @@ and ('v,'r,'i) t =
 | TId of 'i
 | TTy of Ty.t
 | TVar of 'v
+| TDyn
 | TRowVar of 'r
 | TAny | TEmpty | TAttrAny (* Attr.any *)
 | TNull | TEnv | TSym | TLang | TExtPtr
@@ -69,10 +77,12 @@ module TIdSet : Set.S with type elt=TId.t
 
 val build_cconst : Var.t cconst -> Ty.t
 val build_prim : Var.t prim -> Ty.t
+val build_classes : RowVar.t classes -> Ty.t
+
 val build : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.t
+val build_gradual : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Gradual.t
 val build_struct : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.t
 val build_field : Ty.t TIdMap.t -> (Var.t,RowVar.t,TId.t) t -> Ty.F.t
-val build_classes : RowVar.t classes -> Ty.t
 
 module StrMap : Map.S with type key=string
 type env = {

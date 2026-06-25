@@ -241,6 +241,8 @@ let pp_prim_tag f _ _ fmt t =
   Format.fprintf fmt "p(%a)" (f Prec.min_prec Prec.NoAssoc) t
 
 
+let dyn = "dyn"
+
 (* ========================= *)
 
 let ty' aliases fmt t =
