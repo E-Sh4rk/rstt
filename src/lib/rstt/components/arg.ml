@@ -51,12 +51,16 @@ let fresh_id =
   fun () ->
     i := !i+1 ;
     Enum.mk (string_of_int !i)
-let mk' ~allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
+let mk' ?allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   let record t = t |> Descr.mk_record |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr in
   let pos_tl' = Utils.constant_oty_part pos_tl' |> Ty.O.get in
   let id = (match id with None -> Ty.empty | Some id -> Descr.mk_enum id |> Ty.mk_descr)
   |> Ty.O.optional |> Ty.F.mk_descr in
-  let allow_more_pos = allow_more_pos && (pos_tl' |> Ty.O.Atom.get |> Ty.is_empty |> not) in
+  let allow_more_pos =
+    match allow_more_pos with
+    | Some b -> b
+    | None -> pos_tl' |> Ty.O.Atom.get |> Ty.is_empty |> not
+  in
   let pos_tl' = if allow_more_pos then Ty.O.mk pos_tl' else Ty.O.absent in
   let pos_bindings = pos' |> List.mapi (fun i fty -> Labels.pos i, fty) |> LabelMap.of_list in
   let pos = Reserved.pos, { Records.Atom.bindings=pos_bindings ;
@@ -82,7 +86,7 @@ let mk { pos_named ; pos_tl ; named_tl ; named } =
       { pos' ; named' ; pos_tl'=pos_tl ; named_tl'=named_tl }
   ) in
   atoms' |> Ty.disj
-let mk' = mk' ~allow_more_pos:true ~id:None
+let mk' = mk' ?allow_more_pos:None ~id:None
 let any_id = Enums.any |> Descr.mk_enums |> Ty.mk_descr
 |> Ty.O.optional |> Ty.F.mk_descr
 let any_d =
