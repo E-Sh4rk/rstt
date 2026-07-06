@@ -76,8 +76,6 @@ let simplify_res e =
   | RSubst ss -> RSubst ss
   | RTy tys -> RTy (List.map TyOp.simplify tys)
 
-let aliases _env = [] (* TODO *)
-
 let print_res env fmt res =
   match res with
   | RBool bs ->
@@ -85,11 +83,11 @@ let print_res env fmt res =
     Format.fprintf fmt "@[<h>%a@]" (print_seq_space print_bool) bs
   | RTy tys ->
     let pp_ty fmt t =
-      Format.fprintf fmt "@[<hov>%a@]" (Pp.ty' (aliases env)) t in
+      Format.fprintf fmt "@[<hov>%a@]" (Pp.ty' (Ast.aliases env)) t in
     Format.fprintf fmt "@[<v>%a@]" (print_seq_cut pp_ty) tys
   | RSubst ss ->
     Format.fprintf fmt "@[<v>%a@]"
-      (print_seq_cut (Pp.subst' (aliases env))) ss
+      (print_seq_cut (Pp.subst' (Ast.aliases env))) ss
 
 let print_raw_res _ fmt res =
   match res with
@@ -107,11 +105,12 @@ let print_raw_res _ fmt res =
 let treat_elt env elt =
   match elt with
   | DefineAlias (ids, e) ->
-    let r, _env = compute_expr env e in
+    let r, env = compute_expr env e in
     let r = simplify_res r in
     begin match r with
     | RTy tys when List.length tys = List.length ids ->
-      failwith "TODO"
+      List.combine ids tys |> List.fold_left
+        (fun env (id,ty) -> Ast.define_alias env id ty) env
     | _ -> failwith "Definitions must be types." 
     end
   | Expr (options, e) ->

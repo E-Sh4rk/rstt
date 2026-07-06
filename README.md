@@ -301,8 +301,8 @@ Every REPL command is a *type expression* terminated with `;;`. A command can be
   raw-type: attr({ _c : v({ _e : prim(lgl(tt)) }) ; _class : class({ ;; ff | tt }) ; _attr : lst(record) ..})
   ```
 
-The grammar also accepts `type name = T ;;` to define a type alias, but this is not
-implemented yet (it currently raises an error) — it is reserved for a future version. TODO
+The REPL also accepts instructions `type name = T ;;` to define a type alias
+(`name` will denote the type `T` in future prompts).
 
 ## Subtyping and constraint solving
 

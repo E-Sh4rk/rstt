@@ -68,8 +68,10 @@ module TId : sig
   type t
   val compare : t -> t -> int
   val equal : t -> t -> bool
-  val pp : Format.formatter -> t -> unit
   val create : unit -> t
+  val create_named : string -> t
+  val name : t -> string option
+  val pp : Format.formatter -> t -> unit
 end
 
 module TIdMap : Map.S with type key=TId.t

@@ -24,3 +24,5 @@ val empty_env : env
 val build_ty : env -> ty -> Ty.t * env
 val build_subst : env -> subst -> Subst.t * env
 val build_tally : env -> tally -> Tallying.constr list * env
+val define_alias : env -> string -> Ty.t -> env
+val aliases : env -> (Ty.t * string) list

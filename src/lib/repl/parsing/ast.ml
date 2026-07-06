@@ -19,18 +19,18 @@ type elt =
 type program = elt list
 type command = Elt of elt | End
 
-type env = Builder.env
-let empty_env = Builder.empty_env
+type env = { benv:Builder.env ; aliases:Ty.t Builder.TIdMap.t }
+let empty_env = { benv=Builder.empty_env ; aliases=Builder.TIdMap.empty }
 
 let build_ty env t =
-  let env, t = Builder.resolve env t in
-  Builder.build Builder.TIdMap.empty t, env
+  let benv, t = Builder.resolve env.benv t in
+  Builder.build env.aliases t, { env with benv }
 
 let build_subst env s =
   let env = ref env in
   let s = s |> List.map (fun (str,ty) ->
-      let env', v = Builder.tvar !env str in
-      let ty, env' = build_ty env' ty in
+      let benv, v = Builder.tvar (!env).benv str in
+      let ty, env' = build_ty { !env with benv } ty in
       env := env' ; (v, ty)
     ) in
   let s = Subst.of_list1 s in
@@ -49,3 +49,16 @@ let build_tally env cs =
     )
   in
   cs, !env
+
+let define_alias env name ty =
+  let tid = Builder.TId.create_named name in
+  let tids = Builder.StrMap.add name tid env.benv.tids in
+  let benv = { env.benv with tids } in
+  let aliases = Builder.TIdMap.add tid ty env.aliases in
+  { benv ; aliases }
+
+let aliases env =
+  Builder.TIdMap.bindings env.aliases |> List.map (fun (tid, ty) ->
+    let name = Builder.TId.name tid |> Option.get in
+    ty, name
+  )

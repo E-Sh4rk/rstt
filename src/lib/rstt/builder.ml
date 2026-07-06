@@ -165,7 +165,6 @@ module TId = struct
   type t = int
   let compare = Stdlib.Int.compare
   let equal = Stdlib.Int.equal
-  let pp fmt t = Format.fprintf fmt "%d" t
 
   let next_id =
     let last = ref 0 in
@@ -173,6 +172,16 @@ module TId = struct
       last := !last + 1 ;
       !last
   let create () = next_id ()
+  let names = Hashtbl.create 100
+  let create_named str =
+    let i = next_id () in
+    Hashtbl.add names i str ;
+    i
+  let name t = Hashtbl.find_opt names t
+  let pp fmt t =
+    match name t with
+    | None -> Format.fprintf fmt "_%d" t
+    | Some str -> Format.fprintf fmt "%s_%d" str t
 end
 
 module TIdMap = Map.Make(TId)
