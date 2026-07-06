@@ -82,10 +82,11 @@ let print_res env fmt res =
   match res with
   | RBool bs ->
     let print_bool fmt b = Format.fprintf fmt "%b" b in
-    Format.fprintf fmt "@[%a@]" (print_seq_space print_bool) bs
+    Format.fprintf fmt "@[<h>%a@]" (print_seq_space print_bool) bs
   | RTy tys ->
-    Format.fprintf fmt "@[%a@]"
-      (print_seq_cut (Pp.ty' (aliases env))) tys
+    let pp_ty fmt t =
+      Format.fprintf fmt "@[<hov>%a@]" (Pp.ty' (aliases env)) t in
+    Format.fprintf fmt "@[<v>%a@]" (print_seq_cut pp_ty) tys
   | RSubst ss ->
     Format.fprintf fmt "@[<v>%a@]"
       (print_seq_cut (Pp.subst' (aliases env))) ss
@@ -94,10 +95,11 @@ let print_raw_res _ fmt res =
   match res with
   | RBool bs ->
     let print_bool fmt b = Format.fprintf fmt "%b" b in
-    Format.fprintf fmt "@[%a@]" (print_seq_space print_bool) bs
+    Format.fprintf fmt "@[<h>%a@]" (print_seq_space print_bool) bs
   | RTy tys ->
-    Format.fprintf fmt "@[%a@]"
-      (print_seq_cut Sstt.Printer.print_ty') tys
+    let pp_ty fmt t =
+      Format.fprintf fmt "@[<hov>%a@]" Sstt.Printer.print_ty' t in
+    Format.fprintf fmt "@[<v>%a@]" (print_seq_cut pp_ty) tys
   | RSubst ss ->
     Format.fprintf fmt "@[<v>%a@]"
       (print_seq_cut Sstt.Printer.print_subst') ss
