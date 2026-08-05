@@ -360,7 +360,9 @@ and build_field sctx env t =
       let t1 = build_field sctx env t1 in
       let t2 = build_field sctx env t2 in
       Ty.F.diff t1 t2
-  | TNeg t -> Ty.F.neg (build_field sctx env t)
+  (* Having a negation operator over fields would be too confusing
+     with the regular type negation *)
+  (* | TNeg t -> Ty.F.neg (build_field sctx env t) *)
   | t -> Ty.F.mk_descr (build sctx env t |> Ty.O.required)
 
 let build_field env t =

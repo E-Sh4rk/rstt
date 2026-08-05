@@ -208,7 +208,9 @@ and print_fdescr prec assoc fmt fd =
     | FVarop (FCup,ds) -> print_cup ~cmp:Compare.fdescr aux prec assoc fmt ds
     | FVarop (FCap,ds) -> print_cap ~cmp:Compare.fdescr aux prec assoc fmt ds
     | FBinop (b,fop1,fop2) -> Prec.print_binary_fop aux prec assoc b fmt fop1 fop2
-    | FUnop (u,fop) -> Prec.print_unary_fop aux prec assoc u fmt fop
+    | FUnop (FNeg,fop) ->
+      (* Prec.print_unary_fop aux prec assoc u fmt fop *)
+      Prec.print_binary_fop aux prec assoc FDiff fmt Printer.any_fdescr fop
   in
   aux prec assoc fmt fd
 
