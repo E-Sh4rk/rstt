@@ -48,8 +48,9 @@ let simpl_descr d =
       | Records r -> Records r
     ) in
   construct (b, comps)
-let extra vd = VDescr.map simpl_descr vd
-let simplify t = Transform.simplify ~extra t
+let simplify_vdescr vd = VDescr.map simpl_descr vd
+let simplify_vdescr vd = vd |> simplify_vdescr |> Transform.simplify_vdescr
+let simplify t = Transform.transform simplify_vdescr t
 
 (* ===== TALLY ===== *)
 
