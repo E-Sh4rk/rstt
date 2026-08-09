@@ -48,9 +48,8 @@ module Gradual = struct
   let build ty =
     let sub, slb = dynvars_of_ty ty |> VarSet.elements |> List.map (fun v ->
       match polarity v ty with
-      | `None -> assert false
       | `Both -> invalid_arg "Dyn occurs in an invariant position."
-      | `Pos -> (v, Ty.any), (v, Ty.empty)
+      | `Pos | `None -> (v, Ty.any), (v, Ty.empty)
       | `Neg -> (v, Ty.empty), (v, Ty.any)
     ) |> List.split in
     let ub = Subst.apply (Subst.of_list1 sub) ty in
