@@ -15,7 +15,7 @@
 "vec5": v1(^INT('a)) ;;
 "vec6": v1(CHR('a)) ;;
 "vec7": v1(^CHR('a)) ;;
-"vec8": ((INT1) -> c_true) & ((INT) -> c_bool) & ((INT\INT1) | (vec & ~INT) -> c_false) ;;
+"vec8": ((INT1) -> c_true) & ((INT) -> c_bool) & (vec\INT1 -> c_false) ;;
 "vec9": 42L = v1(^42L) ;;
 "vec10": tt|ff = ^LGL1 ;;
 "vec11": RAW | LGL ;;

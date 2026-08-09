@@ -1,0 +1,4 @@
+
+"simpl1": (INT\INT1) | (vec & ~INT) ;;
+v1(^INT('a)) ;; v1(^CHR('a)) ;;
+"simpl2": (INT\INT1) | (vec & ~INT) ;;
