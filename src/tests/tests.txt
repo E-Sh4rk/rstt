@@ -110,5 +110,3 @@
 "c15": c_ptr | c_string ;;
 "c16": c_int_na('a) ;;
 "c17": c_int_na('a) \ c_int('a) ;;
-
-"sym": ( a: { #k : 'a }, b = #k ) -> 'a ;;

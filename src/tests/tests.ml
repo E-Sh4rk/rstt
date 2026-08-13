@@ -144,5 +144,4 @@ let%expect_test "tests" =
     c15: c_ptr
     c16: c_int_na & c_int_na('a)
     c17: c_int_na \ c_int & c_int_na('a)
-    sym: (a: { #(b,2): 'a }, b: any?) -> 'a
     |}]

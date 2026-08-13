@@ -32,6 +32,11 @@ let parse_type str =
   buf.lex_curr_p <- { buf.lex_curr_p with pos_fname = "_" };
   parse_with_errors Parser.ty_main buf
 
+let parse_funsig str =
+  let buf = from_string str in
+  buf.lex_curr_p <- { buf.lex_curr_p with pos_fname = "_" };
+  parse_with_errors Parser.funsig_main buf
+
 let parse_command buf =
   try
     buf.lex_curr_p <- { buf.lex_curr_p with pos_fname = "_" };

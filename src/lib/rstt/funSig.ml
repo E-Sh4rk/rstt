@@ -127,9 +127,12 @@ let is_regular_ty t =
   | _ -> true
   | exception (Not_regular _) -> false
 
-let to_regular t =
-  try regular_sig t
-  with Not_regular msg -> invalid_arg ("Not a regular signature: "^msg^".")
+let fail_not_regular kind f t =
+  try f t with Not_regular msg -> invalid_arg ("Not a regular "^kind^": "^msg^".")
+
+let to_regular t = fail_not_regular "signature" regular_sig t
+let to_regular_ty t = fail_not_regular "type" regular_ty t
+let to_regular_arg t = fail_not_regular "argument" regular_arg t
 
 (* === Specialization === *)
 

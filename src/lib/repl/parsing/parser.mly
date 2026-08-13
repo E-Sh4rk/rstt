@@ -2,34 +2,44 @@
 open Ast
 open Rstt.Builder
 open Rstt
+open Rstt.FunSig
+
+(* Types are parsed as FunSig types: they are more general than regular types,
+   as any regular type can be embedded with FRegular. FunSig constructors are
+   thus always preferred, and a conversion back to a regular type is performed
+   wherever a regular type is expected. *)
+
+let reg t = try to_regular_ty t with Invalid_argument msg -> raise (Errors.E_Parser msg)
+let reg_arg a = try to_regular_arg a with Invalid_argument msg -> raise (Errors.E_Parser msg)
 
 let parse_id_or_builtin str =
+    let r t = FRegular t in
     match str with
-    | "empty" -> TEmpty
-    | "any" -> TAny
-    | "dyn" -> TDyn
-    | "attr" -> TAttrAny
-    | "absent" -> TOption TEmpty
-    | "null" -> TNull
-    | "env" -> TEnv
-    | "sym" -> TSym
-    | "lang" -> TLang
-    | "prim" -> TPrim PAny
-    | "list" -> TList{bindings=[];sym=[];tl=TOption TAny}
+    | "empty" -> r TEmpty
+    | "any" -> r TAny
+    | "dyn" -> r TDyn
+    | "attr" -> r TAttrAny
+    | "absent" -> r (TOption TEmpty)
+    | "null" -> r TNull
+    | "env" -> r TEnv
+    | "sym" -> r TSym
+    | "lang" -> r TLang
+    | "prim" -> r (TPrim PAny)
+    | "list" -> FList { bindings=[] ; tl=r (TOption TAny) }
     (* C stuff  *)
-    | "c_double" -> TCConst CDouble
-    | "c_string" -> TCConst CString
-    | "c_char" -> TCConst CChar
-    | "c_void" -> TCConst CVoid
-    | "c_null" -> TCConst CNull
-    | "c_int_na" -> TCConst CIntNa
-    | "c_int" -> TCConst CInt
-    | "c_na" -> TCConst CNa
-    | "c_bool" -> TCConst CBool
-    | "c_true" -> TCConst CTrue
-    | "c_false" -> TCConst CFalse
-    | "c_ptr" -> TCConst CPtr
-    | str -> TId str
+    | "c_double" -> r (TCConst CDouble)
+    | "c_string" -> r (TCConst CString)
+    | "c_char" -> r (TCConst CChar)
+    | "c_void" -> r (TCConst CVoid)
+    | "c_null" -> r (TCConst CNull)
+    | "c_int_na" -> r (TCConst CIntNa)
+    | "c_int" -> r (TCConst CInt)
+    | "c_na" -> r (TCConst CNa)
+    | "c_bool" -> r (TCConst CBool)
+    | "c_true" -> r (TCConst CTrue)
+    | "c_false" -> r (TCConst CFalse)
+    | "c_ptr" -> r (TCConst CPtr)
+    | str -> r (TId str)
 
 let parse_builtin_prim str =
     match str with
@@ -49,11 +59,13 @@ let parse_builtin_prim str =
     | "NUM" -> PNum
     | str -> raise (Errors.E_Parser ("Unknown primitive builtin "^str))
 
+let absent = FRegular (TOption TEmpty)
+
 let assert_one i =
     if Z.equal i Z.one |> not
     then raise (Errors.E_Parser ("Cannot specify a size other than 1 for a vector"))
 
-type arg_elt = Pos of ty | Named of string * ty | Tail of ty * ty
+type 'a arg_elt = Pos of 'a | Named of string * 'a | Tail of 'a * 'a
 let split_arg_elt' lst =
     let rec pos_fields lst =
         match lst with
@@ -71,7 +83,7 @@ let split_arg_elt' lst =
     in
     let tail_field lst =
         match lst with
-        | [] -> TOption TEmpty, TOption TEmpty
+        | [] -> absent, absent
         | [Tail (t1,t2)] -> t1, t2
         | _ -> raise (Errors.E_Parser ("Unexpected field"))
     in
@@ -89,7 +101,7 @@ let split_arg_elt lst =
     let tail_field lst =
         match lst with
         | (Tail (t1,t2))::lst -> (t1, t2), lst
-        | lst -> (TOption TEmpty, TOption TEmpty), lst
+        | lst -> (absent, absent), lst
     in
     let pos_named, lst = named_fields lst in
     let tl, lst = tail_field lst in
@@ -101,14 +113,14 @@ let split_arg_elt lst =
 let split_lst_elts lst =
     let lst, tl = match List.rev lst with
     | (`LstTl ty)::lst -> List.rev lst, ty
-    | lst -> List.rev lst, TOption TEmpty
+    | lst -> List.rev lst, absent
     in
-    let bindings, sym = lst |> List.partition_map (function
-        | `LstNamed (str,t) -> Either.left (str,t)
-        | `LstSym (str,t) -> Either.right (Labels.sym_of_name str,t)
+    let bindings = lst |> List.map (function
+        | `LstNamed (str,t) -> LConst str, t
+        | `LstSym (str,t) -> LVar str, t
         | `LstTl _ -> raise (Errors.E_Parser ("Unexpected list tail"))
     ) in
-    bindings, sym, tl
+    bindings, tl
 
 let split_classes_elts lst =
     let lst, tl = match List.rev lst with
@@ -128,6 +140,7 @@ let split_classes_elts lst =
         | `ClassMaybeId id -> Either.right (Classes.L (id, []))
     ) in
     pos, neg, unk, tl
+
 %}
 
 %token<string> STRING, SHORT(*, SBRACKET*)
@@ -147,7 +160,8 @@ let split_classes_elts lst =
 %token EOF
 
 %start<program> program
-%start<ty> ty_main
+%start<Ast.ty> ty_main
+%start<Ast.funsig> funsig_main
 %start<command> command
 
 %right ARROW CARROW
@@ -188,13 +202,13 @@ expr_nocmp:
 simpl_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
-| ty=ty { CTy ty }
+| ty=ty { CTy (reg ty) }
 | LLBRACKET e=expr_nocmp RRBRACKET { e }
 
 atomic_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
-| ty=atomic_ty { CTy ty }
+| ty=atomic_ty { CTy (reg ty) }
 | LLBRACKET e=expr_nocmp RRBRACKET { e }
 
 op:
@@ -204,16 +218,19 @@ tsubst:
 | LLBRACKET bindings=separated_list(SEMICOLON, subst_binding) RRBRACKET { bindings }
 
 %inline subst_binding:
-| v=VARID COLON ty=ty { (v, ty) }
+| v=VARID COLON ty=ty { (v, reg ty) }
 
 tally:
 | LLBRACKET cs=separated_nonempty_list(SEMICOLON, tally_binding) RRBRACKET { cs }
 
 %inline tally_binding:
-| ty1=ty op=op ty2=ty { (ty1, op, ty2) }
+| ty1=ty op=op ty2=ty { (reg ty1, op, reg ty2) }
 
 ty_main:
-| ty=ty EOF { ty }
+| ty=ty EOF { reg ty }
+
+funsig_main:
+| dom=arg ARROW ret=ty EOF { { dom ; ret } }
 
 classes:
 | LT elts=separated_list(COMMA, classes_elt) GT
@@ -231,68 +248,78 @@ classes:
 ty:
 | ty=simple_ty { ty }
 | ty=simple_ty WHERE ts=separated_nonempty_list(AND, param_type_def)
-  { TWhere (ty, ts) }
+  { FRegular (TWhere (reg ty, ts)) }
 
 %inline param_type_def:
-| name=ID EQUAL t=simple_ty { (name, t) }
+| name=ID EQUAL t=simple_ty { (name, reg t) }
 
 simple_ty:
-| ty=atomic_ty classes=classes { TAttr {content=ty;classes=CClasses classes;attrs=TAny} }
-| ty=atomic_ty classes=classes WITH attrs=atomic_ty { TAttr {content=ty;classes=CClasses classes;attrs=attrs} }
-| classes=classes { TAttr {content=TAny;classes=CClasses classes;attrs=TAny} }
-| classes=classes WITH attrs=atomic_ty { TAttr {content=TAny;classes=CClasses classes;attrs=attrs} }
+| ty=atomic_ty classes=classes { FAttr {content=ty;classes=CClasses classes;attrs=FRegular TAny} }
+| ty=atomic_ty classes=classes WITH attrs=atomic_ty { FAttr {content=ty;classes=CClasses classes;attrs=attrs} }
+| classes=classes { FAttr {content=FRegular TAny;classes=CClasses classes;attrs=FRegular TAny} }
+| classes=classes WITH attrs=atomic_ty { FAttr {content=FRegular TAny;classes=CClasses classes;attrs=attrs} }
 | ty=atomic_ty { ty }
-| ty=atomic_ty WITH attrs=atomic_ty { TAttr {content=ty;classes=CAny;attrs=attrs} }
-| ty1=simple_ty TOR ty2=simple_ty { TCup (ty1, ty2) }
-| ty1=simple_ty TDIFF ty2=simple_ty { TDiff (ty1, ty2) }
-| ty1=simple_ty TAND ty2=simple_ty { TCap (ty1, ty2) }
-| TNEG ty=simple_ty { TNeg (ty) }
-| ty1=simple_ty ARROW ty2=simple_ty { TArrow (ty1, ty2) }
-| ty1=simple_ty CARROW ty2=simple_ty { TCArrow (ty1, ty2) }
-| ty=atomic_ty QUESTION_MARK { TOption (ty) }
+| ty=atomic_ty WITH attrs=atomic_ty { FAttr {content=ty;classes=CAny;attrs=attrs} }
+| ty1=simple_ty TOR ty2=simple_ty { FRegular (TCup (reg ty1, reg ty2)) }
+| ty1=simple_ty TDIFF ty2=simple_ty { FRegular (TDiff (reg ty1, reg ty2)) }
+| ty1=simple_ty TAND ty2=simple_ty { FRegular (TCap (reg ty1, reg ty2)) }
+| TNEG ty=simple_ty { FRegular (TNeg (reg ty)) }
+| ty1=simple_ty ARROW ty2=simple_ty { FRegular (TArrow (reg ty1, reg ty2)) }
+| ty1=simple_ty CARROW ty2=simple_ty { FRegular (TCArrow (reg ty1, reg ty2)) }
+| ty=atomic_ty QUESTION_MARK { FRegular (TOption (reg ty)) }
 
 atomic_ty:
 | id=ID { parse_id_or_builtin id }
-| id=VARID { TVar (id) }
-| id=RVARID { TRowVar (id) }
+| id=SYMID { FLVar id }
+| id=VARID { FRegular (TVar (id)) }
+| id=RVARID { FRegular (TRowVar (id)) }
 | LPAREN ty=ty RPAREN { ty }
-| P p=prim RPAREN { TPrim p }
-| S s=ty RPAREN { TStruct s }
+| P p=prim RPAREN { FRegular (TPrim p) }
+| S s=ty RPAREN { FRegular (TStruct (reg s)) }
 (* Vectors *)
-| VP p=prim RPAREN { TVec (Vector p) }
-| s=SHORT { TVec (Vector (parse_builtin_prim s)) }
-| HAT s=SHORT { TVec (Vector (PHat (parse_builtin_prim s))) }
-| s=SLEN { let (s,i) = s in assert_one i ; TVec (Scalar (parse_builtin_prim s)) }
-| HAT s=SLEN { let (s,i) = s in assert_one i ; TVec (Scalar (PHat (parse_builtin_prim s))) }
+| VP p=prim RPAREN { FRegular (TVec (Vector p)) }
+| s=SHORT { FRegular (TVec (Vector (parse_builtin_prim s))) }
+| HAT s=SHORT { FRegular (TVec (Vector (PHat (parse_builtin_prim s)))) }
+| s=SLEN { let (s,i) = s in assert_one i ; FRegular (TVec (Scalar (parse_builtin_prim s))) }
+| HAT s=SLEN { let (s,i) = s in assert_one i ; FRegular (TVec (Scalar (PHat (parse_builtin_prim s)))) }
 // | VB l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
 // | s=SBRACKET l=prim RBRACKET {TVec (VarLength (l,parse_builtin_prim s)) }
 // | HAT s=SBRACKET l=prim RBRACKET { TVec (VarLength (l,PHat (parse_builtin_prim s))) }
-| i=VLEN LPAREN p=prim RPAREN { assert_one i ; TVec (Scalar (p)) }
-| s=prim_atom { TVec (Scalar s) }
+| i=VLEN LPAREN p=prim RPAREN { assert_one i ; FRegular (TVec (Scalar (p))) }
+| s=prim_atom { FRegular (TVec (Scalar s)) }
 (* Containers (lists, args, tuples, externalptr) *)
-| EPTR_ANY { TExtPtr } | EPTR ty=ty RPAREN { TExtPtr' ty }
+| EPTR_ANY { FRegular TExtPtr } | EPTR ty=ty RPAREN { FRegular (TExtPtr' (reg ty)) }
 | LBRACE elts=separated_list(COMMA, lst_elt) RBRACE
-{ let bindings,sym,tl = split_lst_elts elts in TList {bindings;sym;tl} }
+{ let bindings,tl = split_lst_elts elts in FList {bindings;tl} }
 | ALPAREN elts=separated_list(COMMA, arg_elt2) RPAREN
 {
     let pos',named',tl' = split_arg_elt' elts in
     let pos_tl',named_tl' = tl' in
-    TArg' { pos' ; named' ; pos_tl' ; named_tl' }
+    FRegular (TArg' { pos'=List.map reg pos' ; pos_tl'=reg pos_tl' ;
+                      named'=List.map (fun (str,t) -> str, reg t) named' ;
+                      named_tl'=reg named_tl' })
 }
+| a=arg { FRegular (TArg (reg_arg a)) }
+| LBRACKET lst=separated_list(COMMA, simple_ty) RBRACKET
+{ FRegular (TTuple (List.map reg lst)) }
+(* C stuff *)
+| STAR t=atomic_ty { FRegular (TCPtr (reg t)) }
+| C i=cint RPAREN { FRegular (TCConst i) }
+| C str=cstr RPAREN { FRegular (TCConst str) }
+| PCI id=VARID RPAREN { FRegular (TCConst (CIntVar id)) }
+| PCINA id=VARID RPAREN { FRegular (TCConst (CIntNaVar id)) }
+| PCS id=VARID RPAREN { FRegular (TCConst (CStrVar id)) }
+
+(* An argument type, as it appears in the domain of a function signature *)
+arg:
 | LPAREN elts=separated_list(COMMA, arg_elt) RPAREN
 {
     let pos_named,tl,named = split_arg_elt elts in
     let pos_tl,named_tl = tl in
-    TArg { pos_named ; pos_tl ; named ; named_tl }
+    let binding (str,t) = LConst str, t in
+    { pos_named=List.map binding pos_named ; pos_tl ;
+      named=List.map binding named ; named_tl }
 }
-| LBRACKET lst=separated_list(COMMA, simple_ty) RBRACKET { TTuple lst }
-(* C stuff *)
-| STAR t=atomic_ty { TCPtr t }
-| C i=cint RPAREN { TCConst i }
-| C str=cstr RPAREN { TCConst str }
-| PCI id=VARID RPAREN { TCConst (CIntVar id) }
-| PCINA id=VARID RPAREN { TCConst (CIntNaVar id) }
-| PCS id=VARID RPAREN { TCConst (CStrVar id) }
 
 cint:
 | i=INT { CIntSingl (Z.to_int i) }
@@ -319,7 +346,7 @@ arg_elt2:
 
 arg_elt:
 | lbl=label COLON t=simple_ty { Named (lbl, t) }
-| lbl=label EQUAL id=SYMID { Named (lbl, TSymLabel (id)) }
+| lbl=label EQUAL id=SYMID { Named (lbl, FLVar id) }
 | ELLIPSIS COLON ty=simple_ty { Tail (ty, ty) }
 | ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { Tail (ty1, ty2) }
 

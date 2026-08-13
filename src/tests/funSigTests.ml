@@ -2,7 +2,8 @@ open Rstt
 open Builder
 open FunSig
 
-(* [FunSig] signatures cannot be parsed yet, so they are built explicitly here. *)
+(* Signatures are built explicitly in the first part of this file,
+   and parsed (with [IO.parse_funsig]) in the second one. *)
 
 let print name ty = Format.printf "%s: %a@." name Pp.ty (TyOp.simplify ty)
 let print_sig name t = print name (to_regular t |> Builder.build TIdMap.empty)
@@ -166,5 +167,90 @@ let%expect_test "deep matching" =
     { foo: int }
     deep_empty: Cannot specialize the label variable k: no string can be matched with it.
     attrs: (x: any with { names: "foo" }) ->
+    { foo: int }
+    |}]
+
+(* === Parsing === *)
+
+let parse str =
+  match Rstt_repl.IO.parse_funsig str with
+  | t -> let env', t = FunSig.resolve !env t in env := env' ; Some t
+  | exception (Rstt_repl.IO.SyntaxError (_, msg)) ->
+    Format.printf "%s: %s@." str msg ; None
+
+let print_parsed str =
+  parse str |> Option.iter (fun t ->
+    if is_regular_ty t then print_sig str t
+    else Format.printf "%s: (not regular)@." str)
+
+let%expect_test "parsing" =
+  print_parsed "(x: int, y: lgl) -> CHR" ;
+  print_parsed "(x: {a: int}) -> {b: lgl}" ;
+  print_parsed "(x: int, ...: any, y: lgl) -> CHR" ;
+  (* Types that FunSig cannot express are kept as regular types *)
+  print_parsed "(x: {a: int} | {b: lgl}) -> [int, lgl]" ;
+  (* Label variables, at any depth *)
+  print_parsed "(a: {#k: 'a}, b = #k) -> 'a" ;
+  print_parsed "(a: {#k: 'a}, b: #k) -> {#k: 'a}" ;
+  print_parsed "(x: {a: #k}) -> {#k: int}" ;
+  print_parsed "(x: any with {names: #k}) -> {#k: int}" ;
+  [%expect {|
+    (x: int, y: lgl) -> CHR: (x: int, y: lgl) ->
+    CHR
+    (x: {a: int}) -> {b: lgl}: (x: { a: int }) ->
+    { b: lgl }
+    (x: int, ...: any, y: lgl) -> CHR: (x: int, ...: any, y: lgl) ->
+    CHR
+    (x: {a: int} | {b: lgl}) -> [int, lgl]: (x: { a: int } | { b: lgl }) -> [int,
+    lgl]
+    (a: {#k: 'a}, b = #k) -> 'a: (not regular)
+    (a: {#k: 'a}, b: #k) -> {#k: 'a}: (not regular)
+    (x: {a: #k}) -> {#k: int}: (not regular)
+    (x: any with {names: #k}) -> {#k: int}: (not regular)
+    |}]
+
+let%expect_test "parsing errors" =
+  (* Not a single arrow *)
+  print_parsed "int -> lgl" ;
+  print_parsed "((x: int) -> lgl) & ((x: chr) -> chr)" ;
+  print_parsed "(x: int)" ;
+  (* Label variables in a position that FunSig cannot express *)
+  print_parsed "(x: {#k: int} | list) -> lgl" ;
+  print_parsed "(x: {#k: int}?) -> lgl" ;
+  [%expect {|
+    int -> lgl: syntax error
+    ((x: int) -> lgl) & ((x: chr) -> chr): syntax error
+    (x: int): syntax error
+    (x: {#k: int} | list) -> lgl: Not a regular type: label variable k is unresolved.
+    (x: {#k: int}?) -> lgl: Not a regular type: label variable k is unresolved.
+    |}]
+
+let%expect_test "parsing a regular type" =
+  (* Label variables are rejected outside of a function signature *)
+  let parse_ty str =
+    match Rstt_repl.IO.parse_type str with
+    | ty -> print str (build ty)
+    | exception (Rstt_repl.IO.SyntaxError (_, msg)) -> Format.printf "%s: %s@." str msg
+  in
+  parse_ty "{a: int}" ;
+  parse_ty "{#k: int}" ;
+  parse_ty "(a: {#k: 'a}, b = #k) -> 'a" ;
+  [%expect {|
+    {a: int}: { a: int }
+    {#k: int}: Not a regular type: label variable k is unresolved.
+    (a: {#k: 'a}, b = #k) -> 'a: Not a regular argument: label variable k is unresolved.
+    |}]
+
+let%expect_test "parsing and specializing" =
+  let t = parse "(a: {#k: 'a}, b = #k) -> 'a" |> Option.get in
+  print_spec "get" t
+    (call [TList { bindings=["foo", int] ; sym=[] ; tl=absent } ; str "foo"]) ;
+  let t = parse "(x: {a: #k}) -> {#k: int}" |> Option.get in
+  print_spec "deep" t
+    (call [TList { bindings=["a", str "foo"] ; sym=[] ; tl=absent }]) ;
+  [%expect {|
+    get: (a: { foo: 'a }, b: "foo") ->
+    'a
+    deep: (x: { a: "foo" }) ->
     { foo: int }
     |}]

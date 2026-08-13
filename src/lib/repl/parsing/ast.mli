@@ -2,6 +2,7 @@ open Rstt
 
 type op = LEQ | EQ | GEQ
 type ty = (string,string,string) Builder.t
+type funsig = (string,string,string) FunSig.t
 type subst = (string * ty) list
 type tally = (ty * op * ty) list
 type expr =
