@@ -7,20 +7,10 @@ type label =
 type ('v,'r,'i) ty =
 | FLVar of string  (** A symbolic label variable that can be matched with a singleton string argument. *)
 | FRegular of ('v,'r,'i) Builder.t
-| FList of ('v,'r,'i) lst
+| FList of (label, ('v,'r,'i) ty) Lst.atom
 | FAttr of (('v,'r,'i) ty, 'r Builder.classes) Attr.atom
 
-and ('v,'r,'i) lst = {
-    bindings: (label * ('v,'r,'i) ty) list ;
-    tl: ('v,'r,'i) ty
-}
-
-and ('v,'r,'i) arg = {
-    pos_named : (label * ('v,'r,'i) ty) list ;
-    pos_tl: ('v,'r,'i) ty ;
-    named_tl : ('v,'r,'i) ty ;
-    named : (label * ('v,'r,'i) ty) list
-}
+type ('v,'r,'i) arg = (label, ('v,'r,'i) ty) Arg.atom
 
 type ('v,'r,'i) t = { dom: ('v,'r,'i) arg ; ret: ('v,'r,'i) ty }
 
@@ -41,7 +31,7 @@ val to_regular_ty : ('v,'r,'i) ty -> ('v,'r,'i) Builder.t
     @raise [Invalid_argument] if it contains any polymorphic label.
 *)
 
-val to_regular_arg : ('v,'r,'i) arg -> ('v,'r,'i) Builder.t Arg.atom
+val to_regular_arg : ('v,'r,'i) arg -> (string, ('v,'r,'i) Builder.t) Arg.atom
 (** Converts a FunSig argument to a regular builder argument.
     @raise [Invalid_argument] if it contains any polymorphic label.
 *)
@@ -51,10 +41,4 @@ val specialize : (Var.t,RowVar.t,Builder.TId.t) t -> Ty.t -> (Var.t,RowVar.t,Bui
     in the context where the function it represents is given an argument [arg]
     that will be used to resolve FunSig specific constructs.
     @raise [Invalid_argument] if some FunSig specific constructs remain after specialization.
-*)
-
-(* TODO:
-1. Remove old symbolic labels system (in module Labels and Lst).
-2. Add a parameter 'l (for type of label) in Arg.atom, Arg.atom', and Lst.atom,
-so that the lst and arg type definition in FunSig can be removed.
 *)

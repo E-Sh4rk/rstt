@@ -12,27 +12,27 @@ let npos_field n = Reserved.npos, Intervals.Atom.mk_singl n |> Descr.mk_interval
 let npos_field' n = Reserved.npos, Intervals.Atom.mk (Some n) None |> Descr.mk_interval |> Ty.mk_descr
   |> Ty.O.required |> Ty.F.mk_descr
 
-type 'f atom = { pos_named : (string * 'f) list ; pos_tl: 'f ; named_tl : 'f ; named : (string * 'f) list }
-type 'f atom' = { pos' : 'f list ; pos_tl': 'f ; named' : (string * 'f) list ; named_tl' : 'f }
-type 'f elt =
-| DefSite of 'f atom
-| CallSite of  'f atom'
-type 'f t = 'f elt list
-(* type fsig = unit atom *)
-let map_atom f { pos_named ; pos_tl ; named_tl ; named } =
-  let pos_named = List.map (fun (str,t) -> str, f t) pos_named in
-  let named = List.map (fun (str,t) -> str, f t) named in
+type ('l,'f) atom = { pos_named : ('l * 'f) list ; pos_tl: 'f ; named_tl : 'f ; named : ('l * 'f) list }
+type ('l,'f) atom' = { pos' : 'f list ; pos_tl': 'f ; named' : ('l * 'f) list ; named_tl' : 'f }
+type ('l,'f) elt =
+| DefSite of ('l,'f) atom
+| CallSite of  ('l,'f) atom'
+type ('l,'f) t = ('l,'f) elt list
+let map_atom fl f { pos_named ; pos_tl ; named_tl ; named } =
+  let aux (lbl,t) = fl lbl, f t in
+  let pos_named = List.map aux pos_named in
+  let named = List.map aux named in
   let pos_tl, named_tl = f pos_tl, f named_tl in
   { pos_named ; pos_tl ; named_tl ; named }
-let map_atom' f { pos' ; pos_tl' ; named' ; named_tl' } =
+let map_atom' fl f { pos' ; pos_tl' ; named' ; named_tl' } =
   let pos' = List.map f pos' in
-  let named' = List.map (fun (str,t) -> str, f t) named' in
+  let named' = List.map (fun (lbl,t) -> fl lbl, f t) named' in
   let pos_tl', named_tl' = f pos_tl', f named_tl' in
   { pos' ; pos_tl' ; named' ; named_tl' }
 let map_elt f t =
   match t with
-  | DefSite a -> DefSite (map_atom f a)
-  | CallSite a -> CallSite (map_atom' f a)
+  | DefSite a -> DefSite (map_atom Fun.id f a)
+  | CallSite a -> CallSite (map_atom' Fun.id f a)
 let map f t = List.map (map_elt f) t
 
 let sigs = Hashtbl.create 100
@@ -74,7 +74,7 @@ let mk' ?allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk { pos_named ; pos_tl ; named_tl ; named } =
   let id = fresh_id () in
-  let fsig = map_atom (Fun.const ()) { pos_named ; pos_tl ; named_tl ; named } in
+  let fsig = map_atom Fun.id (Fun.const ()) { pos_named ; pos_tl ; named_tl ; named } in
   Hashtbl.add sigs id fsig ;
   let n = List.length pos_named in
   (* let k = List.length pos in *)
@@ -105,7 +105,7 @@ let extract_ids (a:Records.Atom'.t) =
   | false, _ -> None
 
 let params_of_id id = Hashtbl.find sigs id
-let extract ty : Ty.F.t t =
+let extract ty : (string, Ty.F.t) t =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid arg encoding." ;
   let extract_record lbl a = Records.Atom'.find lbl a |> Ty.F.get_descr
     |> Ty.O.get |> Ty.O.Atom.get |> Ty.get_descr |> Descr.get_records |> Op.Records'.approx in
@@ -136,7 +136,7 @@ let extract ty : Ty.F.t t =
       List.map (fun (lbl,ty) ->
         match Labels.info lbl with
         | Labels.Named str -> (str,ty)
-        | Labels.Pos _ | Labels.Sym _ -> assert false
+        | Labels.Pos _ -> assert false
         | exception Invalid_argument _ -> assert false
         ) in
     let pos_tl', named_tl' = apos.Op.Records'.Atom.tail, anamed.Op.Records'.Atom.tail in

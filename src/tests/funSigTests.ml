@@ -46,7 +46,7 @@ let id = resolve {
 (* Call-site arguments *)
 let call ?(named=[]) pos =
   build (TArg' { pos' = pos ; named' = named ; pos_tl' = absent ; named_tl' = absent })
-let lst = TList { bindings=["foo", int] ; sym=[] ; tl=absent }
+let lst = TList { bindings=["foo", int] ; tl=absent }
 
 let%expect_test "regular signatures" =
   Format.printf "%b %b@." (is_regular_ty get) (is_regular_ty id) ;
@@ -145,7 +145,7 @@ let attrs = resolve {
   ret = FList { bindings=[LVar "k", FRegular int] ; tl=opt } }
 
 let%expect_test "deep matching" =
-  let lst b = TList { bindings=["a", b] ; sym=[] ; tl=absent } in
+  let lst b = TList { bindings=["a", b] ; tl=absent } in
   (* The label variable is resolved from a field of a list argument *)
   print_spec "deep" deep (call [lst (str "foo") ; str "foo"]) ;
   (* Constraints coming from several positions are intersected *)
@@ -157,7 +157,7 @@ let%expect_test "deep matching" =
   (* The label variable is resolved from an attribute of the argument *)
   print_spec "attrs" attrs
     (call [TAttr { Attr.content=TAny ; classes=CAny ;
-                   attrs=TList { bindings=["names", str "foo"] ; sym=[] ; tl=absent } }]) ;
+                   attrs=TList { bindings=["names", str "foo"] ; tl=absent } }]) ;
   [%expect {|
     deep: (x: { a: "foo" }, b: "foo") ->
     { foo: int }
@@ -244,10 +244,10 @@ let%expect_test "parsing a regular type" =
 let%expect_test "parsing and specializing" =
   let t = parse "(a: {#k: 'a}, b = #k) -> 'a" |> Option.get in
   print_spec "get" t
-    (call [TList { bindings=["foo", int] ; sym=[] ; tl=absent } ; str "foo"]) ;
+    (call [TList { bindings=["foo", int] ; tl=absent } ; str "foo"]) ;
   let t = parse "(x: {a: #k}) -> {#k: int}" |> Option.get in
   print_spec "deep" t
-    (call [TList { bindings=["a", str "foo"] ; sym=[] ; tl=absent }]) ;
+    (call [TList { bindings=["a", str "foo"] ; tl=absent }]) ;
   [%expect {|
     get: (a: { foo: 'a }, b: "foo") ->
     'a

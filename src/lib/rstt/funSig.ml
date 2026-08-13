@@ -7,20 +7,10 @@ type label =
 type ('v,'r,'i) ty =
 | FLVar of string
 | FRegular of ('v,'r,'i) Builder.t
-| FList of ('v,'r,'i) lst
+| FList of (label, ('v,'r,'i) ty) Lst.atom
 | FAttr of (('v,'r,'i) ty, 'r Builder.classes) Attr.atom
 
-and ('v,'r,'i) lst = {
-    bindings: (label * ('v,'r,'i) ty) list ;
-    tl: ('v,'r,'i) ty
-}
-
-and ('v,'r,'i) arg = {
-    pos_named : (label * ('v,'r,'i) ty) list ;
-    pos_tl: ('v,'r,'i) ty ;
-    named_tl : ('v,'r,'i) ty ;
-    named : (label * ('v,'r,'i) ty) list
-}
+type ('v,'r,'i) arg = (label, ('v,'r,'i) ty) Arg.atom
 
 type ('v,'r,'i) t = { dom: ('v,'r,'i) arg ; ret: ('v,'r,'i) ty }
 
@@ -35,22 +25,14 @@ let map f fl fc t =
   let rec aux t =
     let t = match t with
     | FLVar _ | FRegular _ -> t
-    | FList { bindings ; tl } ->
-      let bindings = bindings |> List.map (fun (l,t) -> fl l, aux t) in
-      FList { bindings ; tl=aux tl }
+    | FList a -> FList (Lst.map_atom fl aux a)
     | FAttr a -> FAttr (Attr.map_atom aux fc a)
     in
     f t
   in
   aux t
 
-let map_arg f fl fc { pos_named ; pos_tl ; named_tl ; named } =
-  let aux = map f fl fc in
-  let aux_bindings b = b |> List.map (fun (l,t) -> fl l, aux t) in
-  let pos_named = aux_bindings pos_named in
-  let pos_tl, named_tl = aux pos_tl, aux named_tl in
-  let named = aux_bindings named in
-  { pos_named ; pos_tl ; named_tl ; named }
+let map_arg f fl fc a = Arg.map_atom fl (map f fl fc) a
 
 let map_sig f fl fc { dom ; ret } =
   let dom = map_arg f fl fc dom in
@@ -72,25 +54,15 @@ let resolve env t =
     match t with
     | FLVar x -> FLVar x
     | FRegular t -> FRegular (regular t)
-    | FList { bindings ; tl } ->
-      let bindings = bindings |> List.map (fun (l,t) -> l, aux t) in
-      FList { bindings ; tl=aux tl }
+    | FList a -> FList (Lst.map_atom Fun.id aux a)
     | FAttr { Attr.content ; classes=cs ; attrs } ->
       let content = aux content in
       let cs = classes cs in
       let attrs = aux attrs in
       FAttr { Attr.content ; classes=cs ; attrs }
   in
-  let aux_arg { pos_named ; pos_tl ; named_tl ; named } =
-    let aux_bindings b = b |> List.map (fun (l,t) -> l, aux t) in
-    let pos_named = aux_bindings pos_named in
-    let pos_tl = aux pos_tl in
-    let named_tl = aux named_tl in
-    let named = aux_bindings named in
-    { pos_named ; pos_tl ; named_tl ; named }
-  in
   let { dom ; ret } = t in
-  let dom = aux_arg dom in
+  let dom = Arg.map_atom Fun.id aux dom in
   let ret = aux ret in
   !env, { dom ; ret }
 
@@ -107,17 +79,10 @@ let rec regular_ty t =
   match t with
   | FLVar x -> raise (Not_regular ("label variable "^x^" is unresolved"))
   | FRegular t -> t
-  | FList { bindings ; tl } ->
-    let bindings = bindings |> List.map (fun (l,t) -> regular_label l, regular_ty t) in
-    Builder.TList { Lst.bindings ; sym=[] ; tl=regular_ty tl }
+  | FList a -> Builder.TList (Lst.map_atom regular_label regular_ty a)
   | FAttr a -> Builder.TAttr (Attr.map_atom regular_ty Fun.id a)
 
-let regular_arg { pos_named ; pos_tl ; named_tl ; named } =
-  let aux_bindings b = b |> List.map (fun (l,t) -> regular_label l, regular_ty t) in
-  let pos_named = aux_bindings pos_named in
-  let pos_tl, named_tl = regular_ty pos_tl, regular_ty named_tl in
-  let named = aux_bindings named in
-  { Arg.pos_named ; pos_tl ; named_tl ; named }
+let regular_arg a = Arg.map_atom regular_label regular_ty a
 
 let regular_sig { dom ; ret } =
   Builder.TArrow (Builder.TArg (regular_arg dom), regular_ty ret)

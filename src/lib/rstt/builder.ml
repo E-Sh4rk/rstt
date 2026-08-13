@@ -87,9 +87,9 @@ and ('v,'r,'i) t =
 | TPrim of 'v prim
 | TArrow of ('v,'r,'i) t * ('v,'r,'i) t
 | TVec of 'v prim Vec.atom
-| TList of ('v,'r,'i) t Lst.atom
-| TArg of ('v,'r,'i) t Arg.atom
-| TArg' of ('v,'r,'i) t Arg.atom'
+| TList of (string, ('v,'r,'i) t) Lst.atom
+| TArg of (string, ('v,'r,'i) t) Arg.atom
+| TArg' of (string, ('v,'r,'i) t) Arg.atom'
 | TExtPtr' of ('v,'r,'i) t
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
@@ -97,7 +97,6 @@ and ('v,'r,'i) t =
 | TCConst of 'v cconst
 | TCPtr of ('v,'r,'i) t
 | TCArrow of ('v,'r,'i) t * ('v,'r,'i) t
-| TSymLabel of string
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
 and 'r classes =
@@ -135,7 +134,7 @@ let map f fp fc t =
   let rec aux t =
     let t = match t with
     | TId _ | TTy _ | TVar _ | TDyn | TRowVar _ | TAny | TEmpty | TAttrAny
-    | TNull | TEnv | TSym | TLang | TExtPtr | TSymLabel _-> t
+    | TNull | TEnv | TSym | TLang | TExtPtr -> t
     | TCup (t1, t2) -> TCup (aux t1, aux t2)
     | TCap (t1, t2) -> TCap (aux t1, aux t2)
     | TDiff (t1, t2) -> TDiff (aux t1, aux t2)
@@ -144,9 +143,9 @@ let map f fp fc t =
     | TPrim p -> TPrim (fp p)
     | TArrow (t1, t2) -> TArrow (aux t1, aux t2)
     | TVec a -> TVec (Vec.map_atom (map_prim fp) a)
-    | TList a -> TList (Lst.map_atom aux a)
-    | TArg a -> TArg (Arg.map_atom aux a)
-    | TArg' a -> TArg' (Arg.map_atom' aux a)
+    | TList a -> TList (Lst.map_atom Fun.id aux a)
+    | TArg a -> TArg (Arg.map_atom Fun.id aux a)
+    | TArg' a -> TArg' (Arg.map_atom' Fun.id aux a)
     | TExtPtr' t -> TExtPtr' (aux t)
     | TOption t -> TOption (aux t)
     | TAttr a -> TAttr (Attr.map_atom aux (map_classes fc) a)
@@ -187,26 +186,6 @@ module TIdMap = Map.Make(TId)
 module TIdSet = Set.Make(TId)
 
 (* === Construction of types === *)
-
-let build_sym_ctx t =
-  let ctx = Hashtbl.create 7 in
-  let add_if_sym vs t =
-    match t with
-    | TSymLabel str -> List.iter (fun v -> Hashtbl.add ctx str v) vs ; TOption TAny
-    | tye -> tye
-  in
-  let aux t =
-    match t with
-    | TArg args ->
-      let pos_named = args.pos_named |> List.mapi (fun i (str,t) ->
-        str, (add_if_sym [Labels.Pos i ; Labels.Named str] t)) in
-      let named = args.named |> List.map (fun (str, t) ->
-        str, add_if_sym [Labels.Named str] t) in
-      let pos_tl, named_tl = args.pos_tl, args.named_tl in
-      TArg { pos_named ; pos_tl ; named ; named_tl }
-    | t -> t
-  in
-  let t = map aux Fun.id Fun.id t in ctx, t
 
 let build_cconst t =
   match t with
@@ -267,7 +246,7 @@ let build_classes t =
   | CNoClass -> Classes.noclass
   | CClasses a -> Classes.mk a
 
-let rec build_struct sctx env t =
+let rec build_struct env t =
   match t with
   | TId i -> (try TIdMap.find i env |> Gradual.refresh with Not_found ->
     invalid_arg ("type of "^(string_of_int i)^" not found in the environment"))
@@ -276,38 +255,29 @@ let rec build_struct sctx env t =
   | TDyn -> Gradual.mk ()
   | TRowVar _ -> invalid_arg "Unexpected row variable"
   | TAny -> Ty.any | TEmpty -> Ty.empty
-  | TCup (t1,t2) -> Ty.cup (build_struct sctx env t1) (build_struct sctx env t2)
-  | TCap (t1,t2) -> Ty.cap (build_struct sctx env t1) (build_struct sctx env t2)
-  | TDiff (t1,t2) -> Ty.diff (build_struct sctx env t1) (build_struct sctx env t2)
-  | TNeg t -> Ty.neg (build_struct sctx env t)
+  | TCup (t1,t2) -> Ty.cup (build_struct env t1) (build_struct env t2)
+  | TCap (t1,t2) -> Ty.cap (build_struct env t1) (build_struct env t2)
+  | TDiff (t1,t2) -> Ty.diff (build_struct env t1) (build_struct env t2)
+  | TNeg t -> Ty.neg (build_struct env t)
   | TNull -> Null.any | TSym -> Sym.any
   | TEnv -> Env.any | TLang -> Lang.any | TExtPtr -> ExternalPtr.any
-  | TTuple lst -> Descr.mk_tuple (List.map (build sctx env) lst) |> Ty.mk_descr
+  | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
   | TPrim p -> build_prim p
   | TArrow (t1,t2) | TCArrow (t1,t2) ->
-    Descr.mk_arrow (build sctx env t1, build sctx env t2) |> Ty.mk_descr
+    Descr.mk_arrow (build env t1, build env t2) |> Ty.mk_descr
   | TVec a -> Vec.map_atom build_prim a |> Vec.mk
-  | TList a ->
-    let {Lst.bindings;sym;tl} = Lst.map_atom (build_field sctx env) a in
-    let resolve s =
-      match s with
-      | Labels.SStr str -> Labels.SLabel (Hashtbl.find_all sctx str)
-      | Labels.SLabel ts -> SLabel ts
-    in
-    let sym = sym |> List.map (fun (s,a) -> resolve s,a) in
-    Lst.mk {bindings;sym;tl}
-  | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
-  | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
-  | TExtPtr' t -> ExternalPtr.mk (build sctx env t)
+  | TList a -> Lst.map_atom Fun.id (build_field env) a |> Lst.mk
+  | TArg a -> Arg.map_atom Fun.id (build_field env) a |> Arg.mk
+  | TArg' a -> Arg.map_atom' Fun.id (build_field env) a |> Arg.mk'
+  | TExtPtr' t -> ExternalPtr.mk (build env t)
   | TCConst c -> build_cconst c
-  | TCPtr t -> Cptr.mk_nonstring (build sctx env t)
+  | TCPtr t -> Cptr.mk_nonstring (build env t)
   | TOption _ -> invalid_arg "Unexpected optional type"
   | TAttrAny | TAttr _ -> invalid_arg "Unexpected attributes"
   | TStruct _ -> invalid_arg "Unexpected struct"
-  | TSymLabel _ -> invalid_arg "Unexpected symbolic label"
   | TWhere _ -> invalid_arg "Unexpected where clause"
 
-and build sctx env t =
+and build env t =
   match t with
   | TId i -> (try TIdMap.find i env |> Gradual.refresh with Not_found ->
     invalid_arg ("type of "^(string_of_int i)^" not found in the environment"))
@@ -317,65 +287,57 @@ and build sctx env t =
   | TVar v -> Ty.mk_var v
   | TDyn -> Gradual.mk ()
   | TRowVar _ -> invalid_arg "Unexpected row variable"
-  | TCup (t1,t2) -> Ty.cup (build sctx env t1) (build sctx env t2)
-  | TCap (t1,t2) -> Ty.cap (build sctx env t1) (build sctx env t2)
-  | TDiff (t1,t2) -> Ty.diff (build sctx env t1) (build sctx env t2)
-  | TNeg t -> Ty.neg (build sctx env t)
+  | TCup (t1,t2) -> Ty.cup (build env t1) (build env t2)
+  | TCap (t1,t2) -> Ty.cap (build env t1) (build env t2)
+  | TDiff (t1,t2) -> Ty.diff (build env t1) (build env t2)
+  | TNeg t -> Ty.neg (build env t)
   | TWhere (t, eqs) ->
     let eqs = eqs |> List.map (fun (x,t) -> x,Var.mk "_",t) in
     let env = List.fold_left (fun env (x,v,_) -> TIdMap.add x (Ty.mk_var v) env) env eqs in
-    let t, eqs = build sctx env t, List.map (fun (_,v,t) -> v,build sctx env t) eqs in
+    let t, eqs = build env t, List.map (fun (_,v,t) -> v,build env t) eqs in
     let s = Ty.of_eqs eqs |> Subst.of_list1 in
     Subst.apply s t
   (* Explicit attr *)
-  | TAttr a -> Attr.map_atom (build_struct sctx env) build_classes a |> Attr.mk
-  | TStruct t -> build_struct sctx env t
+  | TAttr a -> Attr.map_atom (build_struct env) build_classes a |> Attr.mk
+  | TStruct t -> build_struct env t
   | TCArrow (t1,t2) ->
-    Descr.mk_arrow (build sctx env t1, build sctx env t2) |> Ty.mk_descr
+    Descr.mk_arrow (build env t1, build env t2) |> Ty.mk_descr
   (* We don't need attributes for C values, primitive types, tuples, and args *)
   | TPrim p -> build_prim p
   | TCConst c -> build_cconst c
-  | TCPtr t -> Cptr.mk_nonstring (build sctx env t)
-  | TTuple lst -> Descr.mk_tuple (List.map (build sctx env) lst) |> Ty.mk_descr
-  | TArg a -> Arg.map_atom (build_field sctx env) a |> Arg.mk
-  | TArg' a -> Arg.map_atom' (build_field sctx env) a |> Arg.mk'
+  | TCPtr t -> Cptr.mk_nonstring (build env t)
+  | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
+  | TArg a -> Arg.map_atom Fun.id (build_field env) a |> Arg.mk
+  | TArg' a -> Arg.map_atom' Fun.id (build_field env) a |> Arg.mk'
   (* R types *)
   | t -> Attr.mk
-    {content=build_struct sctx env t ; classes=Ty.any ; attrs=Ty.any}
+    {content=build_struct env t ; classes=Ty.any ; attrs=Ty.any}
 
-and build_field sctx env t =
+and build_field env t =
   match t with
-  | TOption t -> Ty.F.mk_descr (build sctx env t |> Ty.O.optional)
+  | TOption t -> Ty.F.mk_descr (build env t |> Ty.O.optional)
   | TRowVar v -> Ty.F.mk_var v
   | TCup (t1,t2) ->
-      let t1 = build_field sctx env t1 in
-      let t2 = build_field sctx env t2 in
+      let t1 = build_field env t1 in
+      let t2 = build_field env t2 in
       Ty.F.cup t1 t2
   | TCap (t1,t2) ->
-      let t1 = build_field sctx env t1 in
-      let t2 = build_field sctx env t2 in
+      let t1 = build_field env t1 in
+      let t2 = build_field env t2 in
       Ty.F.cap t1 t2
   | TDiff (t1,t2) ->
-      let t1 = build_field sctx env t1 in
-      let t2 = build_field sctx env t2 in
+      let t1 = build_field env t1 in
+      let t2 = build_field env t2 in
       Ty.F.diff t1 t2
   (* Having a negation operator over fields would be too confusing
      with the regular type negation *)
-  (* | TNeg t -> Ty.F.neg (build_field sctx env t) *)
-  | t -> Ty.F.mk_descr (build sctx env t |> Ty.O.required)
+  (* | TNeg t -> Ty.F.neg (build_field env t) *)
+  | t -> Ty.F.mk_descr (build env t |> Ty.O.required)
 
-let build_field env t =
-  let ctx, t = build_sym_ctx t in
-  build_field ctx env t |> Gradual.build_non_gradual_field
-let build_struct env t =
-  let ctx, t = build_sym_ctx t in
-  build_struct ctx env t |> Gradual.build_non_gradual
-let build_gradual env t =
-  let ctx, t = build_sym_ctx t in
-  build ctx env t |> Gradual.build
-let build env t =
-  let ctx, t = build_sym_ctx t in
-  build ctx env t |> Gradual.build_non_gradual
+let build_field env t = build_field env t |> Gradual.build_non_gradual_field
+let build_struct env t = build_struct env t |> Gradual.build_non_gradual
+let build_gradual env t = build env t |> Gradual.build
+let build env t = build env t |> Gradual.build_non_gradual
 
 (* === Resolution of identifiers === *)
 
@@ -500,9 +462,9 @@ let resolve env t =
     | TPrim p -> TPrim (resolve_prim env p)
     | TArrow (t1,t2) -> TArrow (aux tids t1, aux tids t2)
     | TVec a -> TVec (Vec.map_atom (resolve_prim env) a)
-    | TList a -> TList (Lst.map_atom (aux tids) a)
-    | TArg a -> TArg (Arg.map_atom (aux tids) a)
-    | TArg' a -> TArg' (Arg.map_atom' (aux tids) a)
+    | TList a -> TList (Lst.map_atom Fun.id (aux tids) a)
+    | TArg a -> TArg (Arg.map_atom Fun.id (aux tids) a)
+    | TArg' a -> TArg' (Arg.map_atom' Fun.id (aux tids) a)
     | TExtPtr' t -> TExtPtr' (aux tids t)
     | TOption t -> TOption (aux tids t)
     | TAttr a -> TAttr (Attr.map_atom (aux tids) (resolve_classes env) a)
@@ -510,7 +472,6 @@ let resolve env t =
     | TCConst c -> TCConst (resolve_cconst env c)
     | TCPtr t -> TCPtr (aux tids t)
     | TCArrow (t1,t2) -> TCArrow (aux tids t1, aux tids t2)
-    | TSymLabel str -> TSymLabel str
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in
       let tids = List.fold_left (fun tids (x,v,_) -> StrMap.add x v tids) tids eqs in
