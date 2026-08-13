@@ -211,20 +211,13 @@ let ty_of_field fty =
   let oty = fty |> Ty.F.get_descr |> Ty.O.get in
   if Ty.O.Atom.is_required oty then Some (Ty.O.Atom.get oty) else None
 
-(* [occurrences t] returns, for each label variable of [t], the number of times
-   it occurs in [t] and the number of times it occurs as a [FLVar] in the
-   domain of [t]. *)
-let occurrences { dom ; ret } =
-  let res = ref StrMap.empty in
-  let add x dom_flvar =
-    let n, ndom = StrMap.find_opt x !res |> Option.value ~default:(0,0) in
-    res := StrMap.add x (n+1, if dom_flvar then ndom+1 else ndom) !res
-  in
-  let f dom t = (match t with FLVar x -> add x dom | _ -> ()) ; t in
-  let fl l = (match l with LVar x -> add x false | LConst _ -> ()) ; l in
-  ignore (map_arg (f true) fl Fun.id dom) ;
-  ignore (map (f false) fl Fun.id ret) ;
-  !res
+(* [label_vars t] returns the label variables occurring in [t]. *)
+let label_vars t =
+  let res = ref StrSet.empty in
+  let add x = res := StrSet.add x !res in
+  let f t = (match t with FLVar x -> add x | _ -> ()) ; t in
+  let fl l = (match l with LVar x -> add x | LConst _ -> ()) ; l in
+  ignore (map_sig f fl Fun.id t) ; !res
 
 let specialize t arg =
   let fail x msg =
@@ -277,18 +270,12 @@ let specialize t arg =
     |> List.fold_left (StrMap.union (fun _ s1 s2 -> Some (StrSet.union s1 s2)))
       StrMap.empty
   in
-  let vars = occurrences t |> StrMap.bindings |> List.filter_map (fun (x,(n,ndom)) ->
-    (* A label variable that occurs only once, as a parameter of the domain,
-       does not need to be resolved: the associated parameter simply accepts
-       any string of length 1. *)
-    if n = 1 && ndom = 1 then None
-    else match StrMap.find_opt x constraints with
-    | None when ndom = 0 ->
-      fail x "it is not matched with any parameter of the domain"
+  let vars = label_vars t |> StrSet.elements |> List.map (fun x ->
+    match StrMap.find_opt x constraints with
     | None -> fail x "it could not be resolved from the given argument"
     | Some strs when StrSet.is_empty strs ->
       fail x "no string can be matched with it"
-    | Some strs -> Some (x, StrSet.elements strs))
+    | Some strs -> x, StrSet.elements strs)
   in
   (* Build one instance of the signature for each possible assignment
      of the label variables. *)
@@ -300,23 +287,13 @@ let specialize t arg =
       strs |> List.concat_map (fun str ->
         assignments |> List.map (StrMap.add x str))
   in
+  (* Every label variable has been resolved, thus [to_regular] cannot fail. *)
   let instantiate assign =
-    let fl l =
-      match l with
-      | LConst _ -> l
-      | LVar x -> begin match StrMap.find_opt x assign with
-        | Some str -> LConst str
-        | None -> l
-        end
-    in
+    let str x = StrMap.find x assign in
+    let fl l = match l with LConst _ -> l | LVar x -> LConst (str x) in
     let f t =
       match t with
-      | FLVar x -> begin match StrMap.find_opt x assign with
-        | Some str -> FRegular (Builder.TVec (Vec.Scalar (Builder.PChr' str)))
-        (* [x] does not need to be resolved: the parameter
-           accepts any (non-NA) string of length 1. *)
-        | None -> FRegular (Builder.TVec (Vec.Scalar (Builder.PHat Builder.PChr)))
-        end
+      | FLVar x -> FRegular (Builder.TVec (Vec.Scalar (Builder.PChr' (str x))))
       | t -> t
     in
     map_sig f fl Fun.id t |> to_regular

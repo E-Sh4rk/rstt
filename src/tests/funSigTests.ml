@@ -98,7 +98,7 @@ let%expect_test "specialization failures" =
     not_a_string: Cannot specialize the label variable k: it could not be resolved from the given argument.
     not_a_scalar: Cannot specialize the label variable k: it could not be resolved from the given argument.
     missing: Cannot specialize the label variable k: it could not be resolved from the given argument.
-    unbound: Cannot specialize the label variable k: it is not matched with any parameter of the domain.
+    unbound: Cannot specialize the label variable k: it could not be resolved from the given argument.
     |}]
 
 let%expect_test "specialized signatures accept their argument" =
@@ -114,13 +114,16 @@ let%expect_test "specialized signatures accept their argument" =
     |}]
 
 let%expect_test "unused label variables" =
-  (* [#k] is never used as a label: it does not need to be resolved *)
+  (* Every label variable must be resolved, even one that is never
+     used as a label *)
   let unused = resolve { dom = { pos_named = [ LConst "b", FLVar "k" ] ;
                                  pos_tl = opt ; named_tl = opt ; named = [] } ;
                          ret = FRegular int } in
   print_spec "unused" unused (call [int]) ;
+  print_spec "unused_resolved" unused (call [str "foo"]) ;
   [%expect {|
-    unused: (b: ^CHR1) ->
+    unused: Cannot specialize the label variable k: it could not be resolved from the given argument.
+    unused_resolved: (b: "foo") ->
     int
     |}]
 
