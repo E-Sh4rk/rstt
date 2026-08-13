@@ -346,7 +346,6 @@ arg_elt2:
 
 arg_elt:
 | lbl=label COLON t=simple_ty { Named (lbl, t) }
-| lbl=label EQUAL id=SYMID { Named (lbl, FLVar id) }
 | ELLIPSIS COLON ty=simple_ty { Tail (ty, ty) }
 | ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { Tail (ty1, ty2) }
 

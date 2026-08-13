@@ -22,7 +22,7 @@ let opt = FRegular absent
 let str s = TVec (Vec.Scalar (PChr' s))
 let int = TVec (Vec.Vector PSubInt)
 
-(* ( a: { #k: 'a }, b = #k ) -> 'a *)
+(* ( a: { #k: 'a }, b: #k ) -> 'a *)
 let get = resolve {
   dom = {
     pos_named = [
@@ -31,7 +31,7 @@ let get = resolve {
     pos_tl = opt ; named_tl = opt ; named = [] } ;
   ret = FRegular (TVar "'a") }
 
-(* ( b = #k ) -> { #k: int } *)
+(* ( b: #k ) -> { #k: int } *)
 let mk = resolve {
   dom = { pos_named = [ LConst "b", FLVar "k" ] ;
           pos_tl = opt ; named_tl = opt ; named = [] } ;
@@ -128,7 +128,7 @@ let%expect_test "unused label variables" =
     int
     |}]
 
-(* ( x: { a: #k }, b = #k ) -> { #k: int } *)
+(* ( x: { a: #k }, b: #k ) -> { #k: int } *)
 let deep = resolve {
   dom = { pos_named = [
             LConst "x", FList { bindings=[LConst "a", FLVar "k"] ; tl=opt } ;
@@ -190,7 +190,7 @@ let%expect_test "parsing" =
   (* Types that FunSig cannot express are kept as regular types *)
   print_parsed "(x: {a: int} | {b: lgl}) -> [int, lgl]" ;
   (* Label variables, at any depth *)
-  print_parsed "(a: {#k: 'a}, b = #k) -> 'a" ;
+  print_parsed "(a: {#k: 'a}, b: #k) -> 'a" ;
   print_parsed "(a: {#k: 'a}, b: #k) -> {#k: 'a}" ;
   print_parsed "(x: {a: #k}) -> {#k: int}" ;
   print_parsed "(x: any with {names: #k}) -> {#k: int}" ;
@@ -203,7 +203,7 @@ let%expect_test "parsing" =
     CHR
     (x: {a: int} | {b: lgl}) -> [int, lgl]: (x: { a: int } | { b: lgl }) -> [int,
     lgl]
-    (a: {#k: 'a}, b = #k) -> 'a: (not regular)
+    (a: {#k: 'a}, b: #k) -> 'a: (not regular)
     (a: {#k: 'a}, b: #k) -> {#k: 'a}: (not regular)
     (x: {a: #k}) -> {#k: int}: (not regular)
     (x: any with {names: #k}) -> {#k: int}: (not regular)
@@ -234,15 +234,15 @@ let%expect_test "parsing a regular type" =
   in
   parse_ty "{a: int}" ;
   parse_ty "{#k: int}" ;
-  parse_ty "(a: {#k: 'a}, b = #k) -> 'a" ;
+  parse_ty "(a: {#k: 'a}, b: #k) -> 'a" ;
   [%expect {|
     {a: int}: { a: int }
     {#k: int}: Not a regular type: label variable k is unresolved.
-    (a: {#k: 'a}, b = #k) -> 'a: Not a regular argument: label variable k is unresolved.
+    (a: {#k: 'a}, b: #k) -> 'a: Not a regular argument: label variable k is unresolved.
     |}]
 
 let%expect_test "parsing and specializing" =
-  let t = parse "(a: {#k: 'a}, b = #k) -> 'a" |> Option.get in
+  let t = parse "(a: {#k: 'a}, b: #k) -> 'a" |> Option.get in
   print_spec "get" t
     (call [TList { bindings=["foo", int] ; tl=absent } ; str "foo"]) ;
   let t = parse "(x: {a: #k}) -> {#k: int}" |> Option.get in
