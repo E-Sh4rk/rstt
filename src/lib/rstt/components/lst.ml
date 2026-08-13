@@ -52,6 +52,9 @@ let to_t ctx comp =
   else None
 
 let destruct ty = proj_tag ty |> Ty.cap any_d |> extract
+let proj lbl ty =
+  proj_tag ty |> Ty.cap any_d |> Ty.get_descr |> Descr.get_records
+  |> Op.Records'.proj (Labels.named lbl)
 
 let print prec assoc fmt t =
   let cmp {bindings=b1;sym=s1;tl=t1} {bindings=b2;sym=s2;tl=t2} =

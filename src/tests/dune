@@ -1,6 +1,6 @@
 (library
  (name rstt_tests)
  (inline_tests (deps tests.txt))
- (libraries rstt_repl sstt)
+ (libraries rstt rstt_repl sstt)
  (preprocess (pps ppx_expect))
  (modules (:standard)))

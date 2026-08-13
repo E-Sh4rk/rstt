@@ -11,6 +11,11 @@ val mk : Ty.F.t atom -> Ty.t
 val empty : Ty.t
 
 val destruct : Ty.t -> Ty.F.t t
+
+val proj : string -> Ty.t -> Ty.F.t
+(** [proj lbl ty] over-approximates [ty] by a single atom
+    and returns the (possibly absent) type of its field [lbl]. *)
+
 val map_atom : ('a -> 'b) -> 'a atom -> 'b atom
 val map_line : ('a -> 'b) -> 'a line -> 'b line
 val map : ('a -> 'b) -> 'a t -> 'b t
