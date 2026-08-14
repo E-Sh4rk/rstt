@@ -46,16 +46,23 @@ let split_at_index lst n =
   in
   aux [] lst n
 
+let any_id = Enums.any |> Descr.mk_enums |> Ty.mk_descr
 let fresh_id =
   let i = ref 0 in
   fun () ->
     i := !i+1 ;
-    Enum.mk (string_of_int !i)
+    let e = Enum.mk (string_of_int !i) in
+    e, Descr.mk_enum e |> Ty.mk_descr
+let poly_vars = ref VarSet.empty
+let fresh_polymorphic_id =
+  fun () ->
+    let v = Var.mk "_id" in
+    poly_vars := VarSet.add v !poly_vars ;
+    Ty.cap any_id (Ty.mk_var v)
 let mk' ?allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   let record t = t |> Descr.mk_record |> Ty.mk_descr |> Ty.O.required |> Ty.F.mk_descr in
   let pos_tl' = Utils.constant_oty_part pos_tl' |> Ty.O.get in
-  let id = (match id with None -> Ty.empty | Some id -> Descr.mk_enum id |> Ty.mk_descr)
-  |> Ty.O.optional |> Ty.F.mk_descr in
+  let id = (match id with None -> Ty.empty | Some id -> id) |> Ty.O.optional |> Ty.F.mk_descr in
   let allow_more_pos =
     match allow_more_pos with
     | Some b -> b
@@ -72,31 +79,37 @@ let mk' ?allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   let npos = if allow_more_pos then npos_field' n else npos_field n in
   let bindings = [Reserved.id,id ; npos ; pos ; named] |> LabelMap.of_list in
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr |> add_tag
-let mk { pos_named ; pos_tl ; named_tl ; named } =
-  let id = fresh_id () in
-  let fsig = map_atom Fun.id (Fun.const ()) { pos_named ; pos_tl ; named_tl ; named } in
-  Hashtbl.add sigs id fsig ;
+let mk ~polymorphic { pos_named ; pos_tl ; named_tl ; named } =
+  let id_ty =
+    if polymorphic
+    then fresh_polymorphic_id ()
+    else
+      let id, id_ty = fresh_id () in
+      let fsig = map_atom Fun.id (Fun.const ()) { pos_named ; pos_tl ; named_tl ; named } in
+      Hashtbl.add sigs id fsig ; id_ty
+  in
   let n = List.length pos_named in
   (* let k = List.length pos in *)
   let atoms' = List.init (n + 1) (fun i ->
     let pos', named' = split_at_index pos_named i in
     let pos' = pos' |> List.map (fun (_,fty) -> fty) in
     let named' = named'@named in
-    mk' ~allow_more_pos:(i=n) ~id:(Some id)
+    mk' ~allow_more_pos:(i=n) ~id:(Some id_ty)
       { pos' ; named' ; pos_tl'=pos_tl ; named_tl'=named_tl }
   ) in
   atoms' |> Ty.disj
+let mk_polymorphic a = mk ~polymorphic:true a
+let mk a = mk ~polymorphic:false a
 let mk' = mk' ?allow_more_pos:None ~id:None
-let any_id = Enums.any |> Descr.mk_enums |> Ty.mk_descr
-|> Ty.O.optional |> Ty.F.mk_descr
 let any_d =
   { Records.Atom.bindings=[
-      Reserved.id, any_id ;
+      Reserved.id, any_id |> Ty.O.optional |> Ty.F.mk_descr ;
       npos_field' (Z.minus_one)] |> LabelMap.of_list ;
     tail=Ty.F.any }
   |> Descr.mk_record |> Ty.mk_descr
 let any = add_tag any_d
 
+let polymorphic_vars () = !poly_vars
 let extract_ids (a:Records.Atom'.t) =
   let enums = Records.Atom'.find Reserved.id a |> Ty.F.get_descr |> Ty.O.get |> Ty.O.Atom.get
   |> Ty.get_descr |> Descr.get_enums in
@@ -104,7 +117,6 @@ let extract_ids (a:Records.Atom'.t) =
   | true, lst -> Some lst
   | false, _ -> None
 
-let params_of_id id = Hashtbl.find sigs id
 let extract ty : (string, Ty.F.t) t =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid arg encoding." ;
   let extract_record lbl a = Records.Atom'.find lbl a |> Ty.F.get_descr
@@ -160,23 +172,6 @@ let to_t ctx comp =
 
 let destruct ty =
   proj_tag ty |> Ty.cap any_d |> extract
-
-let reidentify ~id ty =
-  let id = id |> Ty.O.optional |> Ty.F.mk_descr |> Ty.F.cap any_id in
-  let aux { Records.Atom.bindings ; tail } =
-    let bindings = LabelMap.add Reserved.id id bindings in
-    { Records.Atom.bindings ; tail }
-  in
-  let ty = proj_tag ty in
-  let ty = Ty.get_descr ty |> Descr.get_records |> Records.dnf
-    |> List.map (fun (ps, _) -> (List.map aux ps, []))
-    |> Records.of_dnf |> Descr.mk_records |> Ty.mk_descr
-  in
-  add_tag ty
-
-let ids_of ty =
-  proj_tag ty |> Ty.get_descr |> Descr.get_records |> Records.dnf'
-  |> List.map extract_ids |> List.filter_map Fun.id |> List.concat
 
 let print prec assoc fmt t =
   let cmp t1 t2 =

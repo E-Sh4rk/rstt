@@ -40,6 +40,7 @@ and ('v,'r,'i) t =
 | TVec of 'v prim Vec.atom
 | TList of (string, ('v,'r,'i) t) Lst.atom
 | TArg of (string, ('v,'r,'i) t) Arg.atom
+| TPolyArg of (string, ('v,'r,'i) t) Arg.atom
 | TArg' of (string, ('v,'r,'i) t) Arg.atom'
 | TExtPtr' of ('v,'r,'i) t
 | TOption of ('v,'r,'i) t

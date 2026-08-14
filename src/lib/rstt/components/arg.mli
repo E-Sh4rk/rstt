@@ -10,11 +10,11 @@ type ('l,'f) t = ('l,'f) elt list
 
 val any : Ty.t
 val mk : (string, Ty.F.t) atom -> Ty.t
+val mk_polymorphic : (string, Ty.F.t) atom -> Ty.t
 val mk' : (string, Ty.F.t) atom' -> Ty.t
+
+val polymorphic_vars : unit -> VarSet.t
 val destruct : Ty.t -> (string, Ty.F.t) t
-val reidentify : id:Ty.t -> Ty.t -> Ty.t
-val ids_of : Ty.t -> Enum.t list
-val params_of_id : Enum.t -> (string, unit) atom
 val map_atom : ('l -> 'm) -> ('a -> 'b) -> ('l,'a) atom -> ('m,'b) atom
 val map_atom' : ('l -> 'm) -> ('a -> 'b) -> ('l,'a) atom' -> ('m,'b) atom'
 val map : ('a -> 'b) -> ('l,'a) t -> ('l,'b) t

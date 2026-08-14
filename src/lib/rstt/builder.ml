@@ -89,6 +89,7 @@ and ('v,'r,'i) t =
 | TVec of 'v prim Vec.atom
 | TList of (string, ('v,'r,'i) t) Lst.atom
 | TArg of (string, ('v,'r,'i) t) Arg.atom
+| TPolyArg of (string, ('v,'r,'i) t) Arg.atom
 | TArg' of (string, ('v,'r,'i) t) Arg.atom'
 | TExtPtr' of ('v,'r,'i) t
 | TOption of ('v,'r,'i) t
@@ -145,6 +146,7 @@ let map f fp fc t =
     | TVec a -> TVec (Vec.map_atom (map_prim fp) a)
     | TList a -> TList (Lst.map_atom Fun.id aux a)
     | TArg a -> TArg (Arg.map_atom Fun.id aux a)
+    | TPolyArg a -> TPolyArg (Arg.map_atom Fun.id aux a)
     | TArg' a -> TArg' (Arg.map_atom' Fun.id aux a)
     | TExtPtr' t -> TExtPtr' (aux t)
     | TOption t -> TOption (aux t)
@@ -268,6 +270,7 @@ let rec build_struct env t =
   | TVec a -> Vec.map_atom build_prim a |> Vec.mk
   | TList a -> Lst.map_atom Fun.id (build_field env) a |> Lst.mk
   | TArg a -> Arg.map_atom Fun.id (build_field env) a |> Arg.mk
+  | TPolyArg a -> Arg.map_atom Fun.id (build_field env) a |> Arg.mk_polymorphic
   | TArg' a -> Arg.map_atom' Fun.id (build_field env) a |> Arg.mk'
   | TExtPtr' t -> ExternalPtr.mk (build env t)
   | TCConst c -> build_cconst c
@@ -308,6 +311,7 @@ and build env t =
   | TCPtr t -> Cptr.mk_nonstring (build env t)
   | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
   | TArg a -> Arg.map_atom Fun.id (build_field env) a |> Arg.mk
+  | TPolyArg a -> Arg.map_atom Fun.id (build_field env) a |> Arg.mk_polymorphic
   | TArg' a -> Arg.map_atom' Fun.id (build_field env) a |> Arg.mk'
   (* R types *)
   | t -> Attr.mk
@@ -464,6 +468,7 @@ let resolve env t =
     | TVec a -> TVec (Vec.map_atom (resolve_prim env) a)
     | TList a -> TList (Lst.map_atom Fun.id (aux tids) a)
     | TArg a -> TArg (Arg.map_atom Fun.id (aux tids) a)
+    | TPolyArg a -> TPolyArg (Arg.map_atom Fun.id (aux tids) a)
     | TArg' a -> TArg' (Arg.map_atom' Fun.id (aux tids) a)
     | TExtPtr' t -> TExtPtr' (aux tids t)
     | TOption t -> TOption (aux tids t)
