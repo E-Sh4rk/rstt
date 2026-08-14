@@ -299,7 +299,7 @@ atomic_ty:
                       named'=List.map (fun (str,t) -> str, reg t) named' ;
                       named_tl'=reg named_tl' })
 }
-| a=arg { FRegular (TArg (reg_arg a)) }
+| a=arg { FRegular (reg_arg a) }
 | LBRACKET lst=separated_list(COMMA, simple_ty) RBRACKET
 { FRegular (TTuple (List.map reg lst)) }
 (* C stuff *)

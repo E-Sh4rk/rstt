@@ -82,22 +82,24 @@ let rec regular_ty t =
   | FList a -> Builder.TList (Lst.map_atom regular_label regular_ty a)
   | FAttr a -> Builder.TAttr (Attr.map_atom regular_ty Fun.id a)
 
-let regular_arg a = Arg.map_atom regular_label regular_ty a
+let regular_arg polymorphic a =
+  let a = Arg.map_atom regular_label regular_ty a in
+  if polymorphic then Builder.TPolyArg a else Builder.TArg a
 
-let regular_sig { dom ; ret } =
-  Builder.TArrow (Builder.TArg (regular_arg dom), regular_ty ret)
+let regular_sig polymorphic { dom ; ret } =
+  Builder.TArrow (regular_arg polymorphic dom, regular_ty ret)
 
 let is_regular_ty t =
-  match regular_sig t with
+  match regular_sig false t with
   | _ -> true
   | exception (Not_regular _) -> false
 
 let fail_not_regular kind f t =
   try f t with Not_regular msg -> invalid_arg ("Not a regular "^kind^": "^msg^".")
 
-let to_regular t = fail_not_regular "signature" regular_sig t
+let to_regular ?(polymorphic=false) t = fail_not_regular "signature" (regular_sig polymorphic) t
 let to_regular_ty t = fail_not_regular "type" regular_ty t
-let to_regular_arg t = fail_not_regular "argument" regular_arg t
+let to_regular_arg ?(polymorphic=false) t = fail_not_regular "argument" (regular_arg polymorphic) t
 
 (* === Specialization === *)
 
@@ -179,14 +181,6 @@ let ty_of_field fty =
   let oty = fty |> Ty.F.get_descr |> Ty.O.get in
   if Ty.O.Atom.is_required oty then Some (Ty.O.Atom.get oty) else None
 
-(* [label_vars t] returns the label variables occurring in [t]. *)
-let label_vars t =
-  let res = ref StrSet.empty in
-  let add x = res := StrSet.add x !res in
-  let f t = (match t with FLVar x -> add x | _ -> ()) ; t in
-  let fl l = (match l with LVar x -> add x | LConst _ -> ()) ; l in
-  ignore (map_sig f fl Fun.id t) ; !res
-
 let specialize t arg =
   let fail x msg =
     invalid_arg ("Cannot specialize the label variable "^x^": "^msg^".")
@@ -238,12 +232,10 @@ let specialize t arg =
     |> List.fold_left (StrMap.union (fun _ s1 s2 -> Some (StrSet.union s1 s2)))
       StrMap.empty
   in
-  let vars = label_vars t |> StrSet.elements |> List.map (fun x ->
-    match StrMap.find_opt x constraints with
-    | None -> fail x "it could not be resolved from the given argument"
-    | Some strs when StrSet.is_empty strs ->
-      fail x "no string can be matched with it"
-    | Some strs -> x, StrSet.elements strs)
+  (* Label variables that could not be resolved are left as is. *)
+  let vars = StrMap.bindings constraints |> List.map (fun (x,strs) ->
+    if StrSet.is_empty strs then fail x "no string can be matched with it" ;
+    x, StrSet.elements strs)
   in
   (* Build one instance of the signature for each possible assignment
      of the label variables. *)
@@ -255,17 +247,23 @@ let specialize t arg =
       strs |> List.concat_map (fun str ->
         assignments |> List.map (StrMap.add x str))
   in
-  (* Every label variable has been resolved, thus [to_regular] cannot fail. *)
   let instantiate assign =
-    let str x = StrMap.find x assign in
-    let fl l = match l with LConst _ -> l | LVar x -> LConst (str x) in
+    let fl l =
+      match l with
+      | LConst _ -> l
+      | LVar x -> begin match StrMap.find_opt x assign with
+        | Some str -> LConst str
+        | None -> l
+        end
+    in
     let f t =
       match t with
-      | FLVar x -> FRegular (Builder.TVec (Vec.Scalar (Builder.PChr' (str x))))
+      | FLVar x -> begin match StrMap.find_opt x assign with
+        | Some str -> FRegular (Builder.TVec (Vec.Scalar (Builder.PChr' str)))
+        | None -> t
+        end
       | t -> t
     in
-    map_sig f fl Fun.id t |> to_regular
+    map_sig f fl Fun.id t
   in
-  match assignments vars |> List.map instantiate with
-  | [] -> assert false
-  | t::ts -> List.fold_left (fun acc t -> Builder.TCap (acc, t)) t ts
+  assignments vars |> List.map instantiate
