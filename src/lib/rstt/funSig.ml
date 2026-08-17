@@ -232,38 +232,28 @@ let specialize t arg =
     |> List.fold_left (StrMap.union (fun _ s1 s2 -> Some (StrSet.union s1 s2)))
       StrMap.empty
   in
-  (* Label variables that could not be resolved are left as is. *)
-  let vars = StrMap.bindings constraints |> List.map (fun (x,strs) ->
+  (* A label variable is only resolved when a single string can be matched
+     with it. The other ones are left as is. *)
+  let assign = constraints |> StrMap.filter_map (fun x strs ->
     if StrSet.is_empty strs then fail x "no string can be matched with it" ;
-    x, StrSet.elements strs)
+    match StrSet.elements strs with
+    | [str] -> Some str
+    | _ -> None)
   in
-  (* Build one instance of the signature for each possible assignment
-     of the label variables. *)
-  let rec assignments vars =
-    match vars with
-    | [] -> [StrMap.empty]
-    | (x,strs)::vars ->
-      let assignments = assignments vars in
-      strs |> List.concat_map (fun str ->
-        assignments |> List.map (StrMap.add x str))
+  let fl l =
+    match l with
+    | LConst _ -> l
+    | LVar x -> begin match StrMap.find_opt x assign with
+      | Some str -> LConst str
+      | None -> l
+      end
   in
-  let instantiate assign =
-    let fl l =
-      match l with
-      | LConst _ -> l
-      | LVar x -> begin match StrMap.find_opt x assign with
-        | Some str -> LConst str
-        | None -> l
-        end
-    in
-    let f t =
-      match t with
-      | FLVar x -> begin match StrMap.find_opt x assign with
-        | Some str -> FRegular (Builder.TVec (Vec.Scalar (Builder.PChr' str)))
-        | None -> t
-        end
-      | t -> t
-    in
-    map_sig f fl Fun.id t
+  let f t =
+    match t with
+    | FLVar x -> begin match StrMap.find_opt x assign with
+      | Some str -> FRegular (Builder.TVec (Vec.Scalar (Builder.PChr' str)))
+      | None -> t
+      end
+    | t -> t
   in
-  assignments vars |> List.map instantiate
+  map_sig f fl Fun.id t

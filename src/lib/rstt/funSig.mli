@@ -40,12 +40,11 @@ val to_regular_arg : ?polymorphic:bool -> ('v,'r,'i) arg -> ('v,'r,'i) Builder.t
 *)
 
 val specialize : (Var.t,RowVar.t,Builder.TId.t) t -> Ty.t ->
-  (Var.t,RowVar.t,Builder.TId.t) t list
+  (Var.t,RowVar.t,Builder.TId.t) t
 (** [specialize t arg] instantiates the polymorphic labels of [t],
     in the context where the function it represents is given an argument [arg]
-    that will be used to resolve them. It returns one signature per possible
-    instantiation (their conjunction should be considered).
-    Polymorphic labels that cannot be resolved from [arg] are left as is.
+    that will be used to resolve them. A polymorphic label is only instantiated
+    when a single string can be matched with it: the other ones are left as is.
     @raise [Invalid_argument] if a polymorphic label cannot be instantiated
     (for instance, because of conflicting constraints).
 *)

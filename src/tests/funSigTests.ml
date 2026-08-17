@@ -8,11 +8,8 @@ open FunSig
 let print name ty = Format.printf "%s: %a@." name Pp.ty (TyOp.simplify ty)
 let print_sig name t = print name (to_regular t |> Builder.build TIdMap.empty)
 let print_spec ?polymorphic name t arg =
-  match specialize t arg |> List.map (to_regular ?polymorphic) with
-  | [] -> assert false
-  | ty::tys ->
-    let ty = List.fold_left (fun acc ty -> TCap (acc, ty)) ty tys in
-    print name (Builder.build TIdMap.empty ty)
+  match specialize t arg |> to_regular ?polymorphic with
+  | ty -> print name (Builder.build TIdMap.empty ty)
   | exception (Invalid_argument msg) -> Format.printf "%s: %s@." name msg
 
 let env = ref Builder.empty_env
@@ -70,7 +67,7 @@ let%expect_test "specialization" =
   print_spec "mk" mk (call [str "foo"]) ;
   (* The label variable can also be matched with a named argument *)
   print_spec "mk_named" mk (call ~named:["b", str "foo"] []) ;
-  (* A union of strings yields an intersection of specialized signatures *)
+  (* A union of strings leaves the label variable unresolved *)
   print_spec "mk_union" mk (call [TCup (str "foo", str "bar")]) ;
   (* Specializing a regular signature is the identity *)
   print_spec "id" id (call [int]) ;
@@ -81,8 +78,7 @@ let%expect_test "specialization" =
     { foo: int }
     mk_named: (b: "foo") ->
     { foo: int }
-    mk_union: ((b: "bar") -> { bar: int }) & ((b: "foo") ->
-    { foo: int })
+    mk_union: Not a regular signature: label variable k is unresolved.
     id: (x: int) ->
     int
     |}]
@@ -108,16 +104,14 @@ let%expect_test "unresolved label variables" =
     |}]
 
 let%expect_test "specialized signatures accept their argument" =
-  let arg = call [TCup (str "foo", str "bar")] in
-  let arrows = specialize mk arg |> List.map to_regular
-    |> List.map (Builder.build TIdMap.empty) |> Ty.conj
+  let arg = call [str "foo"] in
+  let arrows = specialize mk arg |> to_regular |> Builder.build TIdMap.empty
     |> Attr.proj_content |> Ty.get_descr |> Descr.get_arrows in
   Format.printf "%b@." (Ty.leq arg (Op.Arrows.dom arrows)) ;
   print "res" (Op.Arrows.apply arrows arg) ;
   [%expect {|
     true
-    res: { bar: int } |
-    { foo: int }
+    res: { foo: int }
     |}]
 
 let%expect_test "unused label variables" =
@@ -287,13 +281,13 @@ let%expect_test "partially specialized signatures" =
     dom = { pos_named = [ LConst "a", FLVar "k" ; LConst "b", FLVar "l" ] ;
             pos_tl = opt ; named_tl = opt ; named = [] } ;
     ret = FList { bindings=[LVar "k", FRegular int ; LVar "l", FRegular int] ; tl=opt } } in
-  let ts = specialize two (call [str "foo" ; int]) in
-  Format.printf "%d %b@." (List.length ts) (List.exists is_regular_ty ts) ;
+  let t = specialize two (call [str "foo" ; int]) in
+  Format.printf "%b@." (is_regular_ty t) ;
   (* Specializing the result again resolves the remaining label variable *)
-  let ts = ts |> List.concat_map (fun t -> specialize t (call [str "foo" ; str "bar"])) in
-  ts |> List.iter (fun t -> print "two" (to_regular t |> Builder.build TIdMap.empty)) ;
+  let t = specialize t (call [str "foo" ; str "bar"]) in
+  print "two" (to_regular t |> Builder.build TIdMap.empty) ;
   [%expect {|
-    1 false
+    false
     two: (a: "foo", b: "bar") ->
     { foo: int, bar: int }
     |}]
