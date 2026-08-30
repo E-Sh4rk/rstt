@@ -65,18 +65,22 @@ let assert_one i =
     if Z.equal i Z.one |> not
     then raise (Errors.E_Parser ("Cannot specify a size other than 1 for a vector"))
 
-type 'a arg_elt = Pos of 'a | Named of string * 'a | Tail of 'a * 'a
-let split_arg_elt' lst =
+type 'a arg_elt =
+    | ArgPos of 'a
+    | ArgNamed of string * 'a
+    | ArgSym of string * 'a
+    | ArgTail of 'a * 'a
+let split_arg_elt2 lst =
     let rec pos_fields lst =
         match lst with
-        | (Pos t)::lst ->
+        | (ArgPos t)::lst ->
             let ts, lst = pos_fields lst in
             (t::ts), lst
         | _ -> [], lst
     in
     let rec named_fields lst =
         match lst with
-        | (Named (str,ty))::lst ->
+        | (ArgNamed (str,ty))::lst ->
             let fs, lst = named_fields lst in
             ((str,ty)::fs), lst
         | _ -> [], lst
@@ -84,7 +88,7 @@ let split_arg_elt' lst =
     let tail_field lst =
         match lst with
         | [] -> absent, absent
-        | [Tail (t1,t2)] -> t1, t2
+        | [ArgTail (t1,t2)] -> t1, t2
         | _ -> raise (Errors.E_Parser ("Unexpected field"))
     in
     let pos, lst = pos_fields lst in
@@ -93,14 +97,17 @@ let split_arg_elt' lst =
 let split_arg_elt lst =
     let rec named_fields lst =
         match lst with
-        | (Named (str,ty))::lst ->
+        | (ArgNamed (str,ty))::lst ->
             let fs, lst = named_fields lst in
-            ((str,ty)::fs), lst
+            ((LConst str,ty)::fs), lst
+        | (ArgSym (str,ty))::lst ->
+            let fs, lst = named_fields lst in
+            ((LVar str,ty)::fs), lst
         | _ -> [], lst
     in
     let tail_field lst =
         match lst with
-        | (Tail (t1,t2))::lst -> (t1, t2), lst
+        | (ArgTail (t1,t2))::lst -> (t1, t2), lst
         | lst -> (absent, absent), lst
     in
     let pos_named, lst = named_fields lst in
@@ -293,7 +300,7 @@ atomic_ty:
 { let bindings,tl = split_lst_elts elts in FList {bindings;tl} }
 | ALPAREN elts=separated_list(COMMA, arg_elt2) RPAREN
 {
-    let pos',named',tl' = split_arg_elt' elts in
+    let pos',named',tl' = split_arg_elt2 elts in
     let pos_tl',named_tl' = tl' in
     FRegular (TArg' { pos'=List.map reg pos' ; pos_tl'=reg pos_tl' ;
                       named'=List.map (fun (str,t) -> str, reg t) named' ;
@@ -316,9 +323,7 @@ arg:
 {
     let pos_named,tl,named = split_arg_elt elts in
     let pos_tl,named_tl = tl in
-    let binding (str,t) = LConst str, t in
-    { pos_named=List.map binding pos_named ; pos_tl ;
-      named=List.map binding named ; named_tl }
+    { pos_named ; pos_tl ; named ; named_tl }
 }
 
 cint:
@@ -339,15 +344,16 @@ label:
 | s=SHORT { s }
 
 arg_elt2:
-| lbl=label COLON t=simple_ty { Named (lbl, t) }
-| t=simple_ty { Pos t }
-| ELLIPSIS COLON ty=simple_ty { Tail (ty, ty) }
-| ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { Tail (ty1, ty2) }
+| lbl=label COLON t=simple_ty { ArgNamed (lbl, t) }
+| t=simple_ty { ArgPos t }
+| ELLIPSIS COLON ty=simple_ty { ArgTail (ty, ty) }
+| ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { ArgTail (ty1, ty2) }
 
 arg_elt:
-| lbl=label COLON t=simple_ty { Named (lbl, t) }
-| ELLIPSIS COLON ty=simple_ty { Tail (ty, ty) }
-| ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { Tail (ty1, ty2) }
+| lbl=label COLON t=simple_ty { ArgNamed (lbl, t) }
+| ELLIPSIS COLON ty=simple_ty { ArgTail (ty, ty) }
+| ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { ArgTail (ty1, ty2) }
+| lbl=SYMID COLON t=simple_ty { ArgSym (lbl, t) }
 
 prim:
 | LPAREN p=prim RPAREN { p }
