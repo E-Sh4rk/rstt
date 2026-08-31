@@ -209,6 +209,22 @@ let%expect_test "parsing" =
     (x: any with {names: #k}) -> {#k: int}: (not regular)
     |}]
 
+let%expect_test "dot-initial labels" =
+  (* R's conventional parameter names start with a dot. The lexer rule that
+     admits one requires a letter after it, which is what keeps [...] (the
+     ellipsis) and [..] (a range) out of it -- both must keep working here. *)
+  print_parsed "(.Data: 'a, ...: any) -> 'a" ;
+  print_parsed "(.x: int, .f: lgl) -> {.y: CHR}" ;
+  print_parsed "(x: (42L..), y: (..)) -> int" ;
+  [%expect {|
+    (.Data: 'a, ...: any) -> 'a: (.Data: 'a, ...: any) ->
+    'a
+    (.x: int, .f: lgl) -> {.y: CHR}: (.x: int, .f: lgl) ->
+    { .y: CHR }
+    (x: (42L..), y: (..)) -> int: (x: (42L..), y: (..)) ->
+    int
+    |}]
+
 let%expect_test "parsing errors" =
   (* Not a single arrow *)
   print_parsed "int -> lgl" ;

@@ -20,6 +20,8 @@ let newline = ('\010' | '\013' | "\013\010")
 let blank   = [' ' '\009' '\012']
 
 let id = ['a'-'z''A'-'Z''_']['a'-'z''A'-'Z''0'-'9''_''\'''.']*
+(* R names may start with a dot -- [.Data], [.x], [.f] as parameter labels. *)
+let dotid = '.'['a'-'z''A'-'Z''_']['a'-'z''A'-'Z''0'-'9''_''\'''.']*
 let varid = '\''['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9''_']*
 let rvarid = '`'['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9''_']*
 let symid = '#'['a'-'z''A'-'Z''0'-'9''_''\'']*
@@ -47,7 +49,7 @@ rule token = parse
 | vlen as s { VLEN (String.sub s 1 ((String.length s) - 1) |> Z.of_string) }
 | slen as s { SLEN (String.sub s 0 3, String.sub s 3 ((String.length s) - 3) |> Z.of_string) }
 (* | sbracket as s { SBRACKET (String.sub s 0 ((String.length s) - 1)) } | "v[" { VB } *)
-| id as s  { ID s }
+| id as s  { ID s } | dotid as s  { ID s }
 | varid as s  { VARID s }
 | rvarid as s  { RVARID s }
 | symid as s  { SYMID (String.sub s 1 ((String.length s) - 1)) }
