@@ -154,20 +154,47 @@ let extract ty : (string, Ty.F.t) t =
     let pos_tl', named_tl' = apos.Op.Records'.Atom.tail, anamed.Op.Records'.Atom.tail in
     { pos' ; pos_tl' ; named' ; named_tl' }
   in
-  let extract a =
+  (* [mk] represents a def-site argument as the union of the [n+1] ways its [n]
+     parameters can be split between positional and named. [extract_defsite]
+     recovers the whole signature from the fully-positional atom alone, and the
+     others then add nothing: keeping them would bury every signature under its
+     own call-sites.
+     An intersection can however remove exactly that atom, and its siblings are
+     then all that is left of the signature. Dropping them would silently
+     shrink the argument -- a caller that destructs, transforms and rebuilds
+     would lose them -- so read them for what they are, call-site constraints,
+     whenever the signature they belong to has no fully-positional atom left. *)
+  let classify a =
     match extract_ids a with
+    | None -> (* Any *)
+      `Elt (DefSite {pos_named=[] ; pos_tl=Ty.F.any ; named=[] ; named_tl=Ty.F.any})
+    | Some [] -> `Elt (CallSite (extract_callsite a))
     | Some (id::_) ->
-      extract_defsite id a |> Option.map (fun x -> DefSite x)
-    | Some [] -> Some (CallSite (extract_callsite a))
-    | None -> (* Any *) Some
-      (DefSite {pos_named=[];pos_tl=Ty.F.any;named=[];named_tl=Ty.F.any})
+      match extract_defsite id a with
+      | Some x -> `Def (id, DefSite x)
+      | None -> `Partial (id, a)
   in
   let lines = Ty.get_descr ty |> Descr.get_records |> Records.dnf' in
-  List.filter_map extract lines
+  let classified = List.map classify lines in
+  let recovered id =
+    classified |> List.exists (function
+      | `Def (id', _) -> Enum.compare id id' = 0
+      | _ -> false)
+  in
+  classified |> List.filter_map (function
+    | `Elt e | `Def (_, e) -> Some e
+    | `Partial (id, a) ->
+      if recovered id then None
+      else Some (CallSite (extract_callsite a)))
+
 let to_t ctx comp =
   let ty = Op.TagComp.as_atom comp |> snd in
   if Ty.leq ty any_d
-  then Some (extract ty |> map ctx.Printer.build_field)
+  then match extract ty with
+    (* An empty component has no atom to print, and a union of none has no
+       neutral element: leave it to the generic printer. *)
+    | [] -> None
+    | t -> Some (map ctx.Printer.build_field t)
   else None
 
 let destruct ty =
