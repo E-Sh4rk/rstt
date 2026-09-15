@@ -165,7 +165,7 @@ let%expect_test "deep matching" =
     { foo: int }
     deep_partial: (x: { a: "foo" }, b: "foo") ->
     { foo: int }
-    deep_empty: Cannot specialize the label variable k: no string can be matched with it.
+    deep_empty: Not a regular signature: label variable k is unresolved.
     attrs: (x: any with { names: "foo" }) ->
     { foo: int }
     |}]
@@ -306,4 +306,97 @@ let%expect_test "partially specialized signatures" =
     false
     two: (a: "foo", b: "bar") ->
     { foo: int, bar: int }
+    |}]
+
+(* === Groups === *)
+
+let%expect_test "groups" =
+  let spec name str arg = parse str |> Option.iter (fun t -> print_spec name t arg) in
+  let lst bindings = TList { bindings ; tl=absent } in
+  (* A repetition over the fields common to both arguments, and one over the
+     fields private to each of them *)
+  spec "merge"
+    "(x: {(#r_i: 'a_i)_i, (#r_j: 'a_j)_j}, y: {(#r_i: 'a_i)_i, (#r_k: 'a_k)_k}) \
+     -> {(#r_i: 'a_i)_i, (#r_j: 'a_j)_j, (#r_k: 'a_k)_k}"
+    (call [lst ["x", int ; "s", int] ; lst ["y", int ; "s", int]]) ;
+  (* A two-column group: the renaming argument observes both columns at once *)
+  let rename = "(x: {(#o_i: 'a_i)_i}, renaming: {(#o_i: #n_i)_i}) -> {(#n_i: 'a_i)_i}" in
+  spec "rename" rename (call [TVar "'b" ; lst ["o1", str "n1" ; "o2", str "n2"]]) ;
+  (* The two instances get two distinct type variables (both displayed 'a_i),
+     shared between the argument and the result *)
+  let t = parse rename |> Option.get in
+  let ty = specialize t (call [TVar "'b" ; lst ["o1", str "n1" ; "o2", str "n2"]])
+    |> to_regular |> Builder.build TIdMap.empty in
+  Format.printf "distinct type columns: %d@." (Ty.vars ty |> VarSet.cardinal) ;
+  (* A label variable used as a parameter name, resolved by another parameter *)
+  spec "test" "(#l: #v, field: #l, ...: any) -> {#v: #l}"
+    (call ~named:["l", str "v" ; "field", str "l"] []) ;
+  [%expect {|
+    merge: (x: { x: 'a_j, s: 'a_i }, y: { y: 'a_k, s: 'a_i }) ->
+    { x: 'a_j, y: 'a_k, s: 'a_i }
+    rename: (x: { o1: 'a_i, o2: 'a_i }, renaming: { o1: "n1", o2: "n2" }) ->
+    { n1: 'a_i, n2: 'a_i }
+    distinct type columns: 2
+    test: (l: "v", field: "l", ...: any) ->
+    { v: "l" }
+    |}]
+
+let%expect_test "groups: coverage and agreement" =
+  let spec name str arg = parse str |> Option.iter (fun t -> print_spec name t arg) in
+  let lst bindings = TList { bindings ; tl=absent } in
+  let merge = "(x: {(#r_i: 'a_i)_i, (#r_j: 'a_j)_j}, y: {(#r_i: 'a_i)_i, (#r_k: 'a_k)_k}) \
+               -> {(#r_i: 'a_i)_i, (#r_j: 'a_j)_j, (#r_k: 'a_k)_k}" in
+  let merge2 x y = spec "merge" merge (call [lst x ; lst y]) in
+  (* Everything shared: the private groups are empty *)
+  merge2 ["s", int] ["s", int] ;
+  merge2 ["a", int ; "b", int] ["a", int ; "b", int] ;
+  (* Nothing shared *)
+  merge2 ["a", int] ["b", int] ;
+  (* One field shared *)
+  merge2 ["a", int ; "b", int] ["b", int ; "c", int] ;
+  (* An empty record determines the group: it is observed, and has no field *)
+  merge2 [] ["a", int] ;
+  (* A type variable is not an observation: the group stays undetermined *)
+  spec "unobserved" "(x: {(#r_i: 'a_i)_i}) -> {(#r_i: 'a_i)_i}" (call [TVar "'b"]) ;
+  spec "observed" "(x: {(#r_i: 'a_i)_i}) -> {(#r_i: 'a_i)_i}" (call [lst []]) ;
+  (* Two groups meeting only in the result: the clash is caught on the
+     finished instantiation, and both are put back to undetermined *)
+  spec "clash" "(x: {(#r_i: 'a_i)_i}, y: {(#r_j: 'b_j)_j}) -> {(#r_i: 'a_i)_i, (#r_j: 'b_j)_j}"
+    (call [lst ["a", int] ; lst ["a", int]]) ;
+  (* A repetition over the named parameters, and one over attributes *)
+  spec "params" "(x: int, (#p_i: 'a_i)_i, ...: any) -> {(#p_i: 'a_i)_i}"
+    (call ~named:["x", int ; "a", int ; "b", int] []) ;
+  spec "attrs" "(x: any with {(#r_i: 'a_i)_i}) -> {(#r_i: 'a_i)_i}"
+    (call [TAttr { Attr.content=TAny ; classes=CAny ; attrs=lst ["names", int] }]) ;
+  [%expect {|
+    merge: (x: { s: 'a_i }, y: { s: 'a_i }) ->
+    { s: 'a_i }
+    merge: (x: { a: 'a_i, b: 'a_i }, y: { a: 'a_i, b: 'a_i }) ->
+    { a: 'a_i, b: 'a_i }
+    merge: (x: { a: 'a_j }, y: { b: 'a_k }) ->
+    { a: 'a_j, b: 'a_k }
+    merge: (x: { a: 'a_j, b: 'a_i }, y: { b: 'a_i, c: 'a_k }) ->
+    { a: 'a_j, b: 'a_i, c: 'a_k }
+    merge: (x: {  }, y: { a: 'a_k }) ->
+    { a: 'a_k }
+    unobserved: Not a regular signature: column r of the group i is unresolved.
+    observed: (x: {  }) ->
+    {  }
+    clash: Not a regular signature: column r of the group i is unresolved.
+    params: (x: int, a: 'a_i, b: 'a_i, ...: any) ->
+    { a: 'a_i, b: 'a_i }
+    attrs: (x: any with { names: 'a_i }) ->
+    { names: 'a_i }
+    |}]
+
+let%expect_test "parsing groups" =
+  print_parsed "(x: {(#r_i: 'a_i)_i}) -> {(#r_i: 'a_i)_i}" ;
+  (* The key of a repetition must be a column of its own group *)
+  print_parsed "(x: {(#r_j: 'a_i)_i}) -> lgl" ;
+  (* A group is not a regular type *)
+  print_parsed "(x: {(#r_i: int)_i} | list) -> lgl" ;
+  [%expect {|
+    (x: {(#r_i: 'a_i)_i}) -> {(#r_i: 'a_i)_i}: (not regular)
+    (x: {(#r_j: 'a_i)_i}) -> lgl: r_j is not a column of the group i
+    (x: {(#r_i: int)_i} | list) -> lgl: Not a regular type: column r of the group i is unresolved.
     |}]

@@ -354,9 +354,9 @@ A claim is committed in two cases:
 * **pinned column** — `V_#c = {ℓ}` with `ℓ ∈ L(o)`, for a *single-instance*
   column `#c`, i.e. a free label variable. Its binding exists and its label is
   known, so it is the entity taking `ℓ`. A group column is not pinned this way:
-  a group may have no instance at all. This is what lets `#l` claim the
-  parameter `l` in `test`, in a parameter list open enough for `⊥` to have
-  absorbed it.
+  a group may have no instance at all. This is what stops a repetition sharing
+  the record — or the tail `⊥` — from taking a label that a known label variable
+  already names.
 
 Propagating the two settles `get`, `rename`, `test`, and every record in which no
 two entities compete for the same label.
@@ -425,13 +425,16 @@ specialized signature can be specialized again — the existing
 test: (#l: #v, field: #l, ...) -> { #v: #l }
 @(l: "v", field: "l")
 
-E(toplevel) = { #l, field, ⊥ }          (open parameter list)
+E(toplevel) = { #l, field, ⊥ }     (open parameter list)
 
-iteration 1   field:  claimed by the constant `field`; type position #l vs "l"
+iteration 1   field:  matched by the constant `field`; its body #l against "l"
                       → V_#l = {l}
-              l:      A = {#l, ⊥}, #l not yet known → no claim
-iteration 2   l:      V_#l = {l} singles out #l → claimed; body #v vs "v"
-                      → V_#v = {v}
+              l:      A = {#l, ⊥}; setting ⊥ aside, #l is the only claimant, so
+                      it claims l — which agreement confirms. But #l was not yet
+                      known when the parameter was reached, so its body is not
+                      matched this round
+iteration 2   #l is pinned to "l" → the parameter named l is selected
+              l:      its body #v against "v" → V_#v = {v}
 iteration 3   stable
 
 result: (l: "v", field: "l", ...: any) -> {v: "l"}
@@ -493,33 +496,28 @@ is a check on the answer, applied once the instantiation is built.
 
 ### Representation notes
 
-A minimal change to `FunSig` that covers all the examples: restrict a repetition
-body to a *single* binding. Then a repetition is still an `(label, ty)` pair and
-fits the existing `Lst.atom` / `Arg.atom` shapes:
+A repetition body is restricted to a *single* binding, so a repetition is still
+a `(label, ty)` pair and fits the existing `Lst.atom` / `Arg.atom` shapes:
 
 ```ocaml
+type gvar = { group: string ; column: string }
+
 type label =
 | LConst of string
 | LVar of string
-| LGroupVar of { group: string ; column: string }   (* new *)
+| LGroup of gvar                (* new: the key of a repetition *)
 
 type ('v,'r,'i) ty =
 | FLVar of string
-| FGroupVar of { group: string ; column: string }   (* new: #n_i in type position *)
+| FGVar of gvar                 (* new: #n_i in type position *)
 | ...
 ```
 
-plus, on the signature itself, the list of groups with, per group, its label
-columns and its type columns (the latter being ordinary `Var.t`s flagged as
-indexed, so that `instantiate` knows to freshen them per instance):
-
-```ocaml
-type ('v,'r,'i) t = {
-  dom: ('v,'r,'i) arg ;
-  ret: ('v,'r,'i) ty ;
-  groups: group_info StrMap.t ;                      (* new *)
-}
-```
+Nothing is added to the signature itself: the groups, their label columns and
+their type columns are all read off the syntax. A group's label columns are the
+`LGroup`/`FGVar` nodes mentioning it, and its type columns are the ordinary
+variables whose name ends with `_g` — the same convention the surface syntax
+uses — which is all `instantiate` needs to freshen them per instance.
 
 Multi-binding bodies (`(#a_i: 'x_i, #b_i: 'y_i)_i`) would require a dedicated
 binding constructor and are left for later; the algorithm above is written for

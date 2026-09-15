@@ -61,6 +61,9 @@ let parse_builtin_prim str =
 
 let absent = FRegular (TOption TEmpty)
 
+let rep g lbl t =
+    try repetition g lbl t with Invalid_argument msg -> raise (Errors.E_Parser msg)
+
 let assert_one i =
     if Z.equal i Z.one |> not
     then raise (Errors.E_Parser ("Cannot specify a size other than 1 for a vector"))
@@ -69,6 +72,7 @@ type 'a arg_elt =
     | ArgPos of 'a
     | ArgNamed of string * 'a
     | ArgSym of string * 'a
+    | ArgRep of string * string * 'a
     | ArgTail of 'a * 'a
 let split_arg_elt2 lst =
     let rec pos_fields lst =
@@ -103,6 +107,9 @@ let split_arg_elt lst =
         | (ArgSym (str,ty))::lst ->
             let fs, lst = named_fields lst in
             ((LVar str,ty)::fs), lst
+        | (ArgRep (g,str,ty))::lst ->
+            let fs, lst = named_fields lst in
+            ((rep g str ty)::fs), lst
         | _ -> [], lst
     in
     let tail_field lst =
@@ -125,6 +132,7 @@ let split_lst_elts lst =
     let bindings = lst |> List.map (function
         | `LstNamed (str,t) -> LConst str, t
         | `LstSym (str,t) -> LVar str, t
+        | `LstRep (g,str,t) -> rep g str t
         | `LstTl _ -> raise (Errors.E_Parser ("Unexpected list tail"))
     ) in
     bindings, tl
@@ -152,7 +160,7 @@ let split_classes_elts lst =
 
 %token<string> STRING, SHORT(*, SBRACKET*)
 %token<Z.t> INT, LINT, DINT, VLEN
-%token<string> ID, VARID, RVARID, SYMID
+%token<string> ID, VARID, RVARID, SYMID, RPAREN_GROUP
 %token<string*Z.t> SLEN
 %token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
@@ -335,6 +343,7 @@ cstr:
 | str=STRING { CStrSingl str }
 
 %inline lst_elt:
+| LPAREN lbl=SYMID COLON t=simple_ty g=RPAREN_GROUP { `LstRep (g, lbl, t) }
 | lbl=SYMID COLON t=simple_ty { `LstSym (lbl, t) }
 | lbl=label COLON t=simple_ty { `LstNamed (lbl, t) }
 | ty=simple_ty { `LstTl ty }
@@ -351,6 +360,7 @@ arg_elt2:
 
 arg_elt:
 | lbl=label COLON t=simple_ty { ArgNamed (lbl, t) }
+| LPAREN lbl=SYMID COLON t=simple_ty g=RPAREN_GROUP { ArgRep (g, lbl, t) }
 | ELLIPSIS COLON ty=simple_ty { ArgTail (ty, ty) }
 | ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { ArgTail (ty1, ty2) }
 | lbl=SYMID COLON t=simple_ty { ArgSym (lbl, t) }

@@ -25,6 +25,7 @@ let dotid = '.'['a'-'z''A'-'Z''_']['a'-'z''A'-'Z''0'-'9''_''\'''.']*
 let varid = '\''['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9''_']*
 let rvarid = '`'['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9''_']*
 let symid = '#'['a'-'z''A'-'Z''0'-'9''_''\'']*
+let group = ')' '_' ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9''_']*
 
 let int = ('+'|'-')? ['0'-'9']+ ('_'+ ['0'-'9']+)*
 let s = "vec" | "lgl" | "chr" | "int" | "dbl" | "clx" | "raw"
@@ -53,6 +54,7 @@ rule token = parse
 | varid as s  { VARID s }
 | rvarid as s  { RVARID s }
 | symid as s  { SYMID (String.sub s 1 ((String.length s) - 1)) }
+| group as s  { RPAREN_GROUP (String.sub s 2 ((String.length s) - 2)) }
 | newline  { Lexing.new_line lexbuf ; token lexbuf }
 | blank    { token lexbuf }
 | ";;" { BREAK } | ',' { COMMA } | ':' { COLON } | ';' { SEMICOLON } | '=' { EQUAL }

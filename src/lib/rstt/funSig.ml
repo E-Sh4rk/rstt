@@ -1,11 +1,15 @@
 open Sstt
 
+type gvar = { group: string ; column: string }
+
 type label =
 | LConst of string
 | LVar of string
+| LGroup of gvar
 
 type ('v,'r,'i) ty =
 | FLVar of string
+| FGVar of gvar
 | FRegular of ('v,'r,'i) Builder.t
 | FList of (label, ('v,'r,'i) ty) Lst.atom
 | FAttr of (('v,'r,'i) ty, 'r Builder.classes) Attr.atom
@@ -24,7 +28,7 @@ module StrSet = Set.Make(String)
 let map f fl fc t =
   let rec aux t =
     let t = match t with
-    | FLVar _ | FRegular _ -> t
+    | FLVar _ | FGVar _ | FRegular _ -> t
     | FList a -> FList (Lst.map_atom fl aux a)
     | FAttr a -> FAttr (Attr.map_atom aux fc a)
     in
@@ -37,6 +41,26 @@ let map_arg f fl fc a = Arg.map_atom fl (map f fl fc) a
 let map_sig f fl fc { dom ; ret } =
   let dom = map_arg f fl fc dom in
   { dom ; ret=map f fl fc ret }
+
+(* === Groups === *)
+
+(* The variables of a group [g] are those whose name ends with ["_g"]. *)
+let group_column g str =
+  let suffix = "_"^g in
+  if String.ends_with ~suffix str
+  then Some (String.sub str 0 (String.length str - String.length suffix))
+  else None
+
+let repetition g key body =
+  let column str = match group_column g str with
+    | Some column -> { group=g ; column }
+    | None -> invalid_arg (str^" is not a column of the group "^g)
+  in
+  let f t = match t with
+    | FLVar str when group_column g str <> None -> FGVar (column str)
+    | t -> t
+  in
+  LGroup (column key), map f Fun.id Fun.id body
 
 (* === Resolution of identifiers === *)
 
@@ -53,6 +77,7 @@ let resolve env t =
   let rec aux t =
     match t with
     | FLVar x -> FLVar x
+    | FGVar gv -> FGVar gv
     | FRegular t -> FRegular (regular t)
     | FList a -> FList (Lst.map_atom Fun.id aux a)
     | FAttr { Attr.content ; classes=cs ; attrs } ->
@@ -70,14 +95,19 @@ let resolve env t =
 
 exception Not_regular of string
 
+let unresolved_group { group ; column } =
+  raise (Not_regular ("column "^column^" of the group "^group^" is unresolved"))
+
 let regular_label l =
   match l with
   | LConst str -> str
   | LVar x -> raise (Not_regular ("label variable "^x^" is unresolved"))
+  | LGroup gv -> unresolved_group gv
 
 let rec regular_ty t =
   match t with
   | FLVar x -> raise (Not_regular ("label variable "^x^" is unresolved"))
+  | FGVar gv -> unresolved_group gv
   | FRegular t -> t
   | FList a -> Builder.TList (Lst.map_atom regular_label regular_ty a)
   | FAttr a -> Builder.TAttr (Attr.map_atom regular_ty Fun.id a)
@@ -181,79 +211,329 @@ let ty_of_field fty =
   let oty = fty |> Ty.F.get_descr |> Ty.O.get in
   if Ty.O.Atom.is_required oty then Some (Ty.O.Atom.get oty) else None
 
-let specialize t arg =
-  let fail x msg =
-    invalid_arg ("Cannot specialize the label variable "^x^": "^msg^".")
+
+(* The state of the algorithm: candidate labels for each column (a column
+   absent from the map is unconstrained), and the entities of each occurrence. *)
+
+type col = CVar of string | CCol of gvar
+type ent = EConst of string | EVar of string | ECol of gvar | EBot
+
+module ColMap = Map.Make(struct type t = col let compare = compare end)
+
+type ('v,'r,'i) occ = {
+  fields : (string * Ty.t) list ;
+  ents : ent list ;
+  reps : (gvar * ('v,'r,'i) ty) list ;
+}
+
+let cand_inter = ColMap.union (fun _ s1 s2 -> Some (StrSet.inter s1 s2))
+let cand_join = ColMap.merge (fun _ s1 s2 ->
+  match s1, s2 with Some s1, Some s2 -> Some (StrSet.union s1 s2) | _ -> None)
+
+let may v c lbl =
+  match ColMap.find_opt c v with None -> true | Some s -> StrSet.mem lbl s
+let pinned v c =
+  match ColMap.find_opt c v with
+  | Some s when StrSet.cardinal s = 1 -> Some (StrSet.choose s)
+  | _ -> None
+let cand_nb v c =
+  match ColMap.find_opt c v with None -> max_int | Some s -> StrSet.cardinal s
+
+let ent_of_label l =
+  match l with
+  | LConst str -> EConst str
+  | LVar x -> EVar x
+  | LGroup gv -> ECol gv
+let col_of_ent e =
+  match e with
+  | EConst _ | EBot -> None
+  | EVar x -> Some (CVar x)
+  | ECol gv -> Some (CCol gv)
+
+(* A record is open when its tail is not [absent]: the tail then claims the
+   labels the scheme does not name. *)
+let is_open tl =
+  match tl with FRegular (Builder.TOption Builder.TEmpty) -> false | _ -> true
+
+(* [fields_of_lst ty] enumerates the fields of [ty] when it is a single list
+   atom, and returns None when it cannot be observed. *)
+let fields_of_lst ty =
+  let fields bindings =
+    bindings |> List.filter_map (fun (lbl,fty) ->
+      ty_of_field fty |> Option.map (fun ty -> lbl, ty))
   in
-  (* Constraints inferred from one atom [elt] of the argument.
-     Matching is best-effort: positions of the signature that cannot be
-     matched with the argument are simply ignored (they may prevent some
-     label variables from being resolved, but they never make the
-     specialization unsound). *)
-  let constraints_of_elt elt =
-    let res = ref StrMap.empty in
-    let add x strs =
-      let strs = match StrMap.find_opt x !res with
-        | None -> strs
-        | Some strs' -> StrSet.inter strs strs'
-      in
-      res := StrMap.add x strs !res
-    in
-    let rec match_ty pos pat ty =
-      match pat with
-      | FRegular _ -> ()
-      | FLVar x -> strings_of_ty pos ty |> Option.iter (add x)
-      | FAttr { Attr.content ; attrs ; _ } ->
-        match_ty Struct content (Attr.proj_content ty) ;
-        match_ty Struct attrs (Attr.proj_attrs ty)
-      | FList { bindings ; _ } ->
-        let ty = match pos with Struct -> ty | Value -> Attr.proj_content ty in
-        bindings |> List.iter (fun (l,pat) ->
-          match l with
-          (* The label is unknown: the associated field cannot be selected. *)
-          | LVar _ -> ()
-          | LConst lbl -> match_field pat (Lst.proj lbl ty))
-    and match_field pat fty =
-      ty_of_field fty |> Option.iter (match_ty Value pat)
-    in
-    let match_param ~idx ~name pat =
-      field_of_param elt ~idx ~name |> Option.iter (match_field pat)
-    in
-    let name l = match l with LConst str -> Some str | LVar _ -> None in
-    t.dom.pos_named |> List.iteri (fun i (l,pat) ->
-      match_param ~idx:(Some i) ~name:(name l) pat) ;
-    t.dom.named |> List.iter (fun (l,pat) ->
-      match_param ~idx:None ~name:(name l) pat) ;
-    !res
+  match Lst.destruct ty with
+  | [ ([ { Lst.bindings ; _ } ], []) ] -> Some (fields bindings)
+  | _ | exception (Invalid_argument _) -> None
+
+let fields_of_arg elt =
+  let bindings = match elt with
+    | Arg.CallSite { named' ; _ } -> named'
+    | Arg.DefSite { pos_named ; named ; _ } -> pos_named@named
   in
-  (* Each atom of the argument is matched independently, and the resulting
-     constraints are joined (the argument may have any of these shapes). *)
-  let constraints = Arg.destruct arg |> List.map constraints_of_elt
-    |> List.fold_left (StrMap.union (fun _ s1 s2 -> Some (StrSet.union s1 s2)))
-      StrMap.empty
+  bindings |> List.filter_map (fun (lbl,fty) ->
+    ty_of_field fty |> Option.map (fun ty -> lbl, ty))
+
+(* === Narrowing (the traversal) === *)
+
+(* [walk v occs pos pat ty] matches the scheme node [pat] against the concrete
+   type [ty], returning the candidates it narrows and appending to [occs] every
+   record occurrence it goes through. *)
+let rec walk v occs pos pat ty =
+  let constr c strs =
+    match strs with None -> ColMap.empty | Some s -> ColMap.singleton c s
   in
-  (* A label variable is only resolved when a single string can be matched
-     with it. The other ones are left as is. *)
-  let assign = constraints |> StrMap.filter_map (fun x strs ->
-    if StrSet.is_empty strs then fail x "no string can be matched with it" ;
-    match StrSet.elements strs with
-    | [str] -> Some str
-    | _ -> None)
-  in
-  let fl l =
+  match pat with
+  | FRegular _ -> ColMap.empty
+  | FLVar x -> constr (CVar x) (strings_of_ty pos ty)
+  | FGVar gv -> constr (CCol gv) (strings_of_ty pos ty)
+  | FAttr { Attr.content ; attrs ; _ } ->
+    cand_inter
+      (walk v occs Struct content (Attr.proj_content ty))
+      (walk v occs Struct attrs (Attr.proj_attrs ty))
+  | FList { bindings ; tl } ->
+    let ty = match pos with Struct -> ty | Value -> Attr.proj_content ty in
+    let lookup lbl = Lst.proj lbl ty |> ty_of_field in
+    record v occs ~opened:(is_open tl)
+      (bindings |> List.map (fun (l,b) -> l, b, lookup)) (fields_of_lst ty)
+
+(* [record v occs bindings fields] narrows the candidates from one record
+   occurrence, [fields] being its observed fields (None when it cannot be
+   observed, in which case it is not an occurrence). *)
+and record v occs ~opened bindings fields =
+  let ents = bindings |> List.map (fun (l,_,_) -> ent_of_label l) in
+  let ents = if opened then EBot::ents else ents in
+  let reps = bindings |> List.filter_map (fun (l,b,_) ->
+    match l with LGroup gv -> Some (gv,b) | _ -> None) in
+  fields |> Option.iter (fun fields -> occs := { fields ; ents ; reps } :: !occs) ;
+  let body b ty = match ty with None -> ColMap.empty | Some ty -> walk v occs Value b ty in
+  bindings |> List.fold_left (fun acc (l,b,lookup) ->
     match l with
-    | LConst _ -> l
-    | LVar x -> begin match StrMap.find_opt x assign with
-      | Some str -> LConst str
-      | None -> l
+    | LConst str -> cand_inter acc (body b (lookup str))
+    | LVar x ->
+      (* A key whose label is still unknown cannot be used to select a field. *)
+      begin match pinned v (CVar x) with
+      | Some str -> cand_inter acc (body b (lookup str))
+      | None -> acc
       end
+    | LGroup gv ->
+      (* Which candidates are selected is not known yet, so the constraints
+         produced by the body are joined instead of being intersected. *)
+      begin match fields with
+      | None -> acc
+      | Some fields ->
+        match fields |> List.filter_map (fun (lbl,ty) ->
+          if may v (CCol gv) lbl then Some (walk v occs Value b ty) else None)
+        with
+        | [] -> acc
+        | c::cs -> cand_inter acc (List.fold_left cand_join c cs)
+      end)
+    ColMap.empty
+
+let walk_sig v occs t elt =
+  let param idx (l,b) =
+    let idx = match l with LGroup _ -> None | _ -> idx in
+    l, b, (fun str -> Option.bind (field_of_param elt ~idx ~name:(Some str)) ty_of_field)
   in
-  let f t =
-    match t with
-    | FLVar x -> begin match StrMap.find_opt x assign with
-      | Some str -> FRegular (Builder.TVec (Vec.Scalar (Builder.PChr' str)))
-      | None -> t
-      end
+  let bindings =
+    (t.dom.Arg.pos_named |> List.mapi (fun i b -> param (Some i) b))
+    @ (t.dom.Arg.named |> List.map (param None))
+  in
+  (* The result is matched against no concrete type: it constrains nothing. *)
+  record v occs ~opened:(is_open t.dom.Arg.pos_tl || is_open t.dom.Arg.named_tl)
+    bindings (Some (fields_of_arg elt))
+
+(* === Choosing === *)
+
+(* The entities that may still claim [lbl] at the occurrence [o]. *)
+let claimants v o lbl =
+  if List.mem (EConst lbl) o.ents then [EConst lbl]
+  else match o.ents |> List.find_opt (fun e ->
+    match e with EVar x -> pinned v (CVar x) = Some lbl | _ -> false)
+  with
+  | Some e -> [e]
+  | None -> o.ents |> List.filter (fun e ->
+    match e with
+    | EBot -> true (* the tail may claim any label *)
+    | EConst _ -> false
+    | EVar x -> may v (CVar x) lbl
+    | ECol gv -> may v (CCol gv) lbl)
+
+let nkeys occs c =
+  occs |> List.filter (fun o -> o.ents |> List.exists (fun e -> col_of_ent e = Some c))
+       |> List.length
+
+(* The entity claiming [lbl], when the rules single out one. *)
+let claim v occs o lbl =
+  let rank e = match col_of_ent e with
+    | None -> (0,0)
+    | Some c -> (cand_nb v c, - (nkeys occs c))
+  in
+  match claimants v o lbl |> List.filter (fun e -> e <> EBot) with
+  | [e] -> Some e
+  | es ->
+    (* The most constrained claimant wins; a tie resolves nothing. *)
+    match List.sort (fun e1 e2 -> compare (rank e1) (rank e2)) es with
+    | e1::e2::_ -> if rank e1 < rank e2 then Some e1 else None
+    | _ -> None
+
+(* A column keys possibly several occurrences, and claims the same labels at
+   each of them. *)
+let agreement v occs =
+  occs |> List.fold_left (fun v o ->
+    o.ents |> List.fold_left (fun v e ->
+      match col_of_ent e with
+      | None -> v
+      | Some c ->
+        let labels = o.fields |> List.filter_map (fun (lbl,_) ->
+          if List.mem e (claimants v o lbl) then Some lbl else None) in
+        cand_inter v (ColMap.singleton c (StrSet.of_list labels))) v) v
+
+let solve t elt =
+  let rec loop v n =
+    let occs = ref [] in
+    let v' = cand_inter v (walk_sig v occs t elt) in
+    let v' = agreement v' !occs in
+    if n = 0 || ColMap.equal StrSet.equal v v' then v, !occs else loop v' (n-1)
+  in
+  loop ColMap.empty 8
+
+(* === Instantiation === *)
+
+(* The columns of each group of [t]. *)
+let columns t =
+  let add { group ; column } m =
+    StrMap.update group (function
+      | None -> Some (StrSet.singleton column)
+      | Some s -> Some (StrSet.add column s)) m
+  in
+  let m = ref StrMap.empty in
+  let fl l = (match l with LGroup gv -> m := add gv !m | _ -> ()) ; l in
+  let f ty = (match ty with FGVar gv -> m := add gv !m | _ -> ()) ; ty in
+  ignore (map_sig f fl Fun.id t) ; !m
+
+(* The instances of each determined group, as rows over its columns. *)
+let instances t v occs =
+  let contribs g =
+    occs |> List.concat_map (fun o ->
+      o.reps |> List.filter_map (fun (gv,body) ->
+        if gv.group <> g then None else
+        Some (gv, o.fields |> List.filter_map (fun (lbl,ty) ->
+          if claim v occs o lbl <> Some (ECol gv) then None else
+          (* The other columns of the row are read off the body. *)
+          let c = walk v (ref []) Value body ty in
+          Some (ColMap.fold (fun col strs row ->
+            match col, StrSet.elements strs with
+            | CCol gv', [str] when gv'.group = g -> StrMap.add gv'.column str row
+            | _ -> row) c (StrMap.singleton gv.column lbl))))))
+  in
+  columns t |> StrMap.filter_map (fun g cols ->
+    let contribs = contribs g in
+    let complete rows = rows |> List.for_all (fun row ->
+      cols |> StrSet.for_all (fun col -> StrMap.mem col row)) in
+    match contribs |> List.find_opt (fun (_,rows) -> complete rows) with
+    | None -> None
+    | Some (_,rows) ->
+      let image gv rows = rows |> List.filter_map (StrMap.find_opt gv.column)
+        |> StrSet.of_list in
+      if contribs |> List.for_all (fun (gv,rows') ->
+           StrSet.equal (image gv rows) (image gv rows'))
+      then Some rows else None)
+
+exception Clash of string list
+
+let fresh_col =
+  let tbl = Hashtbl.create 16 in
+  fun group i v ->
+    let key = group, i, Var.name v in
+    match Hashtbl.find_opt tbl key with
+    | Some v -> v
+    | None -> let v' = Var.mk (Var.name v) in Hashtbl.add tbl key v' ; v'
+
+let is_col group v = String.ends_with ~suffix:("_"^group) (Var.name v)
+
+let str_pat str = FRegular (Builder.TVec (Vec.Scalar (Builder.PChr' str)))
+
+(* [instantiate t assign inst] replaces the resolved label variables and
+   expands the determined groups of [t]. *)
+let instantiate t assign inst =
+  (* Inside a repetition, the columns of the group are replaced by their value
+     at the instance, and its type columns by a variable fresh for it. *)
+  let subst group i row b =
+    let var v = if is_col group v then fresh_col group i v else v in
+    let f ty = match ty with
+      | FGVar gv when gv.group = group -> str_pat (StrMap.find gv.column row)
+      | FRegular bty ->
+        FRegular (Builder.map (function Builder.TVar v -> Builder.TVar (var v) | t -> t)
+          Fun.id Fun.id bty)
+      | ty -> ty
+    in
+    map f Fun.id Fun.id b
+  in
+  let rec inst_ty ty =
+    match ty with
+    | FLVar x -> (match assign x with Some str -> str_pat str | None -> ty)
+    | FGVar _ | FRegular _ -> ty
+    | FList { bindings ; tl } -> FList { bindings = record bindings ; tl = inst_ty tl }
+    | FAttr a -> FAttr (Attr.map_atom inst_ty Fun.id a)
+  (* Each binding is tagged with the group that produced it, if any, so that a
+     clash can name the groups to give up on. *)
+  and inst_bindings bindings =
+    bindings |> List.concat_map (fun (l,b) ->
+      match l with
+      | LConst _ -> [None, (l, inst_ty b)]
+      | LVar x -> (match assign x with
+        | Some str -> [None, (LConst str, inst_ty b)]
+        | None -> [None, (l, inst_ty b)])
+      | LGroup gv -> (match inst gv.group with
+        | None -> [None, (l, inst_ty b)]
+        | Some rows -> rows |> List.mapi (fun i row ->
+          Some gv.group,
+          (LConst (StrMap.find gv.column row), inst_ty (subst gv.group i row b)))))
+  (* Expanding a record must not produce the same label twice. *)
+  and checked bindings =
+    let labels = bindings |> List.filter_map (fun (_,(l,_)) ->
+      match l with LConst str -> Some str | _ -> None) in
+    let groups = bindings |> List.filter_map fst in
+    if List.length (List.sort_uniq String.compare labels) < List.length labels
+       && groups <> [] then raise (Clash groups) ;
+    List.map snd bindings
+  and record bindings = checked (inst_bindings bindings) in
+  let { Arg.pos_named ; pos_tl ; named ; named_tl } = t.dom in
+  let pos_named, named = inst_bindings pos_named, inst_bindings named in
+  ignore (checked (pos_named@named)) ;
+  let dom = { Arg.pos_named = List.map snd pos_named ; pos_tl = inst_ty pos_tl ;
+              named = List.map snd named ; named_tl = inst_ty named_tl } in
+  { dom ; ret = inst_ty t.ret }
+
+let specialize t arg =
+  (* Each atom of the argument is solved independently: only what all of them
+     agree on is committed. *)
+  let sols = Arg.destruct arg |> List.map (fun elt ->
+    let v, occs = solve t elt in
+    let assign = ColMap.fold (fun c strs assign ->
+      match c, StrSet.elements strs with
+      | CVar x, [str] -> StrMap.add x str assign
+      | _ -> assign) v StrMap.empty in
+    assign, instances t v occs)
+  in
+  let agree eq sols = match sols with
+    | [] -> None
+    | s::ss -> if List.for_all (eq s) ss then Some s else None
+  in
+  let assign x = sols |> List.map (fun (a,_) -> StrMap.find_opt x a) |> agree (=)
+    |> Option.join in
+  let rec build dropped =
+    let inst g =
+      if List.mem g dropped then None
+      else sols |> List.map (fun (_,i) -> StrMap.find_opt g i)
+        |> agree (=) |> Option.join
+    in
+    match instantiate t assign inst with
     | t -> t
+    | exception (Clash groups) ->
+      match groups |> List.filter (fun g -> not (List.mem g dropped)) with
+      | [] -> instantiate t assign (fun _ -> None)
+      | groups -> build (groups@dropped)
   in
-  map_sig f fl Fun.id t
+  build []
