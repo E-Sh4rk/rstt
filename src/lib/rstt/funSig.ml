@@ -222,13 +222,26 @@ module ColMap = Map.Make(struct type t = col let compare = compare end)
 
 type ('v,'r,'i) occ = {
   fields : (string * Ty.t) list ;
+  (* Whether [fields] is all the record can have. When it is not, a label that
+     is not observed may still be present, so the observation says nothing
+     about the columns it does not mention. *)
+  closed : bool ;
   ents : ent list ;
+  (* Those entries of [ents] whose binding admits absence: the argument need
+     not have a field at their label. *)
+  opt : ent list ;
   reps : (gvar * ('v,'r,'i) ty) list ;
 }
 
 let cand_inter = ColMap.union (fun _ s1 s2 -> Some (StrSet.inter s1 s2))
 let cand_join = ColMap.merge (fun _ s1 s2 ->
   match s1, s2 with Some s1, Some s2 -> Some (StrSet.union s1 s2) | _ -> None)
+(* A column absent from the map is unconstrained, and stays so: what is being
+   removed is finite, and the admissible set it is taken from is not. *)
+let cand_remove v c strs =
+  match ColMap.find_opt c v with
+  | None -> v
+  | Some s -> ColMap.add c (StrSet.diff s strs) v
 
 let may v c lbl =
   match ColMap.find_opt c v with None -> true | Some s -> StrSet.mem lbl s
@@ -255,6 +268,14 @@ let col_of_ent e =
 let is_open tl =
   match tl with FRegular (Builder.TOption Builder.TEmpty) -> false | _ -> true
 
+(* Whether a binding admits the absence of its field, as [#k: any?] does. *)
+let is_optional b =
+  match b with FRegular (Builder.TOption _) -> true | _ -> false
+
+(* Whether a record tail admits no further field. *)
+let tail_closed fty =
+  fty |> Ty.F.get_descr |> Ty.O.get |> Ty.O.Atom.get |> Ty.is_empty
+
 (* [fields_of_lst ty] enumerates the fields of [ty] when it is a single list
    atom, and returns None when it cannot be observed. *)
 let fields_of_lst ty =
@@ -263,16 +284,17 @@ let fields_of_lst ty =
       ty_of_field fty |> Option.map (fun ty -> lbl, ty))
   in
   match Lst.destruct ty with
-  | [ ([ { Lst.bindings ; _ } ], []) ] -> Some (fields bindings)
+  | [ ([ { Lst.bindings ; tl } ], []) ] -> Some (fields bindings, tail_closed tl)
   | _ | exception (Invalid_argument _) -> None
 
 let fields_of_arg elt =
-  let bindings = match elt with
-    | Arg.CallSite { named' ; _ } -> named'
-    | Arg.DefSite { pos_named ; named ; _ } -> pos_named@named
+  let bindings, tl = match elt with
+    | Arg.CallSite { named' ; named_tl' ; _ } -> named', named_tl'
+    | Arg.DefSite { pos_named ; named ; named_tl ; _ } -> pos_named@named, named_tl
   in
   bindings |> List.filter_map (fun (lbl,fty) ->
-    ty_of_field fty |> Option.map (fun ty -> lbl, ty))
+    ty_of_field fty |> Option.map (fun ty -> lbl, ty)),
+  tail_closed tl
 
 (* === Narrowing (the traversal) === *)
 
@@ -300,12 +322,16 @@ let rec walk v occs pos pat ty =
 (* [record v occs bindings fields] narrows the candidates from one record
    occurrence, [fields] being its observed fields (None when it cannot be
    observed, in which case it is not an occurrence). *)
-and record v occs ~opened bindings fields =
+and record v occs ~opened bindings obs =
+  let fields = Option.map fst obs in
   let ents = bindings |> List.map (fun (l,_,_) -> ent_of_label l) in
   let ents = if opened then EBot::ents else ents in
+  let opt = bindings |> List.filter_map (fun (l,b,_) ->
+    if is_optional b then Some (ent_of_label l) else None) in
   let reps = bindings |> List.filter_map (fun (l,b,_) ->
     match l with LGroup gv -> Some (gv,b) | _ -> None) in
-  fields |> Option.iter (fun fields -> occs := { fields ; ents ; reps } :: !occs) ;
+  obs |> Option.iter (fun (fields, closed) ->
+    occs := { fields ; closed ; ents ; opt ; reps } :: !occs) ;
   let body b ty = match ty with None -> ColMap.empty | Some ty -> walk v occs Value b ty in
   bindings |> List.fold_left (fun acc (l,b,lookup) ->
     match l with
@@ -385,9 +411,21 @@ let agreement v occs =
       match col_of_ent e with
       | None -> v
       | Some c ->
-        let labels = o.fields |> List.filter_map (fun (lbl,_) ->
-          if List.mem e (claimants v o lbl) then Some lbl else None) in
-        cand_inter v (ColMap.singleton c (StrSet.of_list labels))) v) v
+        let claimed, rest = o.fields |> List.map fst
+          |> List.partition (fun lbl -> List.mem e (claimants v o lbl)) in
+        if not o.closed || List.mem e o.opt
+        then
+          (* A label the record does not have is admissible too, either
+             because the binding may be absent or because the record may have
+             fields beyond the observed ones; only a label it *does* have, and
+             that this entry cannot claim, is ruled out. Intersecting with
+             [claimed] instead would force the field to be present, which is
+             what an optional binding says it need not be -- and a signature
+             that adds a field, such as
+             [(x: {#k: any?, `r}, k: #k, v: 'b) -> {#k: 'b, `r}], could then
+             never be specialized. *)
+          cand_remove v c (StrSet.of_list rest)
+        else cand_inter v (ColMap.singleton c (StrSet.of_list claimed))) v) v
 
 let solve t elt =
   let rec loop v n =

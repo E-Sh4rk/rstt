@@ -400,3 +400,34 @@ let%expect_test "parsing groups" =
     (x: {(#r_j: 'a_i)_i}) -> lgl: r_j is not a column of the group i
     (x: {(#r_i: int)_i} | list) -> lgl: Not a regular type: column r of the group i is unresolved.
     |}]
+
+let%expect_test "label variables and absent fields" =
+  let spec name s arg =
+    match parse s with None -> () | Some t -> print_spec name t arg in
+  let rcd bindings tl = TList { bindings ; tl } in
+  let closed = rcd ["a", int] absent in
+  let open_ = rcd ["a", int] TAny in
+  let has_b = rcd ["a", int ; "b", int] absent in
+  (* An optional binding does not require its field to be there: this is the
+     shape of a signature that *adds* a field, such as R's `$<-`. *)
+  let adds = "(x: {#k: any?, `r}, k: #k, v: 'b) -> {#k: 'b, `r}" in
+  spec "adds-absent" adds (call ~named:["v", int] [closed ; str "b"]) ;
+  spec "adds-present" adds (call ~named:["v", int] [has_b ; str "b"]) ;
+  (* A mandatory binding does require it, when the record is closed... *)
+  spec "needs-closed" "(x: {#k: 'a}, k: #k) -> 'a" (call [closed ; str "b"]) ;
+  (* ...but an open record may have fields beyond the observed ones, so the
+     label is not confined to them. This is the shape of R's `attr`. *)
+  spec "needs-open" "(x: {#k: 'a, any}, k: #k) -> 'a" (call [open_ ; str "b"]) ;
+  (* The label is still pinned by the field when the record has it. *)
+  spec "needs-open-present" "(x: {#k: 'a, any}, k: #k) -> 'a" (call [open_ ; str "a"]) ;
+  [%expect {|
+    adds-absent: (x: { b: any?, `r }, k: "b", v: 'b) ->
+    { b: 'b, `r }
+    adds-present: (x: { b: any?, `r }, k: "b", v: 'b) ->
+    { b: 'b, `r }
+    needs-closed: Not a regular signature: label variable k is unresolved.
+    needs-open: (x: { b: 'a, any }, k: "b") ->
+    'a
+    needs-open-present: (x: { a: 'a, any }, k: "a") ->
+    'a
+    |}]

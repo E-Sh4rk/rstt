@@ -253,6 +253,11 @@ part in what follows. Write
 
 * `L(o)` for the labels bound by the concrete record at `o`, and `fieldty(o, ℓ)`
   for the type of field `ℓ`;
+* `closed(o)` for whether the concrete record at `o` can have no field beyond
+  `L(o)`, i.e. whether its own tail is `absent`. Note that this is a property of
+  the *argument*, where the `⊥` of `E(o)` below is one of the *scheme*: the two
+  are independent. When `¬closed(o)`, `L(o)` is a lower bound on what the record
+  has rather than the whole of it;
 * `E(o)` for the **entities** of the scheme record at `o`: its constant labels,
   its free label variables in key position, one entry `(g, #c)` per key column of
   each repetition, and a distinguished `⊥` when the record is open (its tail is
@@ -272,6 +277,12 @@ shape of the problem instead of being constraints to enforce:
 * *coverage* of a closed record — `⊥ ∉ E(o)`, so every concrete label must go to
   a real entity;
 * an open record — `⊥ ∈ E(o)` absorbs the labels the scheme does not name.
+
+`a_o` is total on `L(o)`, but it is **not surjective**: an entity may claim
+nothing. That happens when its binding is optional (`#k: any?`), the absence of
+the field satisfying it, and whenever `¬closed(o)`, where the label it names may
+simply be one we do not observe. Reading a claim off every entity is the mistake
+to avoid: it forces a field to be present that the scheme says need not be.
 
 The instances of a group are **read off** the assignment rather than bounded from
 both sides: each `ℓ` with `a_o(ℓ) = (g, #c)` contributes one instance of `g` with
@@ -324,11 +335,30 @@ applies three rules.
 * **type position** — a column `#c` matched against a concrete type `ty` gives
   `V_#c ← V_#c ∩ strings_of_ty(pos, ty)`.
 * **agreement** — a column is a key at possibly several occurrences, and must
-  claim the same labels at each, so
-  `V_#c ← ⋂ { ℓ ∈ L(o) | (g,#c) ∈ A_o(ℓ) }` over every occurrence where `#c` is
-  a key; dually `(g,#c)` leaves `A_o(ℓ)` as soon as `ℓ ∉ V_#c`.
-  This one rule is what makes group `i` of `merge` the *common* fields of the
-  two arguments.
+  claim the same labels at each. Where the occurrence settles what it claims —
+  `closed(o)`, and the binding of `#c` at `o` mandatory — that is
+  `V_#c ← ⋂ { ℓ ∈ L(o) | (g,#c) ∈ A_o(ℓ) }` over every such occurrence; dually
+  `(g,#c)` leaves `A_o(ℓ)` as soon as `ℓ ∉ V_#c`. This one rule is what makes
+  group `i` of `merge` the *common* fields of the two arguments.
+
+  Otherwise `#c` may be claiming nothing at `o`, or a label outside `L(o)`, and
+  intersecting with `L(o)` would be unsound. The occurrence then only *rules
+  out* the labels the record does have and that `#c` cannot claim:
+  `V_#c ← V_#c \ { ℓ ∈ L(o) | (g,#c) ∉ A_o(ℓ) }` — a subtraction, so a column
+  still unconstrained stays so. Both halves are needed in practice: without the
+  optional case, a scheme that *adds* a field could never be specialized;
+  without the `¬closed(o)` case, one could only ever read a field the argument
+  is *known* to carry. R's `$<-` and `attr` are the two:
+
+  ```
+  ($<-) : (x: {#k: any?, `r}, k: #k, v: 'b) -> {#k: 'b, `r}
+  @({a: int}, "b", v: ff)        #k = "b", a label the argument does not have
+
+  attr  : (x: any with {#k: 'b, any}, which: #k) -> 'b
+  @(any with {match.length: int, any}, "capture.start")
+                                 #k = "capture.start", not among the observed
+  ```
+
 * **exclusion** — a committed claim `a_o(ℓ) = e` removes `e` from `A_o(ℓ')` for
   every other `ℓ'`, *provided* `e` is single-instance: a constant label or a free
   label variable. A group column claims one label per instance and `⊥` claims any
@@ -465,6 +495,10 @@ merge: (x: { (#r_i : 'a_i)_i, (#r_j : 'a_j)_j }, y: { (#r_i : 'a_i)_i, (#r_k : '
 
 E(x) = { (i,#r), (j,#r) }     E(y) = { (i,#r), (k,#r) }     (both closed)
 
+`closed(x)` and `closed(y)` are what license the intersections below: each
+argument is exactly the two fields shown, so a column that claims nothing there
+claims nothing at all.
+
 agreement   #r_i is a key at x and y  →  V_#r_i = {x,s} ∩ {y,s} = {s}
             #r_j only at x → V_#r_j = {x,s} ;  #r_k only at y → V_#r_k = {y,s}
             x ∉ V_#r_i  →  A_x(x) = { (j,#r) }  →  x claimed by j
@@ -534,6 +568,10 @@ the general case, so only the representation would change.
    `Lst`.
 3. **Optional bindings inside a repetition** (`(#r_i: 'a_i?)_i`) — a claim
    would no longer imply the field is really there; probably worth forbidding.
+   Outside a repetition an optional binding is *not* a problem and is relied
+   upon — it is how a scheme adds a field — the agreement rule simply not
+   reading a claim off it; but a repetition reads its instances off the claims,
+   so an unclaimed column there would have no instance to contribute.
 4. **Is the "most constrained claimant" preference the right one?** It is what
    `merge` needs and it is predictable, but it is a guess. The alternatives are
    to abstain on every competition (more unresolved schemes, never a wrong one)
