@@ -47,8 +47,8 @@ rule token = parse
 | "tt" { TT } | "ff" { FF }
 | "externalptr(" { EPTR } | "externalptr" { EPTR_ANY }
 | "with" { WITH } | "where" { WHERE } | "and" { AND }
-| vlen as s { VLEN (String.sub s 1 ((String.length s) - 1) |> Z.of_string) }
-| slen as s { SLEN (String.sub s 0 3, String.sub s 3 ((String.length s) - 3) |> Z.of_string) }
+| vlen as s { VLEN (String.sub s 1 ((String.length s) - 1) |> Z.of_string, s) }
+| slen as s { SLEN (String.sub s 0 3, String.sub s 3 ((String.length s) - 3) |> Z.of_string, s) }
 (* | sbracket as s { SBRACKET (String.sub s 0 ((String.length s) - 1)) } | "v[" { VB } *)
 | id as s  { ID s } | dotid as s  { ID s }
 | varid as s  { VARID s }

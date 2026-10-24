@@ -159,9 +159,10 @@ let split_classes_elts lst =
 %}
 
 %token<string> STRING, SHORT(*, SBRACKET*)
-%token<Z.t> INT, LINT, DINT, VLEN
+%token<Z.t> INT, LINT, DINT
+%token<Z.t*string> VLEN
 %token<string> ID, VARID, RVARID, SYMID, RPAREN_GROUP
-%token<string*Z.t> SLEN
+%token<string*Z.t*string> SLEN
 %token TYPE WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP (*VB*) P S HAT ARROW CARROW STAR WITH
@@ -295,12 +296,12 @@ atomic_ty:
 | VP p=prim RPAREN { FRegular (TVec (Vector p)) }
 | s=SHORT { FRegular (TVec (Vector (parse_builtin_prim s))) }
 | HAT s=SHORT { FRegular (TVec (Vector (PHat (parse_builtin_prim s)))) }
-| s=SLEN { let (s,i) = s in assert_one i ; FRegular (TVec (Scalar (parse_builtin_prim s))) }
-| HAT s=SLEN { let (s,i) = s in assert_one i ; FRegular (TVec (Scalar (PHat (parse_builtin_prim s)))) }
+| s=SLEN { let (s,i,_) = s in assert_one i ; FRegular (TVec (Scalar (parse_builtin_prim s))) }
+| HAT s=SLEN { let (s,i,_) = s in assert_one i ; FRegular (TVec (Scalar (PHat (parse_builtin_prim s)))) }
 // | VB l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
 // | s=SBRACKET l=prim RBRACKET {TVec (VarLength (l,parse_builtin_prim s)) }
 // | HAT s=SBRACKET l=prim RBRACKET { TVec (VarLength (l,PHat (parse_builtin_prim s))) }
-| i=VLEN LPAREN p=prim RPAREN { assert_one i ; FRegular (TVec (Scalar (p))) }
+| i=VLEN LPAREN p=prim RPAREN { let (i,_) = i in assert_one i ; FRegular (TVec (Scalar (p))) }
 | s=prim_atom { FRegular (TVec (Scalar s)) }
 (* Containers (lists, args, tuples, externalptr) *)
 | EPTR_ANY { FRegular TExtPtr } | EPTR ty=ty RPAREN { FRegular (TExtPtr' (reg ty)) }
@@ -348,9 +349,14 @@ cstr:
 | lbl=label COLON t=simple_ty { `LstNamed (lbl, t) }
 | ty=simple_ty { `LstTl ty }
 
+(* Field names may be any identifier, including keywords *)
 label:
 | id=ID { id }
 | s=SHORT { s }
+| s=SLEN { let (_,_,s) = s in s }
+| s=VLEN { let (_,s) = s in s }
+| TYPE { "type" } | WITH { "with" } | WHERE { "where" } | AND { "and" }
+| TT { "tt" } | FF { "ff" } | EPTR_ANY { "externalptr" }
 
 arg_elt2:
 | lbl=label COLON t=simple_ty { ArgNamed (lbl, t) }
