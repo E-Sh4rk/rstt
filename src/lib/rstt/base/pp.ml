@@ -125,12 +125,16 @@ let with_pos (pp:printing_pos) f t =
   | x -> x
   | effect GetPos, k -> continue k pp
 
-let print_builtin fmt b =
+let print_builtin pos fmt b =
   let open Sstt.Printer in
   let str =
     match b with
     | Empty -> "empty"
-    | Any -> "any"
+    | Any ->
+      begin match pos with
+      | Prim suffix -> "vec"^suffix
+      | _ -> "any"
+      end
     | AnyTuple -> "tuple"
     | AnyEnum -> "enum"
     | AnyTag -> "tag"
@@ -149,7 +153,7 @@ let rec print_descr_ctx' pos prec assoc fmt d =
     | Extension e -> Printer.print_extension_node_ctx prec assoc fmt e
     | Alias str -> fprintf fmt "%s" str
     | Node n -> fprintf fmt "%a" Printer.NodeId.pp n
-    | Builtin b -> print_builtin fmt b
+    | Builtin b -> print_builtin pos fmt b
     | Var v ->
       begin match pos with
       | Prim suffix -> fprintf fmt "v%s(%a)" suffix Var.pp v

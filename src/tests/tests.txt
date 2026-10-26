@@ -1,8 +1,9 @@
 
 "base1": any ;;
 "base2": v(vec) ;;
-"base3": attr ;;
-"base4": any\attr ;;
+"base3": v1(vec) ;;
+"base4": attr ;;
+"base5": any\attr ;;
 
 "tuple1": [] ;;
 "tuple2": [p(42L),p(73L)] <= [p(INT),p(INT)] ;;

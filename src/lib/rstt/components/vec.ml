@@ -37,6 +37,7 @@ let mk_line (p, ns) =
   let ns = List.map mk ns |> List.map Ty.neg in
   Ty.conj (p::ns)
 let any = mk (Vector Ty.any)
+let any_scalar = mk (Scalar Ty.any)
 
 let map_atom f = function
   | Vector c -> Vector (f c)
@@ -82,8 +83,12 @@ let print prec assoc fmt t =
   let print_vec = Pp.print_descr_ctx' (Prim "") in
   let print_scalar = Pp.print_descr_ctx' (Prim "1") in
   let print_atom prec assoc fmt = function
-    | Vector v -> print_vec prec assoc fmt v
-    | Scalar v -> print_scalar prec assoc fmt v
+    | Vector v ->
+      let v = Utils.prune_printer_descr ~any:Prim.any v in
+      print_vec prec assoc fmt v
+    | Scalar v ->
+      let v = Utils.prune_printer_descr ~any:Prim.any v in
+      print_scalar prec assoc fmt v
   in
   let t = t |> List.map (fun (p,ns) -> [p],ns) in
   Pp.print_non_empty_dnf ~cmp ~any:"vec" print_atom prec assoc fmt t

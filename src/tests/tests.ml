@@ -16,14 +16,15 @@ let%expect_test "tests" =
   [%expect {|
     base1: any
     base2: vec
-    base3: <...>
-    base4: ~<...>
+    base3: vec1
+    base4: <...>
+    base5: ~<...>
     tuple1: tuple0
     tuple2: true
     tuple3: [int, lgl]
     vec1: LGL | (INT1 | RAW1)
     vec2: true
-    vec3: vec & v('b) | vec1 & v1('a)
+    vec3: v('b) | v1('a)
     vec4: INT1('a)
     vec5: ^INT1('a)
     vec6: CHR1('a)

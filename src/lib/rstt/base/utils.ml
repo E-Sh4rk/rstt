@@ -37,8 +37,8 @@ let map_tag_content f tag d =
   map_tags f d
 
 let prune_printer_descr ~any d =
+  let any_d = {Printer.ty=any ; op=Printer.Builtin Printer.Any} in
   let rec aux d =
-    let any_d = {Printer.ty=any ; op=Printer.Builtin Printer.Any} in
     if Ty.leq any d.Printer.ty then any_d else
       let op = match d.Printer.op with
       | Varop (Cap, lst) ->
