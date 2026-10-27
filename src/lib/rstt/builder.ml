@@ -79,7 +79,8 @@ and ('v,'r,'i) t =
 | TDyn
 | TRowVar of 'r
 | TAny | TEmpty | TAttrAny (* Attr.any *)
-| TNull | TEnv | TSym | TLang | TExtPtr| TCup of ('v,'r,'i) t * ('v,'r,'i) t
+| TNull | TEnv | TSym | TLang | TExpr | TExtPtr
+| TCup of ('v,'r,'i) t * ('v,'r,'i) t
 | TCap of ('v,'r,'i) t * ('v,'r,'i) t
 | TDiff of ('v,'r,'i) t * ('v,'r,'i) t
 | TNeg of ('v,'r,'i) t
@@ -135,7 +136,7 @@ let map f fp fc t =
   let rec aux t =
     let t = match t with
     | TId _ | TTy _ | TVar _ | TDyn | TRowVar _ | TAny | TEmpty | TAttrAny
-    | TNull | TEnv | TSym | TLang | TExtPtr -> t
+    | TNull | TEnv | TSym | TLang | TExpr | TExtPtr -> t
     | TCup (t1, t2) -> TCup (aux t1, aux t2)
     | TCap (t1, t2) -> TCap (aux t1, aux t2)
     | TDiff (t1, t2) -> TDiff (aux t1, aux t2)
@@ -261,8 +262,9 @@ let rec build_struct env t =
   | TCap (t1,t2) -> Ty.cap (build_struct env t1) (build_struct env t2)
   | TDiff (t1,t2) -> Ty.diff (build_struct env t1) (build_struct env t2)
   | TNeg t -> Ty.neg (build_struct env t)
-  | TNull -> Null.any | TSym -> Sym.any
-  | TEnv -> Env.any | TLang -> Lang.any | TExtPtr -> ExternalPtr.any
+  | TNull -> Null.any | TEnv -> Env.any
+  | TSym -> Sym.any | TLang -> Lang.any | TExpr -> Expr.any
+  | TExtPtr -> ExternalPtr.any
   | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
   | TPrim p -> build_prim p
   | TArrow (t1,t2) | TCArrow (t1,t2) ->
@@ -457,7 +459,7 @@ let resolve env t =
       env := env' ; TRowVar v
     | TAny -> TAny | TEmpty -> TEmpty | TDyn -> TDyn
     | TAttrAny -> TAttrAny | TNull -> TNull | TEnv -> TEnv
-    | TSym -> TSym | TLang -> TLang | TExtPtr -> TExtPtr
+    | TSym -> TSym | TLang -> TLang  | TExpr -> TExpr | TExtPtr -> TExtPtr
     | TCup (t1,t2) -> TCup (aux tids t1, aux tids t2)
     | TCap (t1,t2) -> TCap (aux tids t1, aux tids t2)
     | TDiff (t1,t2) -> TDiff (aux tids t1, aux tids t2)

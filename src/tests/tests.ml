@@ -19,6 +19,11 @@ let%expect_test "tests" =
     base3: vec1
     base4: <...>
     base5: ~<...>
+    expr1: expr
+    expr2: sym
+    expr3: lang
+    expr4: expr<c>
+    expr5: lang<c>
     tuple1: tuple0
     tuple2: true
     tuple3: [int, lgl]

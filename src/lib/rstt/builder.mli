@@ -29,7 +29,7 @@ and ('v,'r,'i) t =
 | TDyn
 | TRowVar of 'r
 | TAny | TEmpty | TAttrAny (* Attr.any *)
-| TNull | TEnv | TSym | TLang | TExtPtr
+| TNull | TEnv | TSym | TLang | TExpr | TExtPtr
 | TCup of ('v,'r,'i) t * ('v,'r,'i) t
 | TCap of ('v,'r,'i) t * ('v,'r,'i) t
 | TDiff of ('v,'r,'i) t * ('v,'r,'i) t

@@ -5,6 +5,12 @@
 "base4": attr ;;
 "base5": any\attr ;;
 
+"expr1": expr ;;
+"expr2": sym ;;
+"expr3": lang ;;
+"expr4": expr<c> ;;
+"expr5": lang<c> ;;
+
 "tuple1": [] ;;
 "tuple2": [p(42L),p(73L)] <= [p(INT),p(INT)] ;;
 "tuple3": [int,lgl] ;;

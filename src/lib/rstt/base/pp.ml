@@ -81,7 +81,7 @@ end
 let pparams = ref Printer.empty_params
 
 let add_printer_param p = pparams := Printer.merge_params [!pparams ; p]
-let printer_params' aliases = { !pparams with aliases=aliases }
+let printer_params' aliases = Printer.merge_params [!pparams ; { aliases ; extensions=[] }]
 let printer_params () = printer_params' []
 
 let print_cup ~cmp f prec assoc fmt vs =

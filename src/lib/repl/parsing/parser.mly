@@ -24,6 +24,7 @@ let parse_id_or_builtin str =
     | "env" -> r TEnv
     | "sym" -> r TSym
     | "lang" -> r TLang
+    | "expr" -> r TExpr
     | "prim" -> r (TPrim PAny)
     | "list" -> FList { bindings=[] ; tl=r (TOption TAny) }
     (* C stuff  *)

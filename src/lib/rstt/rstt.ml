@@ -14,6 +14,7 @@ module Null = Null
 module Env = Env
 module Lang = Lang
 module Sym = Sym
+module Expr = Expr
 module ExternalPtr = ExternalPtr
 module Classes = Classes
 module Attr = Attr
