@@ -41,4 +41,7 @@ module Reserved : sig
 
     val target : Label.t
     (** [target] defines a field used to characterize the target of a CPtr type. *)
+
+    val tag : Label.t
+    (** [tag] defines a field used to characterize the tag of an ExternalPtr type. *)
 end

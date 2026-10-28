@@ -39,4 +39,5 @@ module Reserved = struct
   let classes = Label.mk "_class"
   let attrs = Label.mk "_attr"
   let target = Label.mk "_target"
+  let tag = Label.mk "_tag"
 end

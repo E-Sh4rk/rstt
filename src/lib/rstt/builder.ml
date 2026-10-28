@@ -92,7 +92,7 @@ and ('v,'r,'i) t =
 | TArg of (string, ('v,'r,'i) t) Arg.atom
 | TPolyArg of (string, ('v,'r,'i) t) Arg.atom
 | TArg' of (string, ('v,'r,'i) t) Arg.atom'
-| TExtPtr' of ('v,'r,'i) t
+| TExtPtr' of ('v,'r,'i) t * ('v,'r,'i) t option (* target, tag *)
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t (* Means that the parameter should not be packed in an Attr container *)
@@ -149,7 +149,7 @@ let map f fp fc t =
     | TArg a -> TArg (Arg.map_atom Fun.id aux a)
     | TPolyArg a -> TPolyArg (Arg.map_atom Fun.id aux a)
     | TArg' a -> TArg' (Arg.map_atom' Fun.id aux a)
-    | TExtPtr' t -> TExtPtr' (aux t)
+    | TExtPtr' (t, tag) -> TExtPtr' (aux t, Option.map aux tag)
     | TOption t -> TOption (aux t)
     | TAttr a -> TAttr (Attr.map_atom aux (map_classes fc) a)
     | TStruct t -> TStruct (aux t)
@@ -274,7 +274,7 @@ let rec build_struct env t =
   | TArg a -> Arg.map_atom Fun.id (build_field env) a |> Arg.mk
   | TPolyArg a -> Arg.map_atom Fun.id (build_field env) a |> Arg.mk_polymorphic
   | TArg' a -> Arg.map_atom' Fun.id (build_field env) a |> Arg.mk'
-  | TExtPtr' t -> ExternalPtr.mk (build env t)
+  | TExtPtr' (t, tag) -> ExternalPtr.mk ?tag:(Option.map (build env) tag) (build env t)
   | TCConst c -> build_cconst c
   | TCPtr t -> Cptr.mk_nonstring (build env t)
   | TOption _ -> invalid_arg "Unexpected optional type"
@@ -472,7 +472,7 @@ let resolve env t =
     | TArg a -> TArg (Arg.map_atom Fun.id (aux tids) a)
     | TPolyArg a -> TPolyArg (Arg.map_atom Fun.id (aux tids) a)
     | TArg' a -> TArg' (Arg.map_atom' Fun.id (aux tids) a)
-    | TExtPtr' t -> TExtPtr' (aux tids t)
+    | TExtPtr' (t, tag) -> TExtPtr' (aux tids t, Option.map (aux tids) tag)
     | TOption t -> TOption (aux tids t)
     | TAttr a -> TAttr (Attr.map_atom (aux tids) (resolve_classes env) a)
     | TStruct t -> TStruct (aux tids t)
