@@ -42,7 +42,7 @@ and ('v,'r,'i) t =
 | TArg of (string, ('v,'r,'i) t) Arg.atom
 | TPolyArg of (string, ('v,'r,'i) t) Arg.atom
 | TArg' of (string, ('v,'r,'i) t) Arg.atom'
-| TExtPtr' of ('v,'r,'i) t
+| TExtPtr' of ('v,'r,'i) t * ('v,'r,'i) t option (* target, tag *)
 | TOption of ('v,'r,'i) t
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t

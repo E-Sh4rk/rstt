@@ -6,32 +6,36 @@ let add_tag ty = (tag, ty) |> Descr.mk_tag |> Ty.mk_descr
 let proj_tag ty = ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag
                 |> Op.TagComp.as_atom |> snd
 
-let mk' ty =
+let mk' ty tag =
   let open Records.Atom in
-  let bindings = [Reserved.target, ty |> Ty.O.optional |> Ty.F.mk_descr] |> LabelMap.of_list in
+  let bindings = [Reserved.target, ty |> Ty.O.optional |> Ty.F.mk_descr ;
+                  Reserved.tag, tag |> Ty.O.required |> Ty.F.mk_descr] |> LabelMap.of_list in
   let ty = Descr.mk_record { bindings ; tail=Ty.F.any } |> Ty.mk_descr in
   add_tag ty
-let any = mk' Ty.any
-let null = mk' Ty.empty
-let mk ty = mk' ty
+let any = mk' Ty.any Ty.any
+let null = mk' Ty.empty Ty.any
+let mk ?(tag=Ty.any) ty = mk' ty tag
 
-type 'a t = { nullable:bool ; target:'a }
-let map f { nullable ; target } = { nullable ; target=f target }
+type 'a t = { nullable:bool ; target:'a ; tag:'a }
+let map f { nullable ; target ; tag } = { nullable ; target=f target ; tag=f tag }
 let extract ty =
-  let oty = Ty.get_descr ty |> Descr.get_records |> Op.Records.approx
-  |> Op.Records.Atom.find Reserved.target |> Ty.O.get in
+  let atom = Ty.get_descr ty |> Descr.get_records |> Op.Records.approx in
+  let oty = atom |> Op.Records.Atom.find Reserved.target |> Ty.O.get in
   let nullable, target = Ty.O.Atom.is_optional oty, Ty.O.Atom.get oty in
-  { nullable ; target }
+  let tag = atom |> Op.Records.Atom.find Reserved.tag |> Ty.O.get |> Ty.O.Atom.get in
+  { nullable ; target ; tag }
 
 let to_t ctx comp =
   let (_, pty) = Op.TagComp.as_atom comp in
   Some (extract pty |> map ctx.Printer.build)
 let destruct ty = ty |> proj_tag |> extract
-let print prec assoc fmt { nullable ; target } =
+let print prec assoc fmt { nullable ; target ; tag } =
   let pp_target _ _ fmt target =
-    if Ty.is_any target.Printer.ty
-    then Format.fprintf fmt "externalptr"
-    else Format.fprintf fmt "externalptr(%a)" Pp.print_descr target
+    match Ty.is_any target.Printer.ty, Ty.is_any tag.Printer.ty with
+    | true, true -> Format.fprintf fmt "externalptr"
+    | false, true -> Format.fprintf fmt "externalptr(%a)" Pp.print_descr target
+    | _, false ->
+        Format.fprintf fmt "externalptr(%a, %a)" Pp.print_descr target Pp.print_descr tag
   in
   if nullable then
     pp_target prec assoc fmt target

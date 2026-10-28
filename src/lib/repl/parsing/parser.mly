@@ -304,7 +304,8 @@ atomic_ty:
 | i=VLEN LPAREN p=prim RPAREN { let (i,_) = i in assert_one i ; FRegular (TVec (Scalar (p))) }
 | s=prim_atom { FRegular (TVec (Scalar s)) }
 (* Containers (lists, args, tuples, externalptr) *)
-| EPTR_ANY { FRegular TExtPtr } | EPTR ty=ty RPAREN { FRegular (TExtPtr' (reg ty)) }
+| EPTR_ANY { FRegular TExtPtr } | EPTR ty=ty RPAREN { FRegular (TExtPtr' (reg ty, None)) }
+| EPTR ty=ty COMMA tag=ty RPAREN { FRegular (TExtPtr' (reg ty, Some (reg tag))) }
 | LBRACE elts=separated_list(COMMA, lst_elt) RBRACE
 { let bindings,tl = split_lst_elts elts in FList {bindings;tl} }
 | ALPAREN elts=separated_list(COMMA, arg_elt2) RPAREN
