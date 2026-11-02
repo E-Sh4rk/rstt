@@ -145,6 +145,12 @@ let%expect_test "tests" =
     class28: <root1, root2>
     class29: <top, ~`a | ~`b>
     class30: <top, ~`a>
+    meth1: <df>
+    meth2: <df \ @print>
+    meth3: <df \ (@print, @"[")>
+    meth4: <@print, ?@"$<-">
+    meth5: <@as.data.frame, @.subset, @"%in%", @"a\"b\\c", @"\001">
+    meth6: true
     attr1: INT with { dim: INT, any }
     attr2: INT with { dim: INT }
     attr3: INT with ({ dim: INT, any } & ~{ dim: INT })

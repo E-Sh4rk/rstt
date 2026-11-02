@@ -39,7 +39,9 @@ rule token = parse
 | int as i { INT (Z.of_string i) }
 | (int as i)"L" { LINT (Z.of_string i) }
 | (int as i)"." { DINT (Z.of_string i) }
-| '"'      { read_string (Buffer.create 17) lexbuf }
+| '"'      { read_string (fun s -> STRING s) (Buffer.create 17) lexbuf }
+| '@' '"'  { read_string (fun s -> METHOD s) (Buffer.create 17) lexbuf }
+| '@' ((id | dotid) as s) { METHOD s }
 | "v("  { VP } | s as str { SHORT str } | "p("  { P } | "s(" { S } | "c(" { C }
 | "INT1(" { PI } | "DBL1(" { PD } | "CHR1(" { PC } | "NUM1(" { PN }
 | "INT("  { PI } | "DBL("  { PD } | "CHR("  { PC } | "NUM("  { PN }
@@ -67,13 +69,17 @@ rule token = parse
 | eof { EOF }
 | _ { raise (Errors.E_Lexer ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
 
-and read_string buf = parse
-| newline { enter_newline lexbuf |> read_string buf }
-| '"' { STRING (Buffer.contents buf) }
-| '\\' (backslash_escapes as c) { Buffer.add_char buf (char_for_backslash c); read_string buf lexbuf }
+and read_string mk buf = parse
+| newline { enter_newline lexbuf |> read_string mk buf }
+| '"' { mk (Buffer.contents buf) }
+| '\\' (backslash_escapes as c) { Buffer.add_char buf (char_for_backslash c); read_string mk buf lexbuf }
+| '\\' (['0'-'9'] ['0'-'9'] ['0'-'9'] as d)
+  { match int_of_string d with
+    | i when i < 256 -> Buffer.add_char buf (Char.chr i); read_string mk buf lexbuf
+    | _ -> raise (Errors.E_Lexer ("Illegal escape: \\" ^ d)) }
 | [^ '"' '\\' '\010' '\013']+
   { Buffer.add_string buf (Lexing.lexeme lexbuf);
-    read_string buf lexbuf
+    read_string mk buf lexbuf
   }
 | _ { raise (Errors.E_Lexer ("Illegal string character: " ^ Lexing.lexeme lexbuf)) }
 | eof { raise (Errors.E_Lexer ("String is not terminated")) }

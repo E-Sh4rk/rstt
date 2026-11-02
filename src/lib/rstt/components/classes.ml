@@ -45,6 +45,17 @@ let define_class name ~subclass =
 
 let is_defined name = Hashtbl.mem labels name
 
+(* Method classes are written [@m], or [@"m"] when [m] is not an identifier *)
+let class_of_method m =
+  let is_start c = match c with 'a'..'z' | 'A'..'Z' | '_' -> true | _ -> false in
+  let is_char c = is_start c || match c with '0'..'9' | '\'' | '.' -> true | _ -> false in
+  let is_ident m =
+    let n = String.length m in
+    let from i = i < n && is_start m.[i] && String.for_all is_char (String.sub m i (n-i)) in
+    from 0 || (n > 0 && m.[0] = '.' && from 1)
+  in
+  if is_ident m then "@"^m else Printf.sprintf "@%S" m
+
 let map_tail f t =
   match t with
   | NoOther -> NoOther | AllOthers -> AllOthers | Unknown -> Unknown

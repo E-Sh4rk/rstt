@@ -118,6 +118,16 @@ class root2 = shared ;;
 "class28": <root1 \ shared, root2> ;;
 "class29": <top, ~(`a & `b)> ;;
 "class30": <top, ~`a> ;;
+class @print ;;
+class @"[" ;;
+class @"$<-" ;;
+class df = @print, @"[" ;;
+"meth1": <df> ;;
+"meth2": <df \ @print> ;;
+"meth3": <df \ (@print, @"[")> ;;
+"meth4": <@"print", ~@"[", ?@"$<-"> ;;
+"meth5": <@as.data.frame, @.subset, @"%in%", @"a\"b\\c", @"\001"> ;;
+"meth6": <df> <= <@"[", ...> ;;
 
 "attr1": INT with { dim:INT, any } ;;
 "attr2": INT with { dim:INT } ;;

@@ -173,7 +173,7 @@ let split_classes_elts lst =
 %token<string> STRING, SHORT(*, SBRACKET*)
 %token<Z.t> INT, LINT, DINT
 %token<Z.t*string> VLEN
-%token<string> ID, VARID, RVARID, SYMID, RPAREN_GROUP
+%token<string> ID, VARID, RVARID, SYMID, RPAREN_GROUP, METHOD
 %token<string*Z.t*string> SLEN
 %token TYPE CLASS WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
@@ -278,6 +278,7 @@ classes:
 
 class_name:
 | id=label { id }
+| m=METHOD { Classes.class_of_method m }
 
 (* [a \ b \ c] is the same as [a \ (b, c)] *)
 class_line:

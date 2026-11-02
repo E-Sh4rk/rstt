@@ -9,6 +9,7 @@ and line = L of string * attrs
 
 val define_class : string -> subclass:(string list) -> unit
 val is_defined : string -> bool
+val class_of_method : string -> string
 val mk : RowVar.t atom -> Ty.t
 val any : Ty.t
 val noclass : Ty.t
