@@ -3,47 +3,80 @@ open Sstt
 type 'r tail =
 | NoOther | AllOthers | Unknown
 | RowVars of ('r list * 'r list) list
-type 'r atom = { pos:attrs ; neg:attrs ; unk:attrs ; tail:'r tail }
+type 'r atom = { pos:attrs ; neg:attrs ; unk:string list ; tail:'r tail }
 and attrs = line list
 and line = L of string * attrs
 
 module LabelSet = Set.Make(Label)
 
-type label_info = { name:string; sub: LabelSet.t; trans: LabelSet.t }
+(* [supers] and [subs] are the direct relations, while [up] (resp. [down]) is the
+   set of all the superclasses (resp. subclasses) of a class, itself included.
+   The class lattice must be built before building any type that mentions a
+   class: after that, relations cannot be added anymore. *)
+type label_info = { name:string; supers: LabelSet.t; subs: LabelSet.t;
+                    up: LabelSet.t; down: LabelSet.t }
 let labels = Hashtbl.create 10
 let infos = Hashtbl.create 10
-let top_classes = ref LabelSet.empty
+let built = ref false
 let tag = Tag.mk "class"
 
 let add_tag ty = TagComp.mk (tag, ty) |> Descr.mk_tagcomp |> Ty.mk_descr
 let proj_tag ty =
   ty |> Ty.get_descr |> Descr.get_tags |> Tags.get tag |> Op.TagComp.as_atom |> snd
 
-let new_class ~name ~subclass =
-  let trans_of lbls =
-    let trans = LabelSet.to_list lbls |>
-                List.map (fun lbl -> (Hashtbl.find infos lbl).trans) in
-    List.fold_left LabelSet.union lbls trans
-  in
-  try
-    let n = Label.mk (Utils.slugify name) in
-    let sub = subclass |> List.map (Hashtbl.find labels) |> LabelSet.of_list in
-    let trans = trans_of sub in
-    let sub = sub |> LabelSet.filter (fun n ->
-        LabelSet.subset trans (LabelSet.remove n sub |> trans_of) |> not) in
-    let trans = LabelSet.add n trans in
-    Hashtbl.add infos n { name ; sub ; trans } ; Hashtbl.add labels name n ;
-    sub |> LabelSet.iter (fun n -> top_classes := LabelSet.remove n !top_classes) ;
-    top_classes := LabelSet.add n !top_classes ;
-    n
-  with Not_found -> invalid_arg "undefined sub-attributes"
+let label_of_class name =
+  match Hashtbl.find_opt labels name with
+  | Some lbl -> lbl
+  | None ->
+    let lbl = Label.mk (Utils.slugify name) in
+    let self = LabelSet.singleton lbl in
+    Hashtbl.add infos lbl { name ; supers=LabelSet.empty ; subs=LabelSet.empty ; up=self ; down=self } ;
+    Hashtbl.add labels name lbl ;
+    lbl
 
+let add_relation name ~supers =
+  if !built then invalid_arg "Class lattice already built" ;
+  let lbl = label_of_class name in
+  let supers = supers |> List.map label_of_class |> LabelSet.of_list in
+  let info = Hashtbl.find infos lbl in
+  Hashtbl.replace infos lbl { info with supers = LabelSet.union info.supers supers }
 
-let define_class name ~subclass =
-  if Hashtbl.mem labels name then invalid_arg "Class already defined" ;
-  new_class ~name ~subclass |> ignore
+let build_lattice () =
+  if not !built then begin
+    let info lbl = Hashtbl.find infos lbl in
+    let lbls = Hashtbl.to_seq_keys infos |> List.of_seq in
+    let ups = Hashtbl.create 10 in
+    let rec up visiting lbl =
+      match Hashtbl.find_opt ups lbl with
+      | Some up -> up
+      | None ->
+        if LabelSet.mem lbl visiting then invalid_arg "Cyclic class hierarchy" ;
+        let visiting = LabelSet.add lbl visiting in
+        let up = (info lbl).supers |> LabelSet.to_list |> List.map (up visiting)
+                 |> List.fold_left LabelSet.union (LabelSet.singleton lbl) in
+        Hashtbl.add ups lbl up ; up
+    in
+    let up = up LabelSet.empty in
+    (* Only keep the direct superclasses *)
+    let direct lbl =
+      let supers = (info lbl).supers in
+      supers |> LabelSet.filter (fun s ->
+          supers |> LabelSet.exists (fun s' ->
+              Label.equal s s' |> not && LabelSet.mem s (up s')) |> not)
+    in
+    let supers = lbls |> List.map (fun lbl -> lbl, direct lbl) in
+    let subs lbl = supers |> List.filter_map (fun (lbl', supers) ->
+        if LabelSet.mem lbl supers then Some lbl' else None) |> LabelSet.of_list in
+    let down lbl = lbls |> List.filter (fun lbl' -> LabelSet.mem lbl (up lbl')) |> LabelSet.of_list in
+    supers |> List.iter (fun (lbl, supers) ->
+        let info = { (info lbl) with supers ; subs = subs lbl ; up = up lbl ; down = down lbl } in
+        Hashtbl.replace infos lbl info) ;
+    built := true
+  end
 
-let is_defined name = Hashtbl.mem labels name
+let class_label name =
+  if not !built then invalid_arg "Class lattice not built" ;
+  label_of_class name
 
 (* Method classes are written [@m], or [@"m"] when [m] is not an identifier *)
 let class_of_method m =
@@ -62,23 +95,31 @@ let map_tail f t =
   | RowVars lst -> RowVars (List.map (fun (ps,ns) -> List.map f ps, List.map f ns) lst)
 let map_atom f ({pos;neg;unk;tail}:'a atom) : 'b atom = {pos;neg;unk;tail=map_tail f tail}
 
-let rec labels_of_attrs lst =
+let up info = info.up
+let down info = info.down
+let rec labels_of_attrs closure lst =
   lst |> List.map (fun (L (str,l)) ->
-      if is_defined str |> not then define_class str ~subclass:[] ;
-      let lbl = Hashtbl.find labels str in
-      let all = (Hashtbl.find infos lbl).trans in
-      LabelSet.diff all (labels_of_attrs l)
+      let all = closure (Hashtbl.find infos (class_label str)) in
+      LabelSet.diff all (labels_of_attrs closure l)
     ) |> List.fold_left LabelSet.union LabelSet.empty
 
 let tt, ff = Enum.mk "tt", Enum.mk "ff"
 let tt, ff = Descr.mk_enum tt |> Ty.mk_descr, Descr.mk_enum ff |> Ty.mk_descr
 let bb = Ty.cup tt ff
 let mk {pos;neg;unk;tail} =
-  let pos, unk, neg = labels_of_attrs pos, labels_of_attrs unk, labels_of_attrs neg in
-  let pbindings = pos |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.required tt)) in
-  let ubindings = unk |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.required bb)) in
-  let nbindings = neg |> LabelSet.to_list |> List.map (fun lbl -> lbl, Ty.F.mk_descr (Ty.O.required ff)) in
-  let bindings = LabelMap.of_list (pbindings@nbindings@ubindings) in
+  (* Positive classes also constrain their superclasses, negated classes their
+     subclasses, and unknown classes only themselves. Constraints on a same
+     label are intersected. *)
+  let pos, neg = labels_of_attrs up pos, labels_of_attrs down neg in
+  let unk = unk |> List.map class_label |> LabelSet.of_list in
+  let constrs = [ pos, tt ; neg, ff ; unk, bb ] in
+  let field lbl =
+    constrs |> List.filter_map (fun (lbls, ty) ->
+        if LabelSet.mem lbl lbls then Some ty else None)
+    |> Ty.conj |> Ty.O.required |> Ty.F.mk_descr
+  in
+  let bindings = LabelSet.union pos (LabelSet.union neg unk) |> LabelSet.to_list
+                 |> List.map (fun lbl -> lbl, field lbl) |> LabelMap.of_list in
   let tail = match tail with
   | RowVars dnf -> dnf |> List.map (fun (ps,ns) -> (ps,ns,Ty.O.required bb)) |> Ty.F.of_dnf
   | NoOther -> ff |> Ty.O.required |> Ty.F.mk_descr
@@ -97,7 +138,7 @@ let extract_record ty =
 (* A list of lines denotes the union of their labels: a class shared by several
    parts of the hierarchy may be reached several times, so we remove the lines
    that are already covered by the others. *)
-let remove_redundant lines =
+let remove_redundant closure lines =
   let union ds = List.fold_left LabelSet.union LabelSet.empty ds in
   let rec aux kept lines =
     match lines with
@@ -106,7 +147,7 @@ let remove_redundant lines =
       let others = union (List.map snd kept @ List.map snd lines) in
       if LabelSet.subset d others then aux kept lines else aux ((l,d)::kept) lines
   in
-  lines |> List.map (fun l -> l, labels_of_attrs [l]) |> aux [] |> List.map fst
+  lines |> List.map (fun l -> l, labels_of_attrs closure [l]) |> aux [] |> List.map fst
 
 let record_to_atom r =
   let open Op.Records'.Atom in
@@ -130,17 +171,24 @@ let record_to_atom r =
     ) in
   let unk = bindings |> List.map fst in
   let pos, neg, unk = LabelSet.of_list pos, LabelSet.of_list neg, LabelSet.of_list unk in
-  let rec aux labels pos lbl =
-    let info = Hashtbl.find infos lbl in
-    let sub = LabelSet.to_list info.sub in
-    if (LabelSet.mem lbl labels) = pos
-    then [L (info.name, List.concat_map (aux labels (not pos)) sub |> remove_redundant)]
-    else List.concat_map (aux labels pos) sub
+  (* Positive lines are built from the most specific classes towards their
+     superclasses, and negative lines the other way around *)
+  let lines closure prev next labels =
+    let rec aux pos lbl =
+      let info = Hashtbl.find infos lbl in
+      let next = next info |> LabelSet.to_list in
+      if (LabelSet.mem lbl labels) = pos
+      then [L (info.name, List.concat_map (aux (not pos)) next |> remove_redundant closure)]
+      else List.concat_map (aux pos) next
+    in
+    let first = Hashtbl.to_seq infos |> Seq.filter_map (fun (lbl, info) ->
+        if LabelSet.is_empty (prev info) then Some lbl else None)
+      |> List.of_seq |> List.sort Label.compare in
+    first |> List.concat_map (aux true) |> remove_redundant closure
   in
-  let lines labels =
-    !top_classes |> LabelSet.to_list |> List.concat_map (aux labels true) |> remove_redundant
-  in
-  let pos, neg, unk = lines pos, lines neg, lines unk in
+  let pos = lines up (fun info -> info.subs) (fun info -> info.supers) pos in
+  let neg = lines down (fun info -> info.supers) (fun info -> info.subs) neg in
+  let unk = unk |> LabelSet.to_list |> List.map (fun lbl -> (Hashtbl.find infos lbl).name) in
   let tail =
     match is_tt r.tail, is_ff r.tail with
     | true, true -> RowVars (r.tail |> Ty.F.dnf |> List.map (fun (ps,ns,_) -> ps,ns))
@@ -168,12 +216,11 @@ let print _prec _assoc fmt {pos;neg;unk;tail} =
       let print_tuple prec assoc fmt t = print_nary_op print_class_line prec assoc Tuple fmt t in
       print_binary_op' (print_atomic_str str) print_tuple prec assoc Diff fmt () t
   in
-  let _, neg_prec, _ = unop_info Neg in
-  let print_line fmt (kind,t) =
-    match kind with
-    | `Pos -> print_class_line min_prec NoAssoc fmt t
-    | `Neg -> print_neg print_class_line min_prec NoAssoc fmt t
-    | `Unk -> print_unary print_class_line min_prec NoAssoc (fs "?", neg_prec, NoAssoc) fmt t
+  let print_line fmt t =
+    match t with
+    | `Pos t -> print_class_line min_prec NoAssoc fmt t
+    | `Neg t -> print_neg print_class_line min_prec NoAssoc fmt t
+    | `Unk str -> Format.fprintf fmt "?%s" str
   in
   let print suffix fmt t =
     Format.fprintf fmt "%a%s" print_line t suffix
@@ -188,9 +235,9 @@ let print _prec _assoc fmt {pos;neg;unk;tail} =
       Pp.print_non_empty_dnf' ~cmp:RowVar.compare print_rv Prec.min_prec NoAssoc fmt dnf
   in
   let bindings =
-    (pos |> List.map (fun p -> `Pos,p))@
-    (neg |> List.map (fun n -> `Neg,n))@
-    (unk |> List.map (fun n -> `Unk,n))
+    (pos |> List.map (fun p -> `Pos p))@
+    (neg |> List.map (fun n -> `Neg n))@
+    (unk |> List.map (fun u -> `Unk u))
   in
   match tail with
   | NoOther ->

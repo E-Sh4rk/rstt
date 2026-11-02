@@ -209,8 +209,7 @@ command:
 
 elt:
 | TYPE ids=separated_nonempty_list(SEMICOLON, ID) EQUAL e=expr_nocmp BREAK { DefineAlias (ids, e) }
-| CLASS id=class_name BREAK { DefineClass (id, []) }
-| CLASS id=class_name EQUAL sub=separated_nonempty_list(COMMA, class_name) BREAK { DefineClass (id, sub) }
+| CLASS id=class_name EQUAL supers=separated_nonempty_list(COMMA, class_name) BREAK { AddRelation (id, supers) }
 | o=printing_options e=expr BREAK { Expr (o, e) }
 
 %inline printing_options:
@@ -274,7 +273,7 @@ classes:
 | dnf=rvar_formula { `ClassRowVars dnf }
 | l=class_line { `ClassPos l }
 | TNEG l=atomic_class_line { `ClassNeg l }
-| QUESTION_MARK l=atomic_class_line { `ClassUnk l }
+| QUESTION_MARK id=class_name { `ClassUnk id }
 
 class_name:
 | id=label { id }

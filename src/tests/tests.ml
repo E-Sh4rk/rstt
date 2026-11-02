@@ -127,13 +127,13 @@ let%expect_test "tests" =
     class10: <data.frame>
     class11: <top>
     class12: <top \ mid>
-    class13: <top \ (leaf3, mid)>
-    class14: <top \ (leaf3, mid)>
+    class13: <top \ (mid, leaf3)>
+    class14: <top \ (mid, leaf3)>
     class15: <top \ (mid \ leaf1)>
-    class16: <top \ (leaf3, mid \ leaf1)>
-    class17: <~(top \ mid), ...>
-    class18: <?(top \ leaf3)>
-    class19: <?(mid \ leaf2)>
+    class16: <top \ (mid \ leaf1, leaf3)>
+    class17: <~leaf3, ...>
+    class18: <?top, ?leaf3>
+    class19: <?mid>
     class20: true
     class21: empty
     class22: <top, `a | `b>
@@ -151,6 +151,18 @@ let%expect_test "tests" =
     meth4: <@print, ?@"$<-">
     meth5: <@as.data.frame, @.subset, @"%in%", @"a\"b\\c", @"\001">
     meth6: true
+    neg1: <square>
+    neg2: <square>
+    neg3: true
+    neg4: <~circle, ...>
+    neg5: empty
+    neg6: empty
+    neg7: <square, ?circle>
+    neg8: true
+    neg9: empty
+    neg10: <~(circle \ bigcircle), ...>
+    neg11: <~(@area \ circle), ...>
+    neg12: <?circle>
     attr1: INT with { dim: INT, any }
     attr2: INT with { dim: INT }
     attr3: INT with ({ dim: INT, any } & ~{ dim: INT })
