@@ -15,6 +15,7 @@ type expr =
 type printing_options = { name: string option ; raw: bool }
 type elt =
   | DefineAlias of string list * expr
+  | DefineClass of string * string list
   | Expr of printing_options * expr
 type program = elt list
 type command = Elt of elt | End

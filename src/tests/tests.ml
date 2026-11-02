@@ -125,6 +125,26 @@ let%expect_test "tests" =
     class8: <class1, ~class2, ...>
     class9: <~class2, ?class3, *>
     class10: <data.frame>
+    class11: <top>
+    class12: <top \ mid>
+    class13: <top \ (leaf3, mid)>
+    class14: <top \ (leaf3, mid)>
+    class15: <top \ (mid \ leaf1)>
+    class16: <top \ (leaf3, mid \ leaf1)>
+    class17: <~(top \ mid), ...>
+    class18: <?(top \ leaf3)>
+    class19: <?(mid \ leaf2)>
+    class20: true
+    class21: empty
+    class22: <top, `a | `b>
+    class23: <top, `a & ~`c & ~`b>
+    class24: <class, int>
+    class25: <root1>
+    class26: <shared>
+    class27: <~root1, ...>
+    class28: <root1, root2>
+    class29: <top, ~`a | ~`b>
+    class30: <top, ~`a>
     attr1: INT with { dim: INT, any }
     attr2: INT with { dim: INT }
     attr3: INT with ({ dim: INT, any } & ~{ dim: INT })

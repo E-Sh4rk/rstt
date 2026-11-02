@@ -83,6 +83,20 @@ let noclass = mk {pos=[];neg=[];unk=[];tail=NoOther}
 let extract_record ty =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid attr encoding." ; 
   Ty.get_descr ty |> Descr.get_records |> Op.Records'.approx
+(* A list of lines denotes the union of their labels: a class shared by several
+   parts of the hierarchy may be reached several times, so we remove the lines
+   that are already covered by the others. *)
+let remove_redundant lines =
+  let union ds = List.fold_left LabelSet.union LabelSet.empty ds in
+  let rec aux kept lines =
+    match lines with
+    | [] -> List.rev kept
+    | (l,d)::lines ->
+      let others = union (List.map snd kept @ List.map snd lines) in
+      if LabelSet.subset d others then aux kept lines else aux ((l,d)::kept) lines
+  in
+  lines |> List.map (fun l -> l, labels_of_attrs [l]) |> aux [] |> List.map fst
+
 let record_to_atom r =
   let open Op.Records'.Atom in
   let bindings = r.bindings |> LabelMap.to_list in
@@ -109,12 +123,13 @@ let record_to_atom r =
     let info = Hashtbl.find infos lbl in
     let sub = LabelSet.to_list info.sub in
     if (LabelSet.mem lbl labels) = pos
-    then [L (info.name, List.concat_map (aux labels (not pos)) sub)]
+    then [L (info.name, List.concat_map (aux labels (not pos)) sub |> remove_redundant)]
     else List.concat_map (aux labels pos) sub
   in
-  let pos = !top_classes |> LabelSet.to_list |> List.concat_map (aux pos true) in
-  let neg = !top_classes |> LabelSet.to_list |> List.concat_map (aux neg true) in
-  let unk = !top_classes |> LabelSet.to_list |> List.concat_map (aux unk true) in
+  let lines labels =
+    !top_classes |> LabelSet.to_list |> List.concat_map (aux labels true) |> remove_redundant
+  in
+  let pos, neg, unk = lines pos, lines neg, lines unk in
   let tail =
     match is_tt r.tail, is_ff r.tail with
     | true, true -> RowVars (r.tail |> Ty.F.dnf |> List.map (fun (ps,ns,_) -> ps,ns))
@@ -135,41 +150,19 @@ let destruct ty = proj_tag ty |> extract
 
 let print _prec _assoc fmt {pos;neg;unk;tail} =
   let open Sstt.Prec in
-  let print_tuple p fmt t =
+  let rec print_class_line prec assoc fmt (L (str, t)) =
     match t with
-    | [] -> ()
-    | [e] -> p fmt e
-    | lst -> Format.fprintf fmt "(%a)" (Rstt_utils.print_seq p ", ") lst
+    | [] -> Format.fprintf fmt "%s" str
+    | t ->
+      let print_tuple prec assoc fmt t = print_nary_op print_class_line prec assoc Tuple fmt t in
+      print_binary_op' (print_atomic_str str) print_tuple prec assoc Diff fmt () t
   in
-  let rec print_pos_line fmt (L (str, t)) =
-    if t = []
-    then
-      Format.fprintf fmt "%s" str
-    else
-      Format.fprintf fmt "%s \ %a"
-        str (print_tuple print_pos_line) t
-  in
-  let print_neg_line fmt (L (str, t)) =
-    if t = []
-    then
-      Format.fprintf fmt "~%s" str
-    else
-      Format.fprintf fmt "~(%s \ %a)"
-        str (print_tuple print_pos_line) t
-  in
-  let print_unk_line fmt (L (str, t)) =
-    if t = []
-    then
-      Format.fprintf fmt "?%s" str
-    else
-      Format.fprintf fmt "?(%s \ %a)"
-        str (print_tuple print_pos_line) t
-  in
+  let _, neg_prec, _ = unop_info Neg in
   let print_line fmt (kind,t) =
     match kind with
-    | `Pos -> print_pos_line fmt t
-    | `Neg -> print_neg_line fmt t
-    | `Unk -> print_unk_line fmt t
+    | `Pos -> print_class_line min_prec NoAssoc fmt t
+    | `Neg -> print_neg print_class_line min_prec NoAssoc fmt t
+    | `Unk -> print_unary print_class_line min_prec NoAssoc (fs "?", neg_prec, NoAssoc) fmt t
   in
   let print suffix fmt t =
     Format.fprintf fmt "%a%s" print_line t suffix
@@ -181,7 +174,7 @@ let print _prec _assoc fmt {pos;neg;unk;tail} =
     | AllOthers -> Format.fprintf fmt "*"
     | Unknown -> Format.fprintf fmt "..."
     | RowVars dnf ->
-      Pp.print_non_empty_dnf ~cmp:RowVar.compare ~any:"any" print_rv Prec.min_prec NoAssoc fmt dnf
+      Pp.print_non_empty_dnf' ~cmp:RowVar.compare print_rv Prec.min_prec NoAssoc fmt dnf
   in
   let bindings =
     (pos |> List.map (fun p -> `Pos,p))@

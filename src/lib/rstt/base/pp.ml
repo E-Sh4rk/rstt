@@ -96,7 +96,7 @@ let print_cap ~cmp f prec assoc fmt vs =
   let ps, ns = List.sort cmp ps, List.sort cmp ns in
   Prec.print_line ~any f prec assoc fmt (ps,ns) *)
 
-let print_non_empty_dnf ~any ~cmp f prec assoc fmt dnf =
+let sort_dnf ~cmp dnf =
   let sort_line (ps,ns) = List.sort cmp ps, List.sort cmp ns in
   let dnf = List.map sort_line dnf in
   let cmp_line (ps1,ns1) (ps2,ns2) =
@@ -104,8 +104,19 @@ let print_non_empty_dnf ~any ~cmp f prec assoc fmt dnf =
     | 0 -> List.compare cmp ns1 ns2
     | i -> i
   in
-  let dnf = List.sort cmp_line dnf in
+  List.sort cmp_line dnf
+
+let print_non_empty_dnf ~any ~cmp f prec assoc fmt dnf =
+  let dnf = sort_dnf ~cmp dnf in
   Prec.print_non_empty_dnf ~any f prec assoc fmt dnf
+
+let print_non_empty_dnf' ~cmp f prec assoc fmt dnf =
+  let print_line prec assoc fmt (ps,ns) =
+    let lits = List.map (fun p -> true, p) ps @ List.map (fun n -> false, n) ns in
+    Prec.print_cap (Prec.print_lit f) prec assoc fmt lits
+  in
+  let dnf = sort_dnf ~cmp dnf in
+  Prec.print_cup print_line prec assoc fmt dnf
 
 let print_dnf ~empty ~any ~cmp f prec assoc fmt dnf =
   match dnf with

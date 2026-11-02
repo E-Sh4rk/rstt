@@ -22,6 +22,9 @@ val print_cap : cmp:('a -> 'a -> int) -> (int -> Prec.assoc -> Format.formatter 
 val print_non_empty_dnf : any:string -> cmp:('a -> 'a -> int) ->
     (int -> Prec.assoc -> Format.formatter -> 'a -> unit) ->
     int -> Prec.assoc -> Format.formatter -> ('a list * 'a list) list -> unit
+val print_non_empty_dnf' : cmp:('a -> 'a -> int) ->
+    (int -> Prec.assoc -> Format.formatter -> 'a -> unit) ->
+    int -> Prec.assoc -> Format.formatter -> ('a list * 'a list) list -> unit
 val print_dnf : empty:string -> any:string -> cmp:('a -> 'a -> int) ->
     (int -> Prec.assoc -> Format.formatter -> 'a -> unit) ->
     int -> Prec.assoc -> Format.formatter -> ('a list * 'a list) list -> unit

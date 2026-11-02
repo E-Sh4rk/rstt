@@ -138,22 +138,33 @@ let split_lst_elts lst =
     ) in
     bindings, tl
 
+(* Row variable formulas, in DNF: a union of (positive, negative) intersections *)
+let rv_cup d1 d2 = d1 @ d2
+let rv_cap d1 d2 =
+    d1 |> List.concat_map (fun (ps1,ns1) ->
+        d2 |> List.map (fun (ps2,ns2) -> ps1@ps2, ns1@ns2))
+let rv_neg d =
+    let neg_clause (ps,ns) =
+        (ps |> List.map (fun p -> [],[p])) @ (ns |> List.map (fun n -> [n],[]))
+    in
+    d |> List.map neg_clause |> List.fold_left rv_cap [[],[]]
+
 let split_classes_elts lst =
     let lst, tl = match List.rev lst with
     | `ClassAllOthers::lst -> List.rev lst, Classes.AllOthers
     | `ClassEllipsis::lst -> List.rev lst, Classes.Unknown
-    | (`ClassRowVar id)::lst -> List.rev lst, Classes.RowVars ([[id],[]])
+    | (`ClassRowVars dnf)::lst -> List.rev lst, Classes.RowVars dnf
     | lst -> List.rev lst, Classes.NoOther
     in
     let pos, lst = lst |> List.partition_map (function
-        | `ClassId id -> Either.left (Classes.L (id, []))
-        | `ClassNoId id -> Either.right (`ClassNoId id)
-        | `ClassMaybeId id -> Either.right (`ClassMaybeId id)
+        | `ClassPos l -> Either.left l
+        | `ClassNeg l -> Either.right (`ClassNeg l)
+        | `ClassUnk l -> Either.right (`ClassUnk l)
         | _ -> raise (Errors.E_Parser ("Unexpected class tail"))
     ) in
     let neg, unk = lst |> List.partition_map (function
-        | `ClassNoId id -> Either.left (Classes.L (id, []))
-        | `ClassMaybeId id -> Either.right (Classes.L (id, []))
+        | `ClassNeg l -> Either.left l
+        | `ClassUnk l -> Either.right l
     ) in
     pos, neg, unk, tl
 
@@ -164,7 +175,7 @@ let split_classes_elts lst =
 %token<Z.t*string> VLEN
 %token<string> ID, VARID, RVARID, SYMID, RPAREN_GROUP
 %token<string*Z.t*string> SLEN
-%token TYPE WHERE AND
+%token TYPE CLASS WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP (*VB*) P S HAT ARROW CARROW STAR WITH
 %token PI PD PC PN PCI PCINA PCS
@@ -198,6 +209,8 @@ command:
 
 elt:
 | TYPE ids=separated_nonempty_list(SEMICOLON, ID) EQUAL e=expr_nocmp BREAK { DefineAlias (ids, e) }
+| CLASS id=class_name BREAK { DefineClass (id, []) }
+| CLASS id=class_name EQUAL sub=separated_nonempty_list(COMMA, class_name) BREAK { DefineClass (id, sub) }
 | o=printing_options e=expr BREAK { Expr (o, e) }
 
 %inline printing_options:
@@ -258,9 +271,35 @@ classes:
 
 %inline classes_elt:
 | STAR { `ClassAllOthers } | ELLIPSIS { `ClassEllipsis }
-| id=RVARID { `ClassRowVar id }
-| id=ID { `ClassId id } | TNEG id=ID { `ClassNoId id }
-| QUESTION_MARK id=ID { `ClassMaybeId id }
+| dnf=rvar_formula { `ClassRowVars dnf }
+| l=class_line { `ClassPos l }
+| TNEG l=atomic_class_line { `ClassNeg l }
+| QUESTION_MARK l=atomic_class_line { `ClassUnk l }
+
+class_name:
+| id=label { id }
+
+(* [a \ b \ c] is the same as [a \ (b, c)] *)
+class_line:
+| id=class_name { Classes.L (id, []) }
+| l=class_line TDIFF sub=class_tuple
+{ let Classes.L (id, sub') = l in Classes.L (id, sub' @ sub) }
+
+atomic_class_line:
+| id=class_name { Classes.L (id, []) }
+| LPAREN l=class_line RPAREN { l }
+
+class_tuple:
+| id=class_name { [Classes.L (id, [])] }
+| LPAREN ls=separated_nonempty_list(COMMA, class_line) RPAREN { ls }
+
+rvar_formula:
+| id=RVARID { [[id],[]] }
+| LPAREN d=rvar_formula RPAREN { d }
+| d1=rvar_formula TOR d2=rvar_formula { rv_cup d1 d2 }
+| d1=rvar_formula TAND d2=rvar_formula { rv_cap d1 d2 }
+| d1=rvar_formula TDIFF d2=rvar_formula { rv_cap d1 (rv_neg d2) }
+| TNEG d=rvar_formula { rv_neg d }
 
 ty:
 | ty=simple_ty { ty }
@@ -357,7 +396,7 @@ label:
 | s=SHORT { s }
 | s=SLEN { let (_,_,s) = s in s }
 | s=VLEN { let (_,s) = s in s }
-| TYPE { "type" } | WITH { "with" } | WHERE { "where" } | AND { "and" }
+| TYPE { "type" } | CLASS { "class" } | WITH { "with" } | WHERE { "where" } | AND { "and" }
 | TT { "tt" } | FF { "ff" } | EPTR_ANY { "externalptr" }
 
 arg_elt2:

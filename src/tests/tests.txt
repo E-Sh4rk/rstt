@@ -90,6 +90,35 @@
 "class9": <class1,~class2,?class3, *> ;;
 "class10": <data.frame> ;;
 
+class leaf1 ;;
+class leaf2 ;;
+class leaf3 ;;
+class mid = leaf1, leaf2 ;;
+class top = mid, leaf3 ;;
+"class11": <top> ;;
+"class12": <top \ mid> ;;
+"class13": <top \ (mid, leaf3)> ;;
+"class14": <top \ mid \ leaf3> ;;
+"class15": <top \ (mid \ leaf1)> ;;
+"class16": <top \ (mid \ leaf1, leaf3)> ;;
+"class17": <~(top \ mid), ...> ;;
+"class18": <?(top \ leaf3)> ;;
+"class19": <~top, ?(mid \ leaf2)> ;;
+"class20": <top> <= <mid, ...> ;;
+"class21": <top \ mid> & <mid, ...> ;;
+"class22": <top, `a | `b> ;;
+"class23": <top, `a \ (`b | `c)> ;;
+"class24": <class, int> ;;
+class shared ;;
+class root1 = shared ;;
+class root2 = shared ;;
+"class25": <root1> ;;
+"class26": <shared> ;;
+"class27": <~root1, ...> ;;
+"class28": <root1 \ shared, root2> ;;
+"class29": <top, ~(`a & `b)> ;;
+"class30": <top, ~`a> ;;
+
 "attr1": INT with { dim:INT, any } ;;
 "attr2": INT with { dim:INT } ;;
 "attr3": INT with { dim:INT, any } \ INT with { dim:INT } ;;

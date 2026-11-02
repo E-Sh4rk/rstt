@@ -113,6 +113,8 @@ let treat_elt env elt =
         (fun env (id,ty) -> Ast.define_alias env id ty) env
     | _ -> failwith "Definitions must be types." 
     end
+  | DefineClass (id, subclass) ->
+    Classes.define_class id ~subclass ; env
   | Expr (options, e) ->
     let r, env = compute_expr env e in
     let r = simplify_res r in

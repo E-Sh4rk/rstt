@@ -35,7 +35,7 @@ let slen = s ['0'-'9']+
 let sbracket = s '['
 
 rule token = parse
-| "type" { TYPE }
+| "type" { TYPE } | "class" { CLASS }
 | int as i { INT (Z.of_string i) }
 | (int as i)"L" { LINT (Z.of_string i) }
 | (int as i)"." { DINT (Z.of_string i) }
