@@ -151,10 +151,8 @@ let rv_neg d =
 
 let split_classes_elts lst =
     let lst, tl = match List.rev lst with
-    | `ClassAllOthers::lst -> List.rev lst, Classes.AllOthers
-    | `ClassEllipsis::lst -> List.rev lst, Classes.Unknown
-    | (`ClassRowVars dnf)::lst -> List.rev lst, Classes.RowVars dnf
-    | lst -> List.rev lst, Classes.NoOther
+    | (`ClassTail tl)::lst -> List.rev lst, tl
+    | lst -> List.rev lst, Classes.Tail (Classes.AbsentOr, [])
     in
     let pos, lst = lst |> List.partition_map (function
         | `ClassPos l -> Either.left l
@@ -180,7 +178,7 @@ let split_classes_elts lst =
 %token C VP (*VB*) P S HAT ARROW CARROW STAR WITH
 %token PI PD PC PN PCI PCINA PCS
 %token TT FF EPTR_ANY EPTR
-%token QUESTION_MARK DPOINT
+%token QUESTION_MARK DPOINT DOT
 %token LPAREN RPAREN LBRACE RBRACE ALPAREN
 %token LBRACKET RBRACKET LLBRACKET RRBRACKET
 %token LEQ GEQ LT GT
@@ -269,11 +267,18 @@ classes:
 }
 
 %inline classes_elt:
-| STAR { `ClassAllOthers } | ELLIPSIS { `ClassEllipsis }
-| dnf=rvar_formula { `ClassRowVars dnf }
+| tl=class_tail { `ClassTail tl }
 | l=class_line { `ClassPos l }
 | TNEG l=atomic_class_line { `ClassNeg l }
 | QUESTION_MARK id=class_name { `ClassUnk id }
+
+class_tail:
+| ELLIPSIS { Classes.Unknown }
+| STAR { Classes.Tail (Classes.PresentOr, []) }
+| DOT { Classes.Tail (Classes.AbsentOr, []) }
+| STAR TOR dnf=rvar_formula { Classes.Tail (Classes.PresentOr, dnf) }
+| DOT TOR dnf=rvar_formula { Classes.Tail (Classes.AbsentOr, dnf) }
+| dnf=rvar_formula { Classes.Tail (Classes.Exactly, dnf) }
 
 class_name:
 | id=label { id }

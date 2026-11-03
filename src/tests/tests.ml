@@ -118,7 +118,7 @@ let%expect_test "tests" =
     class3: [[
                `C: { _class1 : `C ; _class2 : tt | `C ;; ff | `C }
             ]]
-    class4: <class1, class2>
+    class4: <class1, class2, . | `C>
     class5: <class1, ...>
     class6: INT<class1, ...>
     class7: <class1, ?class3>
@@ -145,6 +145,14 @@ let%expect_test "tests" =
     class28: <root1, root2>
     class29: <top, ~`a | ~`b>
     class30: <top, ~`a>
+    class31: <top>
+    class32: <top, * | `a>
+    class33: <top, . | `a & ~`b>
+    class34: DBL1<. | `c | `D>
+    class35: DBL1<* | `c | `D>
+    class36: <...>
+    class37: true
+    class38: false
     meth1: <df>
     meth2: <df \ @print>
     meth3: <df \ (@print, @"[")>

@@ -1,8 +1,13 @@
 open Sstt
 
+(* A tail [Tail (kind, dnf)] denotes the union of the row variable formula [dnf]
+   (a DNF of positive and negative row variables) with: all the other classes
+   for [PresentOr], none of them for [AbsentOr], and nothing for [Exactly].
+   [Unknown] leaves the other classes unspecified. *)
+type tail_kind = PresentOr | AbsentOr | Exactly
 type 'r tail =
-| NoOther | AllOthers | Unknown
-| RowVars of ('r list * 'r list) list
+| Unknown
+| Tail of tail_kind * ('r list * 'r list) list
 type 'r atom = { pos:attrs ; neg:attrs ; unk:string list ; tail:'r tail }
 and attrs = line list
 and line = L of string * attrs
@@ -91,8 +96,8 @@ let class_of_method m =
 
 let map_tail f t =
   match t with
-  | NoOther -> NoOther | AllOthers -> AllOthers | Unknown -> Unknown
-  | RowVars lst -> RowVars (List.map (fun (ps,ns) -> List.map f ps, List.map f ns) lst)
+  | Unknown -> Unknown
+  | Tail (k, lst) -> Tail (k, List.map (fun (ps,ns) -> List.map f ps, List.map f ns) lst)
 let map_atom f ({pos;neg;unk;tail}:'a atom) : 'b atom = {pos;neg;unk;tail=map_tail f tail}
 
 let up info = info.up
@@ -121,16 +126,20 @@ let mk {pos;neg;unk;tail} =
   let bindings = LabelSet.union pos (LabelSet.union neg unk) |> LabelSet.to_list
                  |> List.map (fun lbl -> lbl, field lbl) |> LabelMap.of_list in
   let tail = match tail with
-  | RowVars dnf -> dnf |> List.map (fun (ps,ns) -> (ps,ns,Ty.O.required bb)) |> Ty.F.of_dnf
-  | NoOther -> ff |> Ty.O.required |> Ty.F.mk_descr
-  | AllOthers -> tt |> Ty.O.required |> Ty.F.mk_descr
   | Unknown -> bb |> Ty.O.required |> Ty.F.mk_descr
+  | Tail (kind, dnf) ->
+    let others = match kind with
+      | PresentOr -> [ [], [], Ty.O.required tt ]
+      | AbsentOr -> [ [], [], Ty.O.required ff ]
+      | Exactly -> []
+    in
+    others @ (dnf |> List.map (fun (ps,ns) -> (ps,ns,Ty.O.required bb))) |> Ty.F.of_dnf
   in
   { Records.Atom.bindings ; tail } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 
 let any = mk {pos=[];neg=[];unk=[];tail=Unknown}
 let any_d = proj_tag any
-let noclass = mk {pos=[];neg=[];unk=[];tail=NoOther}
+let noclass = mk {pos=[];neg=[];unk=[];tail=Tail (AbsentOr, [])}
 
 let extract_record ty =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid attr encoding." ; 
@@ -149,6 +158,32 @@ let remove_redundant closure lines =
   in
   lines |> List.map (fun l -> l, labels_of_attrs closure [l]) |> aux [] |> List.map fst
 
+(* The tail field is a union of monomials [ps & ~ns & leaf]. Variable-free
+   monomials give the kind of the tail. A monomial with row variables is absorbed
+   when its leaf is covered by the kind; otherwise only the part of its leaf that
+   is not covered matters, and that part is a single value ([tt] or [ff]): we can
+   replace the leaf by [bb] without changing the union. When the kind is [Exactly],
+   the leaves of the monomials are approximated by [bb]. *)
+let tail_of_field fty =
+  let dnf = Ty.F.dnf fty |> List.map (fun (ps,ns,leaf) ->
+      ps, ns, Ty.O.get leaf |> Ty.O.Atom.get) in
+  let consts, monomials = dnf |> List.partition (fun (ps,ns,_) -> ps = [] && ns = []) in
+  let consts = consts |> List.map (fun (_,_,ty) -> ty) |> Ty.disj in
+  let covers ty = Ty.leq ty consts in
+  let kind, covered =
+    match covers tt, covers ff with
+    | true, true -> None, bb
+    | true, false -> Some PresentOr, tt
+    | false, true -> Some AbsentOr, ff
+    | false, false -> Some Exactly, Ty.empty
+  in
+  match kind with
+  | None -> Unknown
+  | Some kind ->
+    let dnf = monomials |> List.filter_map (fun (ps,ns,ty) ->
+        if Ty.leq ty covered then None else Some (ps,ns)) in
+    Tail (kind, dnf)
+
 let record_to_atom r =
   let open Op.Records'.Atom in
   let bindings = r.bindings |> LabelMap.to_list in
@@ -163,6 +198,7 @@ let record_to_atom r =
   in
   let is_tt fty = let ty = ty_of_field fty in Ty.leq ty tt in
   let is_ff fty = let ty = ty_of_field fty in Ty.leq ty ff in
+  (* TODO: class fields that mention row variables are approximated *)
   let pos, bindings = bindings |> List.partition_map (fun (lbl, fty) ->
     if is_tt fty then Either.left lbl else Either.right (lbl,fty)
     ) in
@@ -189,14 +225,7 @@ let record_to_atom r =
   let pos = lines up (fun info -> info.subs) (fun info -> info.supers) pos in
   let neg = lines down (fun info -> info.supers) (fun info -> info.subs) neg in
   let unk = unk |> LabelSet.to_list |> List.map (fun lbl -> (Hashtbl.find infos lbl).name) in
-  let tail =
-    match is_tt r.tail, is_ff r.tail with
-    | true, true -> RowVars (r.tail |> Ty.F.dnf |> List.map (fun (ps,ns,_) -> ps,ns))
-    | true, false -> AllOthers
-    | false, true -> NoOther
-    | false, false -> Unknown
-  in
-  {pos ; neg ; unk ; tail}
+  {pos ; neg ; unk ; tail=tail_of_field r.tail}
 
 let extract t : RowVar.t atom =
   extract_record t |> record_to_atom
@@ -226,13 +255,17 @@ let print _prec _assoc fmt {pos;neg;unk;tail} =
     Format.fprintf fmt "%a%s" print_line t suffix
   in
   let print_rv _prec _assoc fmt rv = RowVar.pp fmt rv in
+  let print_dnf fmt dnf =
+    Pp.print_non_empty_dnf' ~cmp:RowVar.compare print_rv Prec.min_prec NoAssoc fmt dnf
+  in
   let print_tail fmt t =
     match t with
-    | NoOther -> ()
-    | AllOthers -> Format.fprintf fmt "*"
     | Unknown -> Format.fprintf fmt "..."
-    | RowVars dnf ->
-      Pp.print_non_empty_dnf' ~cmp:RowVar.compare print_rv Prec.min_prec NoAssoc fmt dnf
+    | Tail (AbsentOr, []) -> ()
+    | Tail (AbsentOr, dnf) -> Format.fprintf fmt ". | %a" print_dnf dnf
+    | Tail (PresentOr, []) -> Format.fprintf fmt "*"
+    | Tail (PresentOr, dnf) -> Format.fprintf fmt "* | %a" print_dnf dnf
+    | Tail (Exactly, dnf) -> print_dnf fmt dnf
   in
   let bindings =
     (pos |> List.map (fun p -> `Pos p))@
@@ -240,9 +273,9 @@ let print _prec _assoc fmt {pos;neg;unk;tail} =
     (unk |> List.map (fun u -> `Unk u))
   in
   match tail with
-  | NoOther ->
+  | Tail (AbsentOr, []) ->
     Format.fprintf fmt "<%a>" (print_seq (print "") ", ") bindings
-  | AllOthers | Unknown | RowVars _ ->
+  | Unknown | Tail _ ->
     Format.fprintf fmt "<%a%a>" (print_seq (print ", ") "") bindings print_tail tail
 
 let printer_builder =

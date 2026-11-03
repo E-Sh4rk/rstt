@@ -205,6 +205,10 @@ other attributes (`dim`, `names`, ...). RSTT tracks these with two constructors:
 | `<class1, ...>` | has (at least) `class1`; other classes are unspecified |
 | `<~class1, ...>` | does **not** have `class1`; other classes are unspecified |
 | `<?class1, ...>` | `class1` may or may not be present |
+| `<class1, *>` | has `class1` and every other class |
+| `<class1, .>` | same as `<class1>` |
+| ``<class1, `C>`` | has `class1`; the other classes are given by the row variable `` `C `` |
+| ``<class1, * \| `C>`` / ``<class1, . \| `C>`` | the other classes are all present (resp. absent), or given by `` `C `` |
 
 ```
 > <class1> ;;
@@ -348,7 +352,7 @@ constraint back into a type:
 > 'a [[ 'a: LGL ]] ;;
 LGL
 > <class1,`C> [[ <class1,class2> <= <class1,`C> ]] ;;
-<class1, class2>
+<class1, class2, . | `C>
 ```
 
 ## License

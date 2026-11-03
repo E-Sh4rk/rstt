@@ -60,7 +60,7 @@ rule token = parse
 | newline  { Lexing.new_line lexbuf ; token lexbuf }
 | blank    { token lexbuf }
 | ";;" { BREAK } | ',' { COMMA } | ':' { COLON } | ';' { SEMICOLON } | '=' { EQUAL }
-| "..." { ELLIPSIS } | ".." { DPOINT } | '*' { STAR }
+| "..." { ELLIPSIS } | ".." { DPOINT } | '.' { DOT } | '*' { STAR }
 | "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW } | "-->" { CARROW }
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE } | "@(" { ALPAREN }
 | "[" { LBRACKET } | "]" { RBRACKET } | "[[" { LLBRACKET } | "]]" { RRBRACKET }

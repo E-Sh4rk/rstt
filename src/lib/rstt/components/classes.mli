@@ -1,8 +1,13 @@
 open Sstt
 
+(* A tail [Tail (kind, dnf)] denotes the union of the row variable formula [dnf]
+   (a DNF of positive and negative row variables) with: all the other classes
+   for [PresentOr], none of them for [AbsentOr], and nothing for [Exactly].
+   [Unknown] leaves the other classes unspecified. *)
+type tail_kind = PresentOr | AbsentOr | Exactly
 type 'r tail =
-| NoOther | AllOthers | Unknown
-| RowVars of ('r list * 'r list) list
+| Unknown
+| Tail of tail_kind * ('r list * 'r list) list
 type 'r atom = { pos:attrs ; neg:attrs ; unk:string list ; tail:'r tail }
 and attrs = line list
 and line = L of string * attrs
