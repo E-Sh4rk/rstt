@@ -308,6 +308,13 @@ Every REPL command is a *type expression* terminated with `;;`. A command can be
 The REPL also accepts instructions `type name = T ;;` to define a type alias
 (`name` will denote the type `T` in future prompts).
 
+Settings can be changed with `set name = value ;;`. For now, the only setting is
+`safe_mode` (`true` or `false`, default `false`). Some parts of the friendly
+syntax approximate the type they print (e.g. a union of two `externalptr(T, tag)`
+with different tags); in safe mode, those types are printed in the raw encoding
+instead, so that what is printed is always exact. Running `rstt --safe` starts
+the REPL with safe mode on.
+
 ## Subtyping and constraint solving
 
 Beyond building types, the REPL can check subtyping and solve constraints between

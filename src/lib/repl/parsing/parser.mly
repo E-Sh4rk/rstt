@@ -173,7 +173,7 @@ let split_classes_elts lst =
 %token<Z.t*string> VLEN
 %token<string> ID, VARID, RVARID, SYMID, RPAREN_GROUP, METHOD
 %token<string*Z.t*string> SLEN
-%token TYPE CLASS WHERE AND
+%token TYPE CLASS SET WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP (*VB*) P S HAT ARROW CARROW STAR WITH
 %token PI PD PC PN PCI PCINA PCS
@@ -208,7 +208,13 @@ command:
 elt:
 | TYPE ids=separated_nonempty_list(SEMICOLON, ID) EQUAL e=expr_nocmp BREAK { DefineAlias (ids, e) }
 | CLASS id=class_name EQUAL supers=separated_nonempty_list(COMMA, class_name) BREAK { AddRelation (id, supers) }
+| SET name=label EQUAL value=option_value BREAK { SetOption (name, value) }
 | o=printing_options e=expr BREAK { Expr (o, e) }
+
+option_value:
+| v=label { v }
+| i=INT { Z.to_string i }
+| s=STRING { s }
 
 %inline printing_options:
 |       { { name=None ; raw=false } }
@@ -401,7 +407,7 @@ label:
 | s=SHORT { s }
 | s=SLEN { let (_,_,s) = s in s }
 | s=VLEN { let (_,s) = s in s }
-| TYPE { "type" } | CLASS { "class" } | WITH { "with" } | WHERE { "where" } | AND { "and" }
+| TYPE { "type" } | CLASS { "class" } | SET { "set" } | WITH { "with" } | WHERE { "where" } | AND { "and" }
 | TT { "tt" } | FF { "ff" } | EPTR_ANY { "externalptr" }
 
 arg_elt2:

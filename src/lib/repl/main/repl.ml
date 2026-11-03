@@ -106,6 +106,8 @@ let treat_elt env elt =
   match elt with
   | AddRelation (id, supers) ->
     Classes.add_relation id ~supers ; env
+  | SetOption (name, value) ->
+    Config.set name value ; env
   | DefineAlias (ids, e) ->
     Classes.build_lattice () ;
     let r, env = compute_expr env e in

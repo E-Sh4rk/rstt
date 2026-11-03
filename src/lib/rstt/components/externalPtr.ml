@@ -25,9 +25,15 @@ let extract ty =
   let tag = atom |> Op.Records.Atom.find Reserved.tag |> Ty.O.get |> Ty.O.Atom.get in
   { nullable ; target ; tag }
 
+let rebuild { nullable ; target ; tag } =
+  let ty = mk' target tag in
+  if nullable then ty else Ty.diff ty null
+
 let to_t ctx comp =
   let (_, pty) = Op.TagComp.as_atom comp in
-  Some (extract pty |> map ctx.Printer.build)
+  let t = extract pty in
+  if !Config.safe_mode && not (Ty.equiv (rebuild t) (add_tag pty)) then None
+  else Some (map ctx.Printer.build t)
 let destruct ty = ty |> proj_tag |> extract
 let print prec assoc fmt { nullable ; target ; tag } =
   let pp_target _ _ fmt target =

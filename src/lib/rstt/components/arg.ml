@@ -79,15 +79,7 @@ let mk' ?allow_more_pos ~id { pos' ; pos_tl' ; named' ; named_tl' } =
   let npos = if allow_more_pos then npos_field' n else npos_field n in
   let bindings = [Reserved.id,id ; npos ; pos ; named] |> LabelMap.of_list in
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr |> add_tag
-let mk ~polymorphic { pos_named ; pos_tl ; named_tl ; named } =
-  let id_ty =
-    if polymorphic
-    then fresh_polymorphic_id ()
-    else
-      let id, id_ty = fresh_id () in
-      let fsig = map_atom Fun.id (Fun.const ()) { pos_named ; pos_tl ; named_tl ; named } in
-      Hashtbl.add sigs id fsig ; id_ty
-  in
+let mk_with_id id_ty { pos_named ; pos_tl ; named_tl ; named } =
   let n = List.length pos_named in
   (* let k = List.length pos in *)
   let atoms' = List.init (n + 1) (fun i ->
@@ -98,6 +90,16 @@ let mk ~polymorphic { pos_named ; pos_tl ; named_tl ; named } =
       { pos' ; named' ; pos_tl'=pos_tl ; named_tl'=named_tl }
   ) in
   atoms' |> Ty.disj
+let mk ~polymorphic a =
+  let id_ty =
+    if polymorphic
+    then fresh_polymorphic_id ()
+    else
+      let id, id_ty = fresh_id () in
+      let fsig = map_atom Fun.id (Fun.const ()) a in
+      Hashtbl.add sigs id fsig ; id_ty
+  in
+  mk_with_id id_ty a
 let mk_polymorphic a = mk ~polymorphic:true a
 let mk a = mk ~polymorphic:false a
 let mk' = mk' ?allow_more_pos:None ~id:None
@@ -117,7 +119,8 @@ let extract_ids (a:Records.Atom'.t) =
   | true, lst -> Some lst
   | false, _ -> None
 
-let extract ty : (string, Ty.F.t) t =
+(* Also returns, for each element, the type it denotes *)
+let extract_with_tys ty : ((string, Ty.F.t) elt * Ty.t) list =
   if Ty.vars_toplevel ty |> VarSet.is_empty |> not then invalid_arg "Invalid arg encoding." ;
   let extract_record lbl a = Records.Atom'.find lbl a |> Ty.F.get_descr
     |> Ty.O.get |> Ty.O.Atom.get |> Ty.get_descr |> Descr.get_records |> Op.Records'.approx in
@@ -164,14 +167,15 @@ let extract ty : (string, Ty.F.t) t =
      shrink the argument -- a caller that destructs, transforms and rebuilds
      would lose them -- so read them for what they are, call-site constraints,
      whenever the signature they belong to has no fully-positional atom left. *)
+  let callsite a = let a' = extract_callsite a in CallSite a', mk' a' in
   let classify a =
     match extract_ids a with
     | None -> (* Any *)
-      `Elt (DefSite {pos_named=[] ; pos_tl=Ty.F.any ; named=[] ; named_tl=Ty.F.any})
-    | Some [] -> `Elt (CallSite (extract_callsite a))
+      `Elt (DefSite {pos_named=[] ; pos_tl=Ty.F.any ; named=[] ; named_tl=Ty.F.any}, any)
+    | Some [] -> `Elt (callsite a)
     | Some (id::_) ->
       match extract_defsite id a with
-      | Some x -> `Def (id, DefSite x)
+      | Some x -> `Def (id, (DefSite x, mk_with_id (Descr.mk_enum id |> Ty.mk_descr) x))
       | None -> `Partial (id, a)
   in
   let lines = Ty.get_descr ty |> Descr.get_records |> Records.dnf' in
@@ -185,16 +189,19 @@ let extract ty : (string, Ty.F.t) t =
     | `Elt e | `Def (_, e) -> Some e
     | `Partial (id, a) ->
       if recovered id then None
-      else Some (CallSite (extract_callsite a)))
+      else Some (callsite a))
+let extract ty = extract_with_tys ty |> List.map fst
 
 let to_t ctx comp =
   let ty = Op.TagComp.as_atom comp |> snd in
   if Ty.leq ty any_d
-  then match extract ty with
+  then match extract_with_tys ty with
     (* An empty component has no atom to print, and a union of none has no
        neutral element: leave it to the generic printer. *)
     | [] -> None
-    | t -> Some (map ctx.Printer.build_field t)
+    | t when !Config.safe_mode &&
+             not (Ty.equiv (List.map snd t |> Ty.disj) (add_tag ty)) -> None
+    | t -> Some (List.map fst t |> map ctx.Printer.build_field)
   else None
 
 let destruct ty =

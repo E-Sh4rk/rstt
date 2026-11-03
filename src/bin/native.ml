@@ -7,7 +7,10 @@ let input_files = ref []
 let anon_fun filename =
     input_files := filename::!input_files
 
-let speclist = [ ]
+let speclist = [
+    ("--safe", Arg.Set Rstt.Config.safe_mode,
+     " Fall back to the generic printer whenever a type cannot be printed exactly")
+]
 
 let () =
     Arg.parse speclist anon_fun usage_msg ;

@@ -231,7 +231,10 @@ let extract t : RowVar.t atom =
   extract_record t |> record_to_atom
 let to_t _ comp =
   let ty = Op.TagComp.as_atom comp |> snd in
-  if Ty.leq ty any_d then Some (extract ty)
+  if Ty.leq ty any_d then
+    let a = extract ty in
+    if !Config.safe_mode && not (Ty.equiv (mk a |> proj_tag) ty) then None
+    else Some a
   else None
 
 let destruct ty = proj_tag ty |> extract

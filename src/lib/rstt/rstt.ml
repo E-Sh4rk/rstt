@@ -4,6 +4,7 @@ module Builder = Builder
 module FunSig = FunSig
 module TyOp = TyOp
 module Labels = Labels
+module Config = Config
 
 (* R components *)
 module Prim = Prim
