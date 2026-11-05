@@ -15,7 +15,7 @@ type expr =
 type printing_options = { name: string option ; raw: bool }
 type elt =
   | DefineAlias of string list * expr
-  | AddRelation of string * string list
+  | DeclareClass of string * string list
   | SetOption of string * string
   | Expr of printing_options * expr
 type program = elt list

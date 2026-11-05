@@ -8,13 +8,18 @@ type tail_kind = PresentOr | AbsentOr | Exactly
 type 'r tail =
 | Unknown
 | Tail of tail_kind * ('r list * 'r list) list
-type 'r atom = { pos:attrs ; neg:attrs ; unk:string list ; tail:'r tail }
+(* Method classes are written [@m], and classes [c]. Names that are not
+   identifiers are quoted: [@"m"] and ["c"]. *)
+type cls = Class of string | Method of string
+type 'r atom = { pos:attrs ; neg:cls list ; unk:attrs ; tail:'r tail }
 and attrs = line list
-and line = L of string * attrs
+and line = L of cls * attrs
 
-val add_relation : string -> supers:(string list) -> unit
-val build_lattice : unit -> unit
-val class_of_method : string -> string
+val string_of_cls : cls -> string
+val cls_of_string : string -> cls
+val pp_cls : Format.formatter -> cls -> unit
+
+val declare_class : string -> methods:(string list) -> unit
 val mk : RowVar.t atom -> Ty.t
 val any : Ty.t
 val noclass : Ty.t

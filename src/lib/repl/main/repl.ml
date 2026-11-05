@@ -104,12 +104,11 @@ let print_raw_res _ fmt res =
 
 let treat_elt env elt =
   match elt with
-  | AddRelation (id, supers) ->
-    Classes.add_relation id ~supers ; env
+  | DeclareClass (id, methods) ->
+    Classes.declare_class id ~methods ; env
   | SetOption (name, value) ->
     Config.set name value ; env
   | DefineAlias (ids, e) ->
-    Classes.build_lattice () ;
     let r, env = compute_expr env e in
     let r = simplify_res r in
     begin match r with
@@ -119,7 +118,6 @@ let treat_elt env elt =
     | _ -> failwith "Definitions must be types." 
     end
   | Expr (options, e) ->
-    Classes.build_lattice () ;
     let r, env = compute_expr env e in
     let r = simplify_res r in
     let print_res = if options.raw then print_raw_res else print_res in

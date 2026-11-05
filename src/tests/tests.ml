@@ -125,24 +125,9 @@ let%expect_test "tests" =
     class8: <class1, ~class2, ...>
     class9: <~class2, ?class3, *>
     class10: <data.frame>
-    class11: <top>
-    class12: <top \ mid>
-    class13: <top \ (mid, leaf3)>
-    class14: <top \ (mid, leaf3)>
-    class15: <top \ (mid \ leaf1)>
-    class16: <top \ (mid \ leaf1, leaf3)>
-    class17: <~leaf3, ...>
-    class18: <?top, ?leaf3>
-    class19: <?mid>
-    class20: true
-    class21: empty
     class22: <top, `a | `b>
     class23: <top, `a & ~`c & ~`b>
     class24: <class, int>
-    class25: <root1>
-    class26: <shared>
-    class27: <~root1, ...>
-    class28: <root1, root2>
     class29: <top, ~`a | ~`b>
     class30: <top, ~`a>
     class31: <top>
@@ -156,21 +141,28 @@ let%expect_test "tests" =
     meth1: <df>
     meth2: <df \ @print>
     meth3: <df \ (@print, @"[")>
-    meth4: <@print, ?@"$<-">
-    meth5: <@as.data.frame, @.subset, @"%in%", @"a\"b\\c", @"\001">
-    meth6: true
+    meth4: <df \ (@print, @"[")>
+    meth5: <@print, ?@"$<-">
+    meth6: <@as.data.frame, @.subset, @"%in%", @"a\"b\\c", @"\001">
+    meth7: true
+    meth8: empty
+    meth9: <"my class", data.frame, "1", "a\"b">
     neg1: <square>
     neg2: <square>
     neg3: true
     neg4: <~circle, ...>
     neg5: empty
     neg6: empty
-    neg7: <square, ?circle>
-    neg8: true
-    neg9: empty
-    neg10: <~(circle \ bigcircle), ...>
-    neg11: <~(@area \ circle), ...>
-    neg12: <?circle>
+    neg7: <~@area, ...>
+    unk1: <square, ?circle>
+    unk2: <df, ?"my class">
+    unk3: <?circle>
+    unk4: <~@area, ?circle>
+    unk5: <?circle, *>
+    unk6: <@area, ?circle, *>
+    unk7: <?circle, `a>
+    unk8: <?(circle \ @area), `a>
+    unk9: <~@print, ...>
     attr1: INT with { dim: INT, any }
     attr2: INT with { dim: INT }
     attr3: INT with ({ dim: INT, any } & ~{ dim: INT })

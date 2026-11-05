@@ -207,7 +207,7 @@ command:
 
 elt:
 | TYPE ids=separated_nonempty_list(SEMICOLON, ID) EQUAL e=expr_nocmp BREAK { DefineAlias (ids, e) }
-| CLASS id=class_name EQUAL supers=separated_nonempty_list(COMMA, class_name) BREAK { AddRelation (id, supers) }
+| CLASS id=real_class_name EQUAL methods=separated_nonempty_list(COMMA, METHOD) BREAK { DeclareClass (id, methods) }
 | SET name=label EQUAL value=option_value BREAK { SetOption (name, value) }
 | o=printing_options e=expr BREAK { Expr (o, e) }
 
@@ -275,8 +275,8 @@ classes:
 %inline classes_elt:
 | tl=class_tail { `ClassTail tl }
 | l=class_line { `ClassPos l }
-| TNEG l=atomic_class_line { `ClassNeg l }
-| QUESTION_MARK id=class_name { `ClassUnk id }
+| TNEG cls=class_name { `ClassNeg cls }
+| QUESTION_MARK l=atomic_class_line { `ClassUnk l }
 
 class_tail:
 | ELLIPSIS { Classes.Unknown }
@@ -286,9 +286,13 @@ class_tail:
 | DOT TOR dnf=rvar_formula { Classes.Tail (Classes.AbsentOr, dnf) }
 | dnf=rvar_formula { Classes.Tail (Classes.Exactly, dnf) }
 
-class_name:
+real_class_name:
 | id=label { id }
-| m=METHOD { Classes.class_of_method m }
+| str=STRING { str }
+
+class_name:
+| id=real_class_name { Classes.Class id }
+| m=METHOD { Classes.Method m }
 
 (* [a \ b \ c] is the same as [a \ (b, c)] *)
 class_line:
