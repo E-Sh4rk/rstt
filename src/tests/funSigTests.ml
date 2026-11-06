@@ -13,7 +13,8 @@ let print_spec ?polymorphic name t arg =
   | exception (Invalid_argument msg) -> Format.printf "%s: %s@." name msg
 
 let env = ref Builder.empty_env
-let resolve t = let env', t = FunSig.resolve !env t in env := env' ; t
+(* Resolves a signature made of the single arrow [a]. *)
+let resolve a = let env', t = FunSig.resolve !env [a] in env := env' ; t
 let build t = let env', t = Builder.resolve !env t in env := env' ;
   Builder.build TIdMap.empty t
 
@@ -281,8 +282,8 @@ let%expect_test "polymorphic domain" =
   let arg t = match t with
     | TArg _ -> "TArg" | TPolyArg _ -> "TPolyArg" | _ -> assert false
   in
-  Format.printf "%s %s@." (arg (to_regular_arg id.dom))
-    (arg (to_regular_arg ~polymorphic:true id.dom)) ;
+  Format.printf "%s %s@." (arg (to_regular_arg (List.hd id).dom))
+    (arg (to_regular_arg ~polymorphic:true (List.hd id).dom)) ;
   print_spec ~polymorphic:true "mk_poly" mk (call [str "foo"]) ;
   [%expect {|
     TArg TPolyArg
@@ -430,4 +431,45 @@ let%expect_test "label variables and absent fields" =
     'a
     needs-open-present: (x: { a: 'a, any }, k: "a") ->
     'a
+    |}]
+
+let%expect_test "intersections of arrows" =
+  (* [&&] and [||] have a lower precedence than [->]: a signature may be an
+     intersection of arrows, written without parentheses. *)
+  let arrows name t =
+    Format.printf "%s: %i arrow(s)@." name (List.length t) in
+  parse "(x: int) -> int && (x: lgl) -> lgl" |> Option.iter (arrows "two") ;
+  parse "(x: int) -> int && (x: lgl) -> lgl && (x: chr) -> chr" |> Option.iter (arrows "three") ;
+  print_parsed "(x: int) -> int && (x: lgl) -> lgl" ;
+  (* An arrow of the return type is unaffected *)
+  parse "(x: int) -> (y: int) -> int && (x: lgl) -> lgl" |> Option.iter (arrows "curried") ;
+  (* In a field, [&&] and [||] are the intersection and the union *)
+  print_parsed "(f: (y: int) -> int && (y: lgl) -> lgl) -> int" ;
+  print_parsed "(x: null || {a: int}) -> int" ;
+  (* They are also the connectives of regular types *)
+  let ty s = Rstt_repl.IO.parse_type s |> build in
+  print "ty" (ty "(x: int) -> int && (x: lgl) -> lgl") ;
+  (* [{a: int} | (null && null)] would be [{a: int} | null] *)
+  print "ty-prec" (ty "{a: int} | null && null") ;
+  (* The label variables of an arrow are local to it: each arrow is
+     specialized on its own *)
+  let spec name s arg =
+    match parse s with None -> () | Some t -> print_spec name t arg in
+  spec "local" "(b: #k) -> {#k: int} && (b: int) -> int" (call [str "foo"]) ;
+  [%expect {|
+    two: 2 arrow(s)
+    three: 3 arrow(s)
+    (x: int) -> int && (x: lgl) -> lgl: ((x: int) -> int) & ((x: lgl) ->
+    lgl)
+    curried: 2 arrow(s)
+    (f: (y: int) -> int && (y: lgl) -> lgl) -> int: (f: ((y: int) -> int) &
+    ((y: lgl) -> lgl)) ->
+    int
+    (x: null || {a: int}) -> int: (x: { a: int } | null) ->
+    int
+    ty: ((x: int) -> int) & ((x: lgl) ->
+    lgl)
+    ty-prec: null
+    local: ((b: "foo") -> { foo: int }) & ((b: int) ->
+    int)
     |}]

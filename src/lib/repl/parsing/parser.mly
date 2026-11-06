@@ -182,7 +182,7 @@ let split_classes_elts lst =
 %token LPAREN RPAREN LBRACE RBRACE ALPAREN
 %token LBRACKET RBRACKET LLBRACKET RRBRACKET
 %token LEQ GEQ LT GT
-%token TOR TAND TNEG TDIFF
+%token TOR TAND TNEG TDIFF TTOR TTAND
 %token EOF
 
 %start<program> program
@@ -190,6 +190,8 @@ let split_classes_elts lst =
 %start<Ast.funsig> funsig_main
 %start<command> command
 
+%left TTOR
+%left TTAND
 %right ARROW CARROW
 %left TOR
 %left TAND
@@ -262,8 +264,15 @@ tally:
 ty_main:
 | ty=ty EOF { reg ty }
 
+(* A signature is an intersection of arrows, written with [&&] (whose
+   precedence is lower than the one of [->]). *)
 funsig_main:
-| dom=arg ARROW ret=ty EOF { { dom ; ret } }
+| arrows=separated_nonempty_list(TTAND, funsig_arrow) EOF { arrows }
+
+funsig_arrow:
+| dom=arg ARROW ret=simple_ty { { dom ; ret } }
+| dom=arg ARROW ret=simple_ty WHERE ts=separated_nonempty_list(AND, param_type_def)
+  { { dom ; ret=FRegular (TWhere (reg ret, ts)) } }
 
 classes:
 | LT elts=separated_list(COMMA, classes_elt) GT
@@ -317,9 +326,17 @@ rvar_formula:
 | TNEG d=rvar_formula { rv_neg d }
 
 ty:
-| ty=simple_ty { ty }
-| ty=simple_ty WHERE ts=separated_nonempty_list(AND, param_type_def)
+| ty=bool_ty { ty }
+| ty=bool_ty WHERE ts=separated_nonempty_list(AND, param_type_def)
   { FRegular (TWhere (reg ty, ts)) }
+
+(* [&&] and [||] are the intersection and the union, with a precedence lower
+   than the one of [->] (e.g. [a -> b && c -> d] is the intersection of two
+   arrows). *)
+bool_ty:
+| ty=simple_ty { ty }
+| ty1=bool_ty TTOR ty2=bool_ty { FRegular (TCup (reg ty1, reg ty2)) }
+| ty1=bool_ty TTAND ty2=bool_ty { FRegular (TCap (reg ty1, reg ty2)) }
 
 %inline param_type_def:
 | name=ID EQUAL t=simple_ty { (name, reg t) }
@@ -372,7 +389,7 @@ atomic_ty:
                       named_tl'=reg named_tl' })
 }
 | a=arg { FRegular (reg_arg a) }
-| LBRACKET lst=separated_list(COMMA, simple_ty) RBRACKET
+| LBRACKET lst=separated_list(COMMA, bool_ty) RBRACKET
 { FRegular (TTuple (List.map reg lst)) }
 (* C stuff *)
 | STAR t=atomic_ty { FRegular (TCPtr (reg t)) }
@@ -401,10 +418,10 @@ cstr:
 | str=STRING { CStrSingl str }
 
 %inline lst_elt:
-| LPAREN lbl=SYMID COLON t=simple_ty g=RPAREN_GROUP { `LstRep (g, lbl, t) }
-| lbl=SYMID COLON t=simple_ty { `LstSym (lbl, t) }
-| lbl=label COLON t=simple_ty { `LstNamed (lbl, t) }
-| ty=simple_ty { `LstTl ty }
+| LPAREN lbl=SYMID COLON t=bool_ty g=RPAREN_GROUP { `LstRep (g, lbl, t) }
+| lbl=SYMID COLON t=bool_ty { `LstSym (lbl, t) }
+| lbl=label COLON t=bool_ty { `LstNamed (lbl, t) }
+| ty=bool_ty { `LstTl ty }
 
 (* Field names may be any identifier, including keywords *)
 label:
@@ -416,17 +433,17 @@ label:
 | TT { "tt" } | FF { "ff" } | EPTR_ANY { "externalptr" }
 
 arg_elt2:
-| lbl=label COLON t=simple_ty { ArgNamed (lbl, t) }
-| t=simple_ty { ArgPos t }
-| ELLIPSIS COLON ty=simple_ty { ArgTail (ty, ty) }
-| ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { ArgTail (ty1, ty2) }
+| lbl=label COLON t=bool_ty { ArgNamed (lbl, t) }
+| t=bool_ty { ArgPos t }
+| ELLIPSIS COLON ty=bool_ty { ArgTail (ty, ty) }
+| ELLIPSIS COLON LPAREN ty1=bool_ty COMMA ty2=bool_ty RPAREN { ArgTail (ty1, ty2) }
 
 arg_elt:
-| lbl=label COLON t=simple_ty { ArgNamed (lbl, t) }
-| LPAREN lbl=SYMID COLON t=simple_ty g=RPAREN_GROUP { ArgRep (g, lbl, t) }
-| ELLIPSIS COLON ty=simple_ty { ArgTail (ty, ty) }
-| ELLIPSIS COLON LPAREN ty1=simple_ty COMMA ty2=simple_ty RPAREN { ArgTail (ty1, ty2) }
-| lbl=SYMID COLON t=simple_ty { ArgSym (lbl, t) }
+| lbl=label COLON t=bool_ty { ArgNamed (lbl, t) }
+| LPAREN lbl=SYMID COLON t=bool_ty g=RPAREN_GROUP { ArgRep (g, lbl, t) }
+| ELLIPSIS COLON ty=bool_ty { ArgTail (ty, ty) }
+| ELLIPSIS COLON LPAREN ty1=bool_ty COMMA ty2=bool_ty RPAREN { ArgTail (ty1, ty2) }
+| lbl=SYMID COLON t=bool_ty { ArgSym (lbl, t) }
 
 prim:
 | LPAREN p=prim RPAREN { p }

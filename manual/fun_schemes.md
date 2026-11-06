@@ -33,14 +33,26 @@ The document is organised as follows.
 
 ### Signatures
 
-A scheme is parsed by `Rstt_repl.IO.parse_funsig` and must be a *single* arrow
-whose domain is an argument list:
+A scheme is parsed by `Rstt_repl.IO.parse_funsig`. It is an arrow whose domain
+is an argument list:
 
 ```
 (x: int, y: lgl) -> CHR
 (x: int, ...: any, y: lgl) -> CHR
 (x: int, ...: (any, any), y: lgl) -> CHR
 ```
+
+or an intersection of such arrows, separated by `&&`:
+
+```
+(x: int) -> int && (x: lgl) -> lgl
+```
+
+`&&` and `||` are the intersection and the union, as `&` and `|`, but with a
+precedence lower than the one of `->`, so that arrows can be intersected without
+parentheses. They can be used in any type. The arrows of a scheme share their
+type variables, but their label variables and groups are local to each of them:
+`specialize` specializes each arrow on its own.
 
 `...:` introduces the two tails of `Arg.atom` (`pos_tl` and `named_tl`); the
 parameters written before it are *positional-or-named* (`pos_named`), the ones

@@ -16,7 +16,9 @@ type ('v,'r,'i) ty =
 
 type ('v,'r,'i) arg = (label, ('v,'r,'i) ty) Arg.atom
 
-type ('v,'r,'i) t = { dom: ('v,'r,'i) arg ; ret: ('v,'r,'i) ty }
+type ('v,'r,'i) arrow = { dom: ('v,'r,'i) arg ; ret: ('v,'r,'i) ty }
+
+type ('v,'r,'i) t = ('v,'r,'i) arrow list
 
 module StrMap = Map.Make(String)
 module StrSet = Set.Make(String)
@@ -64,7 +66,7 @@ let repetition g key body =
 
 (* === Resolution of identifiers === *)
 
-let resolve env t =
+let resolve_arrow env t =
   let env = ref env in
   let regular t =
     let env', t = Builder.resolve !env t in
@@ -91,6 +93,9 @@ let resolve env t =
   let ret = aux ret in
   !env, { dom ; ret }
 
+(* The arrows are resolved in turn, so that they share their type variables. *)
+let resolve env t = List.fold_left_map resolve_arrow env t
+
 (* === Conversion to a regular type === *)
 
 exception Not_regular of string
@@ -116,8 +121,13 @@ let regular_arg polymorphic a =
   let a = Arg.map_atom regular_label regular_ty a in
   if polymorphic then Builder.TPolyArg a else Builder.TArg a
 
-let regular_sig polymorphic { dom ; ret } =
+let regular_arrow polymorphic { dom ; ret } =
   Builder.TArrow (regular_arg polymorphic dom, regular_ty ret)
+
+let regular_sig polymorphic t =
+  match List.map (regular_arrow polymorphic) t with
+  | [] -> invalid_arg "A signature must have at least one arrow."
+  | a::arrows -> List.fold_left (fun t a -> Builder.TCap (t, a)) a arrows
 
 let is_regular_ty t =
   match regular_sig false t with
@@ -544,7 +554,7 @@ let instantiate t assign inst =
               named = List.map snd named ; named_tl = inst_ty named_tl } in
   { dom ; ret = inst_ty t.ret }
 
-let specialize t arg =
+let specialize_arrow t arg =
   (* Each atom of the argument is solved independently: only what all of them
      agree on is committed. *)
   let sols = Arg.destruct arg |> List.map (fun elt ->
@@ -575,3 +585,7 @@ let specialize t arg =
       | groups -> build (groups@dropped)
   in
   build []
+
+(* Each arrow is specialized on its own: the label variables and the groups
+   of an arrow are local to it. *)
+let specialize t arg = List.map (fun a -> specialize_arrow a arg) t

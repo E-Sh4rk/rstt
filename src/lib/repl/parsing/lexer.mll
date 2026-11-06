@@ -65,7 +65,7 @@ rule token = parse
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE } | "@(" { ALPAREN }
 | "[" { LBRACKET } | "]" { RBRACKET } | "[[" { LLBRACKET } | "]]" { RRBRACKET }
 | "<=" { LEQ } | ">=" { GEQ } | "<" { LT } | ">" { GT }
-| '|' { TOR } | '&' { TAND } | '~' { TNEG } | '\\' { TDIFF }
+| "||" { TTOR } | "&&" { TTAND } | '|' { TOR } | '&' { TAND } | '~' { TNEG } | '\\' { TDIFF }
 | eof { EOF }
 | _ { raise (Errors.E_Lexer ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
 
