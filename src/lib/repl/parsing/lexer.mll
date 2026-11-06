@@ -45,7 +45,7 @@ rule token = parse
 | "v("  { VP } | s as str { SHORT str } | "p("  { P } | "s(" { S } | "c(" { C }
 | "INT1(" { PI } | "DBL1(" { PD } | "CHR1(" { PC } | "NUM1(" { PN }
 | "INT("  { PI } | "DBL("  { PD } | "CHR("  { PC } | "NUM("  { PN }
-| "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS }
+| "c_int(" { PCI } | "c_int_na(" { PCINA } | "c_string(" { PCS } | "c_ptr(" { PCP }
 | "tt" { TT } | "ff" { FF }
 | "externalptr(" { EPTR } | "externalptr" { EPTR_ANY }
 | "with" { WITH } | "where" { WHERE } | "and" { AND }

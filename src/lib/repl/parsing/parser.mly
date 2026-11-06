@@ -176,7 +176,7 @@ let split_classes_elts lst =
 %token TYPE CLASS SET WHERE AND
 %token BREAK COMMA EQUAL COLON SEMICOLON ELLIPSIS
 %token C VP (*VB*) P S HAT ARROW CARROW STAR WITH
-%token PI PD PC PN PCI PCINA PCS
+%token PI PD PC PN PCI PCINA PCS PCP
 %token TT FF EPTR_ANY EPTR
 %token QUESTION_MARK DPOINT DOT
 %token LPAREN RPAREN LBRACE RBRACE ALPAREN
@@ -376,6 +376,7 @@ atomic_ty:
 { FRegular (TTuple (List.map reg lst)) }
 (* C stuff *)
 | STAR t=atomic_ty { FRegular (TCPtr (reg t)) }
+| PCP t=ty RPAREN { FRegular (TCPtrAll (reg t)) }
 | C i=cint RPAREN { FRegular (TCConst i) }
 | C str=cstr RPAREN { FRegular (TCConst str) }
 | PCI id=VARID RPAREN { FRegular (TCConst (CIntVar id)) }

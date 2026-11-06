@@ -47,7 +47,8 @@ and ('v,'r,'i) t =
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t
 | TCConst of 'v cconst
-| TCPtr of ('v,'r,'i) t
+| TCPtr of ('v,'r,'i) t (* *T: a pointer to T, C strings excluded *)
+| TCPtrAll of ('v,'r,'i) t (* c_ptr(T): a pointer to T, C strings included *)
 | TCArrow of ('v,'r,'i) t * ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 

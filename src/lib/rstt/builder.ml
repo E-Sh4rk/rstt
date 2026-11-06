@@ -97,7 +97,8 @@ and ('v,'r,'i) t =
 | TAttr of (('v,'r,'i) t, 'r classes) Attr.atom
 | TStruct of ('v,'r,'i) t (* Means that the parameter should not be packed in an Attr container *)
 | TCConst of 'v cconst
-| TCPtr of ('v,'r,'i) t
+| TCPtr of ('v,'r,'i) t (* *T: a pointer to T, C strings excluded *)
+| TCPtrAll of ('v,'r,'i) t (* c_ptr(T): a pointer to T, C strings included *)
 | TCArrow of ('v,'r,'i) t * ('v,'r,'i) t
 | TWhere of ('v,'r,'i) t * ('i * ('v,'r,'i) t) list
 
@@ -155,6 +156,7 @@ let map f fp fc t =
     | TStruct t -> TStruct (aux t)
     | TCConst c -> TCConst c
     | TCPtr t -> TCPtr (aux t)
+    | TCPtrAll t -> TCPtrAll (aux t)
     | TCArrow (t1, t2) -> TCArrow (aux t1, aux t2)
     | TWhere (t, lst) -> TWhere (aux t, lst |> List.map (fun (id, t) -> id, aux t))
     in
@@ -277,6 +279,7 @@ let rec build_struct env t =
   | TExtPtr' (t, tag) -> ExternalPtr.mk ?tag:(Option.map (build env) tag) (build env t)
   | TCConst c -> build_cconst c
   | TCPtr t -> Cptr.mk_nonstring (build env t)
+  | TCPtrAll t -> Cptr.mk (build env t)
   | TOption _ -> invalid_arg "Unexpected optional type"
   | TAttrAny | TAttr _ -> invalid_arg "Unexpected attributes"
   | TStruct _ -> invalid_arg "Unexpected struct"
@@ -311,6 +314,7 @@ and build env t =
   | TPrim p -> build_prim p
   | TCConst c -> build_cconst c
   | TCPtr t -> Cptr.mk_nonstring (build env t)
+  | TCPtrAll t -> Cptr.mk (build env t)
   | TTuple lst -> Descr.mk_tuple (List.map (build env) lst) |> Ty.mk_descr
   | TArg a -> Arg.map_atom Fun.id (build_field env) a |> Arg.mk
   | TPolyArg a -> Arg.map_atom Fun.id (build_field env) a |> Arg.mk_polymorphic
@@ -478,6 +482,7 @@ let resolve env t =
     | TStruct t -> TStruct (aux tids t)
     | TCConst c -> TCConst (resolve_cconst env c)
     | TCPtr t -> TCPtr (aux tids t)
+    | TCPtrAll t -> TCPtrAll (aux tids t)
     | TCArrow (t1,t2) -> TCArrow (aux tids t1, aux tids t2)
     | TWhere (t, eqs) ->
       let eqs = eqs |> List.map (fun (x,t) -> x,TId.create (),t) in

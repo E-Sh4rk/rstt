@@ -1,5 +1,8 @@
 open Sstt
 
+val mk : Ty.t -> Ty.t
+(* [mk t]: a pointer, possibly null, whose target has type [t], C strings
+   included. *)
 val mk_nonstring : Ty.t -> Ty.t
 val singl_string : string -> Ty.t
 val var_string : Var.t -> Ty.t
