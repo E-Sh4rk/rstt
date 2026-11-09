@@ -7,6 +7,7 @@ type ('a, 'c) t = ('a, 'c) line list
 val tag : Tag.t
 val mk : (Ty.t, Ty.t) atom -> Ty.t
 val mk_content : Ty.t -> Ty.t
+val mk_content_noclass : Ty.t -> Ty.t
 val mk_content_noattr : Ty.t -> Ty.t
 val mk_line : (Ty.t,Ty.t) line -> Ty.t
 val any : Ty.t

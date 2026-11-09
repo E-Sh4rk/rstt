@@ -21,6 +21,8 @@ let mk { content ; classes ; attrs } =
   { Records.Atom.bindings ; tail=Ty.F.any } |> Descr.mk_record |> Ty.mk_descr |> add_tag
 let mk_content content =
   mk { content ; classes=Classes.any ; attrs=Lst.any }
+let mk_content_noclass content =
+  mk { content ; classes=Classes.noclass ; attrs=Lst.any }
 let mk_content_noattr content =
   mk { content ; classes=Classes.noclass ; attrs=Lst.empty }
 let any_d =
