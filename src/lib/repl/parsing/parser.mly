@@ -434,12 +434,14 @@ label:
 
 arg_elt2:
 | lbl=label COLON t=bool_ty { ArgNamed (lbl, t) }
+| DOT COLON t=bool_ty { ArgNamed (".", t) }  (* R allows a parameter named `.` *)
 | t=bool_ty { ArgPos t }
 | ELLIPSIS COLON ty=bool_ty { ArgTail (ty, ty) }
 | ELLIPSIS COLON LPAREN ty1=bool_ty COMMA ty2=bool_ty RPAREN { ArgTail (ty1, ty2) }
 
 arg_elt:
 | lbl=label COLON t=bool_ty { ArgNamed (lbl, t) }
+| DOT COLON t=bool_ty { ArgNamed (".", t) }  (* R allows a parameter named `.` *)
 | LPAREN lbl=SYMID COLON t=bool_ty g=RPAREN_GROUP { ArgRep (g, lbl, t) }
 | ELLIPSIS COLON ty=bool_ty { ArgTail (ty, ty) }
 | ELLIPSIS COLON LPAREN ty1=bool_ty COMMA ty2=bool_ty RPAREN { ArgTail (ty1, ty2) }
