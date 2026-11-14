@@ -303,7 +303,8 @@ and build env t =
     let eqs = eqs |> List.map (fun (x,t) -> x,Var.mk "_",t) in
     let env = List.fold_left (fun env (x,v,_) -> TIdMap.add x (Ty.mk_var v) env) env eqs in
     let t, eqs = build env t, List.map (fun (_,v,t) -> v,build env t) eqs in
-    let s = Ty.of_eqs eqs |> Subst.of_list1 in
+    let vars, tys = Ty.of_eqs eqs |> List.split in
+    let s = List.combine vars (Ty.factorize_many tys) |> Subst.of_list1 in
     Subst.apply s t
   (* Explicit attr *)
   | TAttr a -> Attr.map_atom (build_struct env) build_classes a |> Attr.mk

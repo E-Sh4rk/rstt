@@ -50,7 +50,7 @@ let simpl_descr d =
   construct (b, comps)
 let simplify_vdescr vd = VDescr.map simpl_descr vd
 let simplify_vdescr vd = vd |> simplify_vdescr |> Transform.simplify_vdescr
-let simplify t = Transform.transform simplify_vdescr t
+let simplify t = Transform.transform simplify_vdescr t |> Ty.factorize
 
 (* ===== TALLY ===== *)
 
