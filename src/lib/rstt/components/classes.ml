@@ -149,12 +149,10 @@ let record_to_atom r =
   let bindings = r.bindings |> LabelMap.to_list in
   let ty_of_field fty =
     let dnf = Ty.F.dnf fty in
-    let aux (ps,ns,leaf) =
-      match ps, ns with
-      | [], [] -> Ty.O.get leaf |> Ty.O.Atom.get
-      | _, _ -> Ty.empty
-      in
-    List.map aux dnf |> Ty.disj
+    let leaf (_,_,leaf) = Ty.O.get leaf |> Ty.O.Atom.get in
+    match List.filter (fun (ps,ns,_) -> ps = [] && ns = []) dnf with
+    | [] -> List.map leaf dnf |> Ty.disj
+    | consts -> List.map leaf consts |> Ty.disj
   in
   (* TODO: class fields that mention row variables are approximated *)
   let values = bindings |> List.map (fun (lbl, fty) ->
