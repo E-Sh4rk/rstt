@@ -90,16 +90,19 @@ let print prec assoc fmt t =
     let print_attrs fmt t =
       Pp.print_struct_descr_ctx Prec.max_prec Prec.NoAssoc fmt t
     in
+    let attr_info = (Prec.fs "", 6, Prec.NoAssoc) in
     let anyclass = Ty.leq Classes.any classes.Printer.ty in
     let anyattr = Ty.leq Lst.any attrs.Printer.ty in
     if anyclass && anyattr && is_descr_attr_content content then
       Format.fprintf fmt "%a" (Pp.print_struct_descr_ctx prec assoc) content
     else if anyattr then
-      Format.fprintf fmt "%a%a" print_opt_content content print_classes classes
+      Prec.fprintf prec assoc attr_info fmt "%a%a"
+        print_opt_content content print_classes classes
     else if anyclass then
-      Format.fprintf fmt "%a with %a" print_content content print_attrs attrs
+      Prec.fprintf prec assoc attr_info fmt "%a with %a"
+        print_content content print_attrs attrs
     else
-      Format.fprintf fmt "%a%a with %a"
+      Prec.fprintf prec assoc attr_info fmt "%a%a with %a"
         print_opt_content content print_classes classes print_attrs attrs
   in
   Pp.print_non_empty_dnf ~cmp ~any:"attr" print_atom prec assoc fmt t

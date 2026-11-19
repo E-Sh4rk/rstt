@@ -163,11 +163,14 @@ let%expect_test "tests" =
     unk7: <?circle, `a>
     unk8: <?(circle \ @area), `a>
     unk9: <~@print, ...>
+    unk10: <~@print, `a>
     attr1: INT with { dim: INT, any }
     attr2: INT with { dim: INT }
     attr3: INT with ({ dim: INT, any } & ~{ dim: INT })
     attr4: true
     attr5: true
+    attr6: @((INT<c>)?)
+    attr7: @((INT with { dim: INT })?)
     rec1: x1 where x1 = dbl | { x1 }
     rec2: false
     rec3: true

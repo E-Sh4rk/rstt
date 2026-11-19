@@ -132,12 +132,15 @@ class "my class" = @print ;;
 "unk7": <?circle, `a> ;;
 "unk8": <?(circle \ @area), `a> ;;
 "unk9": <?df, ~@print, ...> ;;
+"unk10": <~@print, . | `a> & <`a> ;;
 
 "attr1": INT with { dim:INT, any } ;;
 "attr2": INT with { dim:INT } ;;
 "attr3": INT with { dim:INT, any } \ INT with { dim:INT } ;;
 "attr4": 42L<> with {  } <= INT ;;
 "attr5": INT <= INT with { any } ;;
+"attr6": @( (INT<c>)? ) ;;
+"attr7": @( (INT with { dim:INT })? ) ;;
 
 "rec1": a where a = { a } | dbl ;;
 "rec2": a where a = { a } | dbl <= a where a = { a } | int ;;
