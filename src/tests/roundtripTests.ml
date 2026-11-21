@@ -1,6 +1,6 @@
 (* Property-based tests of the printer against the parser: printing a type and
-   parsing the text back should give the same type, and printing that type
-   again the same text.
+   parsing the text back should give the same type, and so should printing and
+   parsing that type again.
 
    The types are generated as the parser's AST ([Rstt_repl.Ast.ty], i.e.
    [Builder.t] over names), so that they cover what the printer can be asked
@@ -9,7 +9,14 @@
 
    1. [print (build ast)] parses;
    2. the type it parses to is equivalent to [build ast];
-   3. printing that type gives the same text.
+   3. printing that type gives a text that parses to an equivalent type.
+
+   Property 3 used to be stronger: printing that type gives the same text.
+   It does not hold, and is left aside (see [round_trip]): how sstt's printer
+   splits a type into nodes (which parts it groups, writes as a difference,
+   or names [lgl1]) depends on how the type is represented, i.e. on how it
+   was built, not only on what it means. So the same type can print as
+   [CHR1 | INT1 \ ^INT1 | RAW1] or [(CHR1 | RAW1) | INT1 \ ^INT1].
 
    The argument lists of signatures get a fresh identity each time they are
    built ([Arg.mk]), which the printer does not print: equivalence (2) is
@@ -170,7 +177,8 @@ type outcome =
   | Unprintable of string                    (* the printer raised *)
   | Unparsable of string * string            (* printed text, error *)
   | Different of string * string             (* printed, reprinted *)
-  | Unstable of string * string              (* printed, reprinted *)
+  | Unstable of string * string              (* printed, reprinted, which does not
+                                                parse to an equivalent type *)
 
 let round_trip (a : ast) =
   declare_classes () ;
@@ -186,10 +194,17 @@ let round_trip (a : ast) =
       | t1, env ->
         let p2 = print env t1 in
         let t0p, env = Ast.build_ty env (poly_args a) in
-        let t1p, _ = Ast.build_ty env (poly_args a1) in
+        let t1p, env = Ast.build_ty env (poly_args a1) in
         if not (equiv t0p t1p) then Different (p1, p2)
-        else if p1 <> p2 then Unstable (p1, p2)
-        else Ok
+        else
+          match IO.parse_type p2 with
+          | exception _ -> Unstable (p1, p2)
+          | a2 ->
+            match Ast.build_ty env (poly_args a2) with
+            | exception _ -> Unstable (p1, p2)
+            | t2p, _ -> if not (equiv t1p t2p) then Unstable (p1, p2) else Ok
+          (* The text itself is not stable (cf. the header):
+             else if p1 <> p2 then Unstable (p1, p2) *)
 
 (* A generated type is kept only if it builds: some combinations are not
    types (e.g. a recursive definition that is not well-founded). *)
@@ -208,7 +223,8 @@ let describe a =
     | Unprintable e -> shown ^ "\n  printing failed: " ^ e
     | Unparsable (p, e) -> p ^ "\n  does not parse: " ^ e
     | Different (p1, p2) -> p1 ^ "\n  reparses to a different type, printed: " ^ p2
-    | Unstable (p1, p2) -> p1 ^ "\n  reprints as: " ^ p2
+    | Unstable (p1, p2) ->
+      p1 ^ "\n  reprints as: " ^ p2 ^ ", which does not parse back to the same type"
 
 let test =
   QCheck2.Test.make ~name:"print then parse is the identity" ~count:500 ~print:describe
