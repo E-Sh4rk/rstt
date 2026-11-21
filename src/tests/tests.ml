@@ -67,6 +67,10 @@ let%expect_test "tests" =
     vec28: NUM1 \ 42
     vec29: LGL1 | RAW1 | ^DBL1 \ (..)
     vec30: lgl1
+    vec31: (5..)
+    vec32: true
+    vec33: (1..5)
+    vec34: true
     lst1: true
     lst2: true
     lst3: false
@@ -191,4 +195,7 @@ let%expect_test "tests" =
     c15: c_ptr
     c16: c_int_na & c_int_na('a)
     c17: c_int_na \ c_int & c_int_na('a)
+    c18: c(43..)
+    c19: c(1..5)
+    c20: true
     |}]

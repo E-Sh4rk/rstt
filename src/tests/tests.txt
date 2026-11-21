@@ -49,6 +49,10 @@ class "my class" = @print ;;
 "vec28": NUM1 \ 42 ;;
 "vec29": dbl1 \ NUM1 ;;
 "vec30": int1 \ NUM1 ;;
+"vec31": (5..) ;;
+"vec32": (5..) = (5...) | (5L..) ;;
+"vec33": (1..5) ;;
+"vec34": (1...5.) <= (1..5) ;;
 
 "lst1": { v(INT) } <= { any } ;;
 "lst2": { a:v1(42L), b:v1(43L), v(INT) } <= { v(INT) } ;;
@@ -163,3 +167,6 @@ class "my class" = @print ;;
 "c15": c_ptr | c_string ;;
 "c16": c_int_na('a) ;;
 "c17": c_int_na('a) \ c_int('a) ;;
+"c18": c(43..) ;;
+"c19": c(1..5) ;;
+"c20": c_int \ c(42) = c(..41) | c(43..) ;;
