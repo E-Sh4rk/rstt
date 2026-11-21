@@ -69,6 +69,15 @@ let prune_printer_descr ~any d =
         end
       (* [d1 \ d2] with [d2] outside of [any]: [d1]. *)
       | Binop (Diff, d1, d2) when disjoint d2 -> (aux d1).op
+      (* [d1 \ (a | b)] with [b] outside of [any]: [d1 \ a]. *)
+      | Binop (Diff, d1, ({ Printer.op = Varop (Cup, lst) ; _ } as d2)) ->
+        begin match List.filter (fun d -> not (disjoint d)) lst with
+        | [ d ] -> Binop (Diff, aux d1, d)
+        | lst' when lst' <> [] && List.length lst' < List.length lst ->
+          let ty = List.fold_left (fun acc d -> Ty.cup acc d.Printer.ty) Ty.empty lst' in
+          Binop (Diff, aux d1, { Printer.op = Varop (Cup, lst') ; ty })
+        | _ -> Binop (Diff, aux d1, d2)
+        end
       | Binop (Diff, d1, d2) -> Binop (Diff, aux d1, d2)
       (* [~(a | b)] with [b] outside of [any]: [~a]. *)
       | Unop (Neg, ({ Printer.op = Varop (Cup, lst) ; _ } as d')) ->

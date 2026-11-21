@@ -196,6 +196,10 @@ let%expect_test "tests" =
     attr5: true
     attr6: @((INT<c>)?)
     attr7: @((INT with { dim: INT })?)
+    attr8: INT & ~<df>
+    attr9: INT & ~<>
+    attr10: [{  } & ~<square>]
+    attr11: true
     rec1: x1 where x1 = dbl | { x1 }
     rec2: false
     rec3: true

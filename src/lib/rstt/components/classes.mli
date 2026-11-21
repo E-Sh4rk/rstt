@@ -25,3 +25,7 @@ val any : Ty.t
 val noclass : Ty.t
 val map_atom : (('a -> 'b) -> 'a atom -> 'b atom)
 val destruct : Ty.t -> RowVar.t atom
+
+val rectangles : Ty.t -> (Ty.t * Ty.t list) list
+(** [rectangles ty] is [ty] as a union of lines, each a single record minus
+    records: [atom] above describes one record only. *)

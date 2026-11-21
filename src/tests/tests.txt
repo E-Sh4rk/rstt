@@ -166,6 +166,10 @@ class "my class" = @print ;;
 "attr5": INT <= INT with { any } ;;
 "attr6": @( (INT<c>)? ) ;;
 "attr7": @( (INT with { dim:INT })? ) ;;
+"attr8": INT \ INT<df> ;;
+"attr9": INT \ INT<> ;;
+"attr10": [{ } \ <square>] ;;
+"attr11": INT \ INT<df> = INT & ~<df> ;;
 
 "rec1": a where a = { a } | dbl ;;
 "rec2": a where a = { a } | dbl <= a where a = { a } | int ;;

@@ -52,9 +52,40 @@ let record_to_atom r =
 let extract t : (Ty.t, Ty.t) t =
   extract_records t |> List.map
     (fun (ps, ns) -> List.map record_to_atom ps, List.map record_to_atom ns)
+(* The same lines, with atoms whose classes are a single record, which the
+   printer can write ([Classes.rectangles]): [{ content ; classes = r \ n ;
+   attrs }] is [{ content ; classes = r ; attrs } & ~{ any ; n ; any }]
+   (e.g. [LGL & ~<c, ...>]), and a union of classes a union of atoms. *)
+let with_rectangles (t : (Ty.t, Ty.t) t) : (Ty.t, Ty.t) t =
+  let neg_atom n = { content = Ty.any ; classes = n ; attrs = Lst.any } in
+  let and_dnf d1 d2 =
+    d1 |> List.concat_map (fun (ps1, ns1) ->
+        d2 |> List.map (fun (ps2, ns2) -> ps1 @ ps2, ns1 @ ns2)) in
+  let rectangles a =
+    match Classes.rectangles a.classes with
+    | [ (_, []) ] -> None (* a rectangle already: as is *)
+    | rects -> Some rects
+  in
+  let pos a = match rectangles a with
+    | None -> [ [ a ], [] ]
+    | Some rects ->
+      rects |> List.map (fun (r, ns) -> [ { a with classes = r } ], List.map neg_atom ns)
+  in
+  (* ~(a1 | a2 ...) with ai = r & ~n1 & ~n2 ...: (~r | n1 | n2 ...) & ... *)
+  let neg a = match rectangles a with
+    | None -> [ [], [ a ] ]
+    | Some rects ->
+      rects |> List.map (fun (r, ns) ->
+          ([], [ { a with classes = r } ]) :: List.map (fun n -> [ neg_atom n ], []) ns)
+      |> List.fold_left and_dnf [ [], [] ]
+  in
+  t |> List.concat_map (fun (ps, ns) ->
+      List.map pos ps @ List.map neg ns |> List.fold_left and_dnf [ [], [] ])
+
 let to_t ctx comp =
   let ty = Op.TagComp.as_atom comp |> snd in
-  if Ty.leq ty any_d then Some (extract ty |> map ctx.Printer.build ctx.Printer.build)
+  if Ty.leq ty any_d
+  then Some (extract ty |> with_rectangles |> map ctx.Printer.build ctx.Printer.build)
   else None
 
 let destruct ty = proj_tag ty |> extract
