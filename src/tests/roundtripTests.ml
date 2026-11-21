@@ -226,10 +226,82 @@ let describe a =
     | Unstable (p1, p2) ->
       p1 ^ "\n  reprints as: " ^ p2 ^ ", which does not parse back to the same type"
 
+let gen = Gen.sized_size (Gen.int_bound 3) ty
+let count = 5000
+let seed = 42
+
+(* ===== Report =====
+
+   QCheck stops at the first counterexample. With RSTT_ROUNDTRIP_REPORT set
+   to a file, it goes on to find up to [max_fail] of them, each shrunk, and
+   they are written there as Markdown (for the job summary of the CI), and to
+   [<file>.annotations] one per line (for its error annotations, cf.
+   .github/workflows/test.yml). *)
+
+let report_file =
+  match Sys.getenv_opt "RSTT_ROUNDTRIP_REPORT" with
+  | None | Some "" -> None
+  | Some path -> Some path
+
+let max_fail = if Option.is_some report_file then 50 else 1
+
+let html s =
+  String.to_seq s |> Seq.map (function
+      | '&' -> "&amp;" | '<' -> "&lt;" | '>' -> "&gt;" | '|' -> "&#124;"
+      | '\n' -> " " | c -> String.make 1 c)
+  |> List.of_seq |> String.concat ""
+let code s = "<code>" ^ html s ^ "</code>"
+
+(* A message of a workflow command: one line, [%], [\r] and [\n] escaped. *)
+let command_message s =
+  String.to_seq s |> Seq.map (function
+      | '%' -> "%25" | '\r' -> "%0D" | '\n' -> "%0A" | c -> String.make 1 c)
+  |> List.of_seq |> String.concat ""
+
+(* A failure: its kind, the printed type, and what went wrong. *)
+let failure a =
+  match round_trip a with
+  | Ok -> None
+  | Unprintable e -> Some ("does not print", describe a, e)
+  | Unparsable (p, e) -> Some ("does not parse", p, e)
+  | Different (p1, p2) -> Some ("parses to another type", p1, "reprints as " ^ p2)
+  | Unstable (p1, p2) -> Some ("reprint parses to another type", p1, "reprints as " ^ p2)
+
+let write_report path (res : ast QCheck2.TestResult.t) =
+  let rows, other =
+    match QCheck2.TestResult.get_state res with
+    | Success -> [], None
+    | Failed { instances } ->
+      instances |> List.filter_map (fun (c : ast QCheck2.TestResult.counter_ex) -> failure c.instance)
+      |> List.sort_uniq (fun (_, p1, _) (_, p2, _) ->
+          compare (String.length p1, p1) (String.length p2, p2)), None
+    | Failed_other { msg } -> [], Some msg
+    | Error { instance ; exn ; _ } ->
+      [ "raises an exception", describe instance.instance, Printexc.to_string exn ], None
+  in
+  Out_channel.with_open_text path (fun oc ->
+      Printf.fprintf oc "### Round trip of the printer and the parser\n\n" ;
+      (match rows, other with
+       | [], None -> Printf.fprintf oc "The property test passes (%d cases, seed %d).\n" count seed
+       | [], Some msg -> Printf.fprintf oc "The property test fails: %s\n" (html msg)
+       | rows, _ ->
+         Printf.fprintf oc "%d types fail (seed %d; shrunk; at most %d are looked for).\n\n"
+           (List.length rows) seed max_fail ;
+         Printf.fprintf oc "| Failure | Printed | Details |\n|---|---|---|\n" ;
+         rows |> List.iter (fun (kind, printed, detail) ->
+             Printf.fprintf oc "| %s | %s | %s |\n" kind (code printed) (code detail)))) ;
+  Out_channel.with_open_text (path ^ ".annotations") (fun oc ->
+      rows |> List.iter (fun (kind, printed, detail) ->
+          Printf.fprintf oc "%s\n"
+            (command_message (Printf.sprintf "%s: %s\n%s" kind printed detail))))
+
+(* ===== The test ===== *)
+
 let test =
-  QCheck2.Test.make ~name:"print then parse is the identity" ~count:5000 ~print:describe
-    (Gen.sized_size (Gen.int_bound 3) ty)
+  QCheck2.Test.make_cell ~name:"print then parse is the identity" ~count ~max_fail ~print:describe gen
     (fun a -> QCheck2.assume (buildable a) ; round_trip a = Ok)
 
 let%test_unit "round trip of the printer and the parser" =
-  QCheck2.Test.check_exn ~rand:(Random.State.make [| 42 |]) test
+  let res = QCheck2.Test.check_cell ~rand:(Random.State.make [| seed |]) test in
+  Option.iter (fun path -> write_report path res) report_file ;
+  QCheck2.Test.check_result test res

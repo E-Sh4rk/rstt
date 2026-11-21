@@ -35,5 +35,24 @@ jobs:
           make deps
           make test-deps
 
+      # Also lists all the types that fail the round trip of the printer and
+      # the parser in a report (cf. src/tests/roundtripTests.ml).
       - name: Run tests
+        env:
+          RSTT_ROUNDTRIP_REPORT: ${{ runner.temp }}/roundtrip.md
         run: make test
+
+      # The report in the job summary, and its first failures (GitHub shows
+      # 10 per step) as error annotations, on the run and on the pull request.
+      - name: Report the round trip
+        if: always()
+        env:
+          REPORT: ${{ runner.temp }}/roundtrip.md
+        run: |
+          [ -s "$REPORT" ] || exit 0
+          cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+          file=src/tests/roundtripTests.ml
+          line=$(grep -n 'let%test_unit "round trip of the printer' "$file" | cut -d: -f1)
+          head -n 10 "$REPORT.annotations" | while IFS= read -r message; do
+            echo "::error file=$file,line=${line:-1},title=Round trip of the printer and the parser::$message"
+          done
