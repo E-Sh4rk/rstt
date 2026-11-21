@@ -4,6 +4,17 @@ let is_alphanum = function 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' -> true | _ -> f
 let slugify = String.map (fun c -> if is_alphanum c then c else '_')
 let slugify str = "_"^(slugify str)
 
+(* The identifiers of the lexer ([id] and [dotid]); the keywords it reads
+   apart that are identifiers too are accepted as names by the parser. *)
+let is_ident str =
+  let is_start c = match c with 'a'..'z' | 'A'..'Z' | '_' -> true | _ -> false in
+  let is_char c = is_start c || match c with '0'..'9' | '\'' | '.' -> true | _ -> false in
+  let n = String.length str in
+  let from i = i < n && is_start str.[i] && String.for_all is_char (String.sub str i (n-i)) in
+  from 0 || (n > 0 && str.[0] = '.' && from 1)
+(* [%S] escapes as the lexer reads strings back ([\\ddd] included). *)
+let quote_name str = if is_ident str then str else Printf.sprintf "%S" str
+
 let rec partition_map3 f lst =
   match lst with
   | [] -> [],[],[]

@@ -63,7 +63,7 @@ let print prec assoc fmt t =
     | f -> Printer.print_field_ctx Prec.min_prec Prec.NoAssoc fmt f
   in
   let print_field suffix fmt (str,ty) =
-    Format.fprintf fmt "%s: %a%s" str print_field_ty ty suffix
+    Format.fprintf fmt "%s: %a%s" (Utils.quote_name str) print_field_ty ty suffix
   in
   let print_atom _prec _assoc fmt {bindings;tl} =
     match tl with
