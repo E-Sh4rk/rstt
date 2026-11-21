@@ -84,6 +84,8 @@ let%expect_test "tests" =
     vec34: true
     vec35: true
     vec36: ^CHR1('a) | sym
+    vec37: INT1 \ ^INT1 | INT1 & ~INT1('a)
+    vec38: (CHR1 \ ^CHR1 | CHR1 & ~CHR1('a)) | CLX1 | DBL1 | INT1 | LGL1 | RAW1
     lst1: true
     lst2: true
     lst3: false

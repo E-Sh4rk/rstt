@@ -66,6 +66,8 @@ class "my class" = @print ;;
 "vec34": (1...5.) <= (1..5) ;;
 "vec35": ^INT1('a) = v1(^INT('a)) ;;
 "vec36": ^CHR1('a) | sym ;;
+"vec37": v1(INT \ ^INT('a)) ;;
+"vec38": v1(~^CHR('a)) ;;
 
 "lst1": { v(INT) } <= { any } ;;
 "lst2": { a:v1(42L), b:v1(43L), v(INT) } <= { v(INT) } ;;

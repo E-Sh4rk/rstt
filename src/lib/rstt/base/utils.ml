@@ -137,10 +137,14 @@ let is_singleton f t =
   match t with
   | [{pos=true;prim=[p];pvs=[];nvs=[]}] -> f p
   | _ -> false
+(* Whether printing [t] with the names that feature any value (e.g. [INT],
+   NA included) may leave that value out: a union of literals ([1L | 2L]),
+   or a line with a negated variable ([INT & ~INT('a)], as [INT('a)]
+   features NA too). *)
 let may_not_feature_any f t =
   t |> List.exists (function
-    | {pos=true;prim;_} -> List.for_all f prim
-    | {pos=false;_} -> false
+    | {pos=true;prim;nvs;_} -> nvs <> [] || List.for_all f prim
+    | {pos=false;nvs;_} -> nvs <> []
   )
 
 let line_to_atoms { pos ; prim ; pvs ; nvs } =
