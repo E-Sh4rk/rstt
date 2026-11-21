@@ -380,6 +380,7 @@ atomic_ty:
 | HAT s=SHORT { FRegular (TVec (Vector (PHat (parse_builtin_prim s)))) }
 | s=SLEN { let (s,i,_) = s in assert_one i ; FRegular (TVec (Scalar (parse_builtin_prim s))) }
 | HAT s=SLEN { let (s,i,_) = s in assert_one i ; FRegular (TVec (Scalar (PHat (parse_builtin_prim s)))) }
+| HAT p=prim_var { FRegular (TVec (Scalar (PHat p))) } (* [^INT1('a)] *)
 // | VB l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
 // | s=SBRACKET l=prim RBRACKET {TVec (VarLength (l,parse_builtin_prim s)) }
 // | HAT s=SBRACKET l=prim RBRACKET { TVec (VarLength (l,PHat (parse_builtin_prim s))) }
@@ -493,6 +494,9 @@ prim_atom:
 | LPAREN DPOINT i2=INT RPAREN
 { let i1,i2 = None, Some (Z.to_int i2) in PNum' (i1,i2) }
 (* Vars *)
+| p=prim_var { p }
+
+prim_var:
 | PC id=VARID RPAREN { PChrVar id }
 | PI id=VARID RPAREN { PIntVar id }
 | PD id=VARID RPAREN { PDblVar id }

@@ -26,6 +26,9 @@ class "my class" = @print ;;
 "tuple9": any --> any <= arrow ;;
 "tuple10": [tt, [null, null]] ;;
 "tuple11": [ [null], tt] <= [ [any], lgl] ;;
+"tuple12": empty -> any ;;
+"tuple13": ~(empty -> any) ;;
+"tuple14": (empty -> any) | null ;;
 
 "vec1": INT1 | LGL | v1(RAW) ;;
 "vec2": v1(^vec) = ^vec1 ;;
@@ -61,6 +64,8 @@ class "my class" = @print ;;
 "vec32": (5..) = (5...) | (5L..) ;;
 "vec33": (1..5) ;;
 "vec34": (1...5.) <= (1..5) ;;
+"vec35": ^INT1('a) = v1(^INT('a)) ;;
+"vec36": ^CHR1('a) | sym ;;
 
 "lst1": { v(INT) } <= { any } ;;
 "lst2": { a:v1(42L), b:v1(43L), v(INT) } <= { v(INT) } ;;
@@ -73,6 +78,8 @@ class "my class" = @print ;;
 "lst9": { "a b":INT, "$date":CHR, "type":lgl } ;;
 "lst10": { "a":INT } = { a:INT } ;;
 "lst11": { "x":"y", "z" } ;;
+"lst12": { y: [LGL], x: CHR1 } ;;
+"lst13": (x: [null, CHR1], y: ([c_int, lang])?) ;;
 
 "eptr1": externalptr ;;
 "eptr2": externalptr \ externalptr(empty) ;;
@@ -182,3 +189,7 @@ class "my class" = @print ;;
 "c18": c(43..) ;;
 "c19": c(1..5) ;;
 "c20": c_int \ c(42) = c(..41) | c(43..) ;;
+"c21": *(null<>) ;;
+"c22": *null<> = (*null)<> ;;
+"c23": *'a ;;
+"c24": *(~(c_string | list)) ;;

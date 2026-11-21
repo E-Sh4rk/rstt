@@ -60,7 +60,7 @@ let print prec assoc fmt t =
   let print_field_ty fmt f =
     match f with
     | f when is_absent f -> Format.fprintf fmt "absent"
-    | f -> Printer.print_field_ctx Prec.min_prec Prec.NoAssoc fmt f
+    | f -> Pp.print_field_ctx Prec.min_prec Prec.NoAssoc fmt f
   in
   let print_field suffix fmt (str,ty) =
     Format.fprintf fmt "%s: %a%s" (Utils.quote_name str) print_field_ty ty suffix

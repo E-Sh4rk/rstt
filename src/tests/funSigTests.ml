@@ -465,7 +465,7 @@ let%expect_test "intersections of arrows" =
     (f: (y: int) -> int && (y: lgl) -> lgl) -> int: (f: ((y: int) -> int) &
     ((y: lgl) -> lgl)) ->
     int
-    (x: null || {a: int}) -> int: (x: { a: int } | null) ->
+    (x: null || {a: int}) -> int: (x: null | { a: int }) ->
     int
     ty: ((x: int) -> int) & ((x: lgl) ->
     lgl)

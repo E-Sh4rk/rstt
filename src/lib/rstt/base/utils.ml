@@ -49,6 +49,7 @@ let map_tag_content f tag d =
 
 let prune_printer_descr ~any d =
   let any_d = {Printer.ty=any ; op=Printer.Builtin Printer.Any} in
+  let disjoint d = Ty.is_empty (Ty.cap d.Printer.ty any) in
   let rec aux d =
     if Ty.leq any d.Printer.ty then any_d else
       let op = match d.Printer.op with
@@ -59,8 +60,26 @@ let prune_printer_descr ~any d =
           | lst -> List.map aux lst
         in
         Printer.Varop (Cap, lst)
-      | Varop (Cup, lst) -> Varop (Cup, List.map aux lst)
+      (* The elements of a union outside of [any] are left out. *)
+      | Varop (Cup, lst) ->
+        begin match List.filter (fun d -> not (disjoint d)) lst with
+        | [] -> Varop (Cup, List.map aux lst)
+        | [d] -> (aux d).op
+        | lst' -> Varop (Cup, List.map aux lst')
+        end
+      (* [d1 \ d2] with [d2] outside of [any]: [d1]. *)
+      | Binop (Diff, d1, d2) when disjoint d2 -> (aux d1).op
       | Binop (Diff, d1, d2) -> Binop (Diff, aux d1, d2)
+      (* [~(a | b)] with [b] outside of [any]: [~a]. *)
+      | Unop (Neg, ({ Printer.op = Varop (Cup, lst) ; _ } as d')) ->
+        begin match List.filter (fun d -> not (disjoint d)) lst with
+        | [] -> any_d.op
+        | [d] -> Unop (Neg, d)
+        | lst' when List.length lst' < List.length lst ->
+          let ty = List.fold_left (fun acc d -> Ty.cup acc d.Printer.ty) Ty.empty lst' in
+          Unop (Neg, { Printer.op = Varop (Cup, lst') ; ty })
+        | _ -> Unop (Neg, d')
+        end
       | op -> op
       in
       { Printer.op ; ty=d.ty }

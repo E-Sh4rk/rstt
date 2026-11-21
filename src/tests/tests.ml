@@ -35,6 +35,9 @@ let%expect_test "tests" =
     tuple9: true
     tuple10: [tt, [null, null]]
     tuple11: true
+    tuple12: empty -> any
+    tuple13: ~(empty -> any)
+    tuple14: (empty -> any) | null
     vec1: LGL | (INT1 | RAW1)
     vec2: true
     vec3: v('b) | v1('a)
@@ -79,6 +82,8 @@ let%expect_test "tests" =
     vec32: true
     vec33: (1..5)
     vec34: true
+    vec35: true
+    vec36: ^CHR1('a) | sym
     lst1: true
     lst2: true
     lst3: false
@@ -90,6 +95,8 @@ let%expect_test "tests" =
     lst9: { "a b": INT, "$date": CHR, type: lgl }
     lst10: true
     lst11: { x: "y", "z" }
+    lst12: { x: CHR1, y: [LGL] }
+    lst13: (x: [null, CHR1], y: [c_int, lang]?)
     eptr1: externalptr
     eptr2: externalptr \ externalptr(empty)
     arg1: true
@@ -210,4 +217,8 @@ let%expect_test "tests" =
     c18: c(43..)
     c19: c(1..5)
     c20: true
+    c21: *(null<>)
+    c22: true
+    c23: *'a
+    c24: *(~(c_string | list))
     |}]
