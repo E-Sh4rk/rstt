@@ -227,7 +227,7 @@ let describe a =
       p1 ^ "\n  reprints as: " ^ p2 ^ ", which does not parse back to the same type"
 
 let test =
-  QCheck2.Test.make ~name:"print then parse is the identity" ~count:500 ~print:describe
+  QCheck2.Test.make ~name:"print then parse is the identity" ~count:5000 ~print:describe
     (Gen.sized_size (Gen.int_bound 3) ty)
     (fun a -> QCheck2.assume (buildable a) ; round_trip a = Ok)
 
