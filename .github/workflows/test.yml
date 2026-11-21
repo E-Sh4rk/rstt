@@ -1,0 +1,39 @@
+name: Tests
+
+# Builds rstt and runs its tests (the REPL tests, the signature tests and the
+# property-based round trip of the printer and the parser) on pull requests,
+# and on demand. deploy.yml runs them too, on main, before deploying the web
+# REPL.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same pull request cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use OCaml 5.3.0
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5.3.0
+          opam-pin: false
+
+      - name: Install OCaml dependencies
+        run: |
+          make deps
+          make test-deps
+
+      - name: Run tests
+        run: make test
