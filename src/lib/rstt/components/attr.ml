@@ -93,7 +93,12 @@ let print prec assoc fmt t =
     let attr_info = (Prec.fs "", 6, Prec.NoAssoc) in
     let anyclass = Ty.leq Classes.any classes.Printer.ty in
     let anyattr = Ty.leq Lst.any attrs.Printer.ty in
-    if anyclass && anyattr && is_descr_attr_content content then
+    (* With any classes and attributes, only the content is printed: [ff] is
+       the vector [ff] with any attributes. Not when the content is a node of
+       a recursive type: the name of the node is also its content alone, e.g.
+       [x1] in [{ a: x1 } where x1 = s(ff) | s({ a: x1<...> })]. *)
+    let is_node d = match d.Printer.op with Node _ -> true | _ -> false in
+    if anyclass && anyattr && is_descr_attr_content content && not (is_node content) then
       Format.fprintf fmt "%a" (Pp.print_struct_descr_ctx prec assoc) content
     else if anyattr then
       Prec.fprintf prec assoc attr_info fmt "%a%a"

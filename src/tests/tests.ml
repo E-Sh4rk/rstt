@@ -197,6 +197,9 @@ let%expect_test "tests" =
     rec1: x1 where x1 = dbl | { x1 }
     rec2: false
     rec3: true
+    rec4: ~x1<...> where x1 = s(ff) | s({ a: x1<...> })
+    rec5: null | x1<...> where x1 = s(ff) | s({ a: x1<...> })
+    rec6: *(x1<...>) where x1 = s(ff) | s({ a: x1<...> })
     c1: c_int_na \ (c(..41) | c(43..)) | c_string \ c("abc")
     c2: c_true
     c3: c_int

@@ -168,6 +168,9 @@ class "my class" = @print ;;
 "rec1": a where a = { a } | dbl ;;
 "rec2": a where a = { a } | dbl <= a where a = { a } | int ;;
 "rec3": a where a = { a } | int <= a where a = { a } | dbl ;;
+"rec4": ~(a where a = ff | { a: a }) ;;
+"rec5": null | (a where a = ff | { a: a }) ;;
+"rec6": *(a where a = ff | { a: a }) ;;
 
 "c1": c_string\c("abc") | c(42) | c_na ;;
 "c2": c_bool & c_true ;;
