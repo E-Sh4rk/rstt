@@ -1,6 +1,6 @@
 (library
  (name rstt_tests)
- (inline_tests (deps tests.txt))
- (libraries rstt rstt_repl sstt)
+ (inline_tests (deps tests.txt (env_var RSTT_ROUNDTRIP_REPORT)))
+ (libraries rstt rstt_repl sstt qcheck-core)
  (preprocess (pps ppx_expect))
  (modules (:standard)))

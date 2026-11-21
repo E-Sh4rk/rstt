@@ -15,13 +15,7 @@ type 'r atom = { pos:attrs ; neg:cls list ; unk:attrs ; tail:'r tail }
 and attrs = line list
 and line = L of cls * attrs
 
-let is_ident str =
-  let is_start c = match c with 'a'..'z' | 'A'..'Z' | '_' -> true | _ -> false in
-  let is_char c = is_start c || match c with '0'..'9' | '\'' | '.' -> true | _ -> false in
-  let n = String.length str in
-  let from i = i < n && is_start str.[i] && String.for_all is_char (String.sub str i (n-i)) in
-  from 0 || (n > 0 && str.[0] = '.' && from 1)
-let quote str = if is_ident str then str else Printf.sprintf "%S" str
+let quote = Utils.quote_name
 let unquote str =
   if str <> "" && str.[0] = '"' then
     try Scanf.sscanf str "%S%!" Fun.id
@@ -213,6 +207,16 @@ let to_t _ comp =
   else None
 
 let destruct ty = proj_tag ty |> extract
+
+(* [ty] as a union of lines, each a rectangle (a single record: the
+   intersection of the positive ones) minus rectangles. Exact, unlike
+   [extract], which approximates [ty] by a single rectangle: e.g. not having
+   the class [c] is not a rectangle (either [c] or one of its methods is
+   absent), nor is having some class. *)
+let rectangles ty =
+  let rect atom = Descr.mk_record atom |> Ty.mk_descr |> add_tag in
+  Ty.cap ty any |> proj_tag |> Ty.get_descr |> Descr.get_records |> Records.dnf
+  |> List.map (fun (ps, ns) -> Ty.conj (any :: List.map rect ps), List.map rect ns)
 
 let print _prec _assoc fmt {pos;neg;unk;tail} =
   let open Sstt.Prec in

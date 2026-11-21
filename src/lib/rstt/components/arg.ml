@@ -236,9 +236,10 @@ let print prec assoc fmt t =
   let print_field_ty fmt f =
     match f with
     | f when is_absent f -> Format.fprintf fmt "absent"
-    | f -> Printer.print_field_ctx Prec.min_prec Prec.NoAssoc fmt f
+    | f -> Pp.print_field_ctx Prec.min_prec Prec.NoAssoc fmt f
   in
-  let print_field fmt (name,ty) = Format.fprintf fmt "%s: %a" name print_field_ty ty in
+  let print_field fmt (name,ty) =
+    Format.fprintf fmt "%s: %a" (Utils.quote_name name) print_field_ty ty in
   let print_tail fmt (f',f) =
     match f', f with
     | { Printer.fty=fty1 ; _ }, { Printer.fty=fty2 ; _ }

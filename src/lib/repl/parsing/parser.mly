@@ -40,6 +40,18 @@ let parse_id_or_builtin str =
     | "c_true" -> r (TCConst CTrue)
     | "c_false" -> r (TCConst CFalse)
     | "c_ptr" -> r (TCConst CPtr)
+    (* The names the printer gives to the top types of sstt's components *)
+    | "tuple" -> r (TTy (Tuples.any |> Descr.mk_tuples |> Ty.mk_descr))
+    | "arrow" -> r (TTy (Arrows.any |> Descr.mk_arrows |> Ty.mk_descr))
+    | "record" -> r (TTy (Records.any |> Descr.mk_records |> Ty.mk_descr))
+    | "enum" -> r (TTy (Enums.any |> Descr.mk_enums |> Ty.mk_descr))
+    | "tag" -> r (TTy (Tags.any |> Descr.mk_tags |> Ty.mk_descr))
+    | str when String.starts_with ~prefix:"tuple" str
+               && String.length str > 5
+               && String.for_all (fun c -> c >= '0' && c <= '9')
+                    (String.sub str 5 (String.length str - 5)) ->
+      let n = int_of_string (String.sub str 5 (String.length str - 5)) in
+      r (TTuple (List.init n (fun _ -> TAny)))
     | str -> r (TId str)
 
 let parse_builtin_prim str =
@@ -180,7 +192,7 @@ let split_classes_elts lst =
 %token TT FF EPTR_ANY EPTR
 %token QUESTION_MARK DPOINT DOT
 %token LPAREN RPAREN LBRACE RBRACE ALPAREN
-%token LBRACKET RBRACKET LLBRACKET RRBRACKET
+%token LBRACKET RBRACKET DLBRACKET
 %token LEQ GEQ LT GT
 %token TOR TAND TNEG TDIFF TTOR TTAND
 %token EOF
@@ -214,9 +226,8 @@ elt:
 | o=printing_options e=expr BREAK { Expr (o, e) }
 
 option_value:
-| v=label { v }
+| v=label { v } (* a string too *)
 | i=INT { Z.to_string i }
-| s=STRING { s }
 
 %inline printing_options:
 |       { { name=None ; raw=false } }
@@ -238,25 +249,25 @@ simpl_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
 | ty=ty { CTy (reg ty) }
-| LLBRACKET e=expr_nocmp RRBRACKET { e }
+| DLBRACKET e=expr_nocmp RBRACKET { e }
 
 atomic_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
 | ty=atomic_ty { CTy (reg ty) }
-| LLBRACKET e=expr_nocmp RRBRACKET { e }
+| DLBRACKET e=expr_nocmp RBRACKET { e }
 
 op:
 | LEQ { LEQ } | EQUAL { EQ } | GEQ { GEQ }
 
 tsubst:
-| LLBRACKET bindings=separated_list(SEMICOLON, subst_binding) RRBRACKET { bindings }
+| DLBRACKET bindings=separated_list(SEMICOLON, subst_binding) RBRACKET { bindings }
 
 %inline subst_binding:
 | v=VARID COLON ty=ty { (v, reg ty) }
 
 tally:
-| LLBRACKET cs=separated_nonempty_list(SEMICOLON, tally_binding) RRBRACKET { cs }
+| DLBRACKET cs=separated_nonempty_list(SEMICOLON, tally_binding) RBRACKET { cs }
 
 %inline tally_binding:
 | ty1=ty op=op ty2=ty { (reg ty1, op, reg ty2) }
@@ -297,7 +308,6 @@ class_tail:
 
 real_class_name:
 | id=label { id }
-| str=STRING { str }
 
 class_name:
 | id=real_class_name { Classes.Class id }
@@ -370,6 +380,7 @@ atomic_ty:
 | HAT s=SHORT { FRegular (TVec (Vector (PHat (parse_builtin_prim s)))) }
 | s=SLEN { let (s,i,_) = s in assert_one i ; FRegular (TVec (Scalar (parse_builtin_prim s))) }
 | HAT s=SLEN { let (s,i,_) = s in assert_one i ; FRegular (TVec (Scalar (PHat (parse_builtin_prim s)))) }
+| HAT p=prim_var { FRegular (TVec (Scalar (PHat p))) } (* [^INT1('a)] *)
 // | VB l=prim RBRACKET LPAREN p=prim RPAREN { TVec (VarLength (l,p)) }
 // | s=SBRACKET l=prim RBRACKET {TVec (VarLength (l,parse_builtin_prim s)) }
 // | HAT s=SBRACKET l=prim RBRACKET { TVec (VarLength (l,PHat (parse_builtin_prim s))) }
@@ -423,9 +434,11 @@ cstr:
 | lbl=label COLON t=bool_ty { `LstNamed (lbl, t) }
 | ty=bool_ty { `LstTl ty }
 
-(* Field names may be any identifier, including keywords *)
+(* Field names may be any identifier, including keywords, or any string
+   between double quotes (cf. [Utils.quote_name]) *)
 label:
 | id=ID { id }
+| s=STRING { s }
 | s=SHORT { s }
 | s=SLEN { let (_,_,s) = s in s }
 | s=VLEN { let (_,s) = s in s }
@@ -481,6 +494,9 @@ prim_atom:
 | LPAREN DPOINT i2=INT RPAREN
 { let i1,i2 = None, Some (Z.to_int i2) in PNum' (i1,i2) }
 (* Vars *)
+| p=prim_var { p }
+
+prim_var:
 | PC id=VARID RPAREN { PChrVar id }
 | PI id=VARID RPAREN { PIntVar id }
 | PD id=VARID RPAREN { PDblVar id }

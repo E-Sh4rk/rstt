@@ -164,6 +164,10 @@ let rec print_descr_ctx' pos prec assoc fmt d =
     | Extension e -> Printer.print_extension_node_ctx prec assoc fmt e
     | Alias str -> fprintf fmt "%s" str
     | Node n -> fprintf fmt "%a" Printer.NodeId.pp n
+    (* In a struct (attributes implied), arrows are written [->], as in the
+       [Arrow] case below; [arrow] is read as [empty --> any]. *)
+    | Builtin AnyArrow when pos = Struct ->
+      Prec.fprintf prec assoc (Prec.binop_info Arrow) fmt "empty ->@ any"
     | Builtin b -> print_builtin pos fmt b
     | Var v ->
       begin match pos with
@@ -294,6 +298,6 @@ let subst' aliases fmt s =
   in
   let b1 = Subst.bindings1 s |> List.map (fun b -> `T b) in
   let b2 = Subst.bindings2 s |> List.map (fun b -> `R b) in
-  Format.fprintf fmt "@[<v 0>[[@[<v 1>%a@]@,]]@]"
+  Format.fprintf fmt "@[<v 0>$[@[<v 1>%a@]@,]@]"
     (Prec.print_seq pp_binding' " ;") (b1@b2)
 let subst = subst' []

@@ -27,6 +27,17 @@ let%expect_test "tests" =
     tuple1: tuple0
     tuple2: true
     tuple3: [int, lgl]
+    tuple4: true
+    tuple5: true
+    tuple6: true
+    tuple7: true
+    tuple8: arrow
+    tuple9: true
+    tuple10: [tt, [null, null]]
+    tuple11: true
+    tuple12: empty -> any
+    tuple13: ~(empty -> any)
+    tuple14: (empty -> any) | null
     vec1: LGL | (INT1 | RAW1)
     vec2: true
     vec3: v('b) | v1('a)
@@ -42,22 +53,22 @@ let%expect_test "tests" =
     vec13: CHR | INT | LGL | RAW
     vec14: clx
     vec15: ("test" | (42L..) | tt) | CHR1 \ ^CHR1 | INT1 \ ^INT1 | LGL1 \ ^LGL1
-    vec16: [[
+    vec16: $[
               'A: p(LGL) | p(CHR | LGL) & 'A
-           ]]
+           ]
     vec17:
-    vec18: [[
+    vec18: $[
               'A: p(LGL)
-           ]]
+           ]
     vec19:
-    vec20: [[
+    vec20: $[
               'A: p(LGL) | p(CHR | LGL) & 'A | p(CHR | LGL) & 'B ;
               'B: p(CHR | LGL) & 'B
-           ]]
-    vec21: [[
+           ]
+    vec21: $[
               'A: p(LGL) & 'A | p(CHR | LGL) & 'A & 'B ;
               'B: p(LGL) | p(CHR | LGL) & 'B
-           ]]
+           ]
     vec22: 42
     vec23: DBL1 \ (..)
     vec24: DBL1 \ 42.
@@ -67,6 +78,14 @@ let%expect_test "tests" =
     vec28: NUM1 \ 42
     vec29: LGL1 | RAW1 | ^DBL1 \ (..)
     vec30: lgl1
+    vec31: (5..)
+    vec32: true
+    vec33: (1..5)
+    vec34: true
+    vec35: true
+    vec36: ^CHR1('a) | sym
+    vec37: INT1 \ ^INT1 | INT1 & ~INT1('a)
+    vec38: (CHR1 \ ^CHR1 | CHR1 & ~CHR1('a)) | CLX1 | DBL1 | INT1 | LGL1 | RAW1
     lst1: true
     lst2: true
     lst3: false
@@ -75,30 +94,35 @@ let%expect_test "tests" =
     lst6: { a: ff }
     lst7: { a: "brrr", INT }
     lst8: { `r } -> { a: 42L, `r }
+    lst9: { "a b": INT, "$date": CHR, type: lgl }
+    lst10: true
+    lst11: { x: "y", "z" }
+    lst12: { x: CHR1, y: [LGL] }
+    lst13: (x: [null, CHR1], y: [c_int, lang]?)
     eptr1: externalptr
     eptr2: externalptr \ externalptr(empty)
     arg1: true
     arg2: true
     arg3: true
     arg4: true
-    arg5: [[
+    arg5: $[
              'A: empty
-          ]]
-          [[
+          ]
+          $[
              'A: INT & 'A ;
              'B: LGL & 'B ;
              'C: INT & 'C ;
              `R: { _b : `R ; _c : `R ; _d : 'D | `R ;; empty? | `R }
-          ]]
-          [[
+          ]
+          $[
              'B: empty
-          ]]
-          [[
+          ]
+          $[
              'C: empty
-          ]]
-          [[
+          ]
+          $[
              'D: empty
-          ]]
+          ]
     arg6: (a: INT, b: DBL, ...: any)
     arg7: @(INT, b: DBL, ...: any)
     arg8: (a: INT, b: DBL, ...: INT, named: raw)
@@ -109,15 +133,16 @@ let%expect_test "tests" =
     arg13: @(LGL, INT?, ...: INT)
     arg14: (a: INT, ...: `r)
     arg15: (a: INT, ...: `r)
+    arg16: ("vctrs:::s3_fallback": INT, na.rm: LGL)
     arr1: INT --> INT
     arr2: INT -> INT
     arr3: INT -> INT
     arr4: INT -> INT
     class1: <class1>
     class2: <class1, `c>
-    class3: [[
+    class3: $[
                `C: { _class1 : `C ; _class2 : tt | `C ;; ff | `C }
-            ]]
+            ]
     class4: <class1, class2, . | `C>
     class5: <class1, ...>
     class6: INT<class1, ...>
@@ -171,9 +196,16 @@ let%expect_test "tests" =
     attr5: true
     attr6: @((INT<c>)?)
     attr7: @((INT with { dim: INT })?)
+    attr8: INT & ~<df>
+    attr9: INT & ~<>
+    attr10: [{  } & ~<square>]
+    attr11: true
     rec1: x1 where x1 = dbl | { x1 }
     rec2: false
     rec3: true
+    rec4: ~x1<...> where x1 = s(ff) | s({ a: x1<...> })
+    rec5: null | x1<...> where x1 = s(ff) | s({ a: x1<...> })
+    rec6: *(x1<...>) where x1 = s(ff) | s({ a: x1<...> })
     c1: c_int_na \ (c(..41) | c(43..)) | c_string \ c("abc")
     c2: c_true
     c3: c_int
@@ -191,4 +223,11 @@ let%expect_test "tests" =
     c15: c_ptr
     c16: c_int_na & c_int_na('a)
     c17: c_int_na \ c_int & c_int_na('a)
+    c18: c(43..)
+    c19: c(1..5)
+    c20: true
+    c21: *(null<>)
+    c22: true
+    c23: *'a
+    c24: *(~(c_string | list))
     |}]

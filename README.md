@@ -333,32 +333,32 @@ false
 
 ### Tallying
 
-`[[ T1 op T2 ; T3 op T4 ; ... ]]` (with `op` one of `<=`, `>=`, `=`) solves the given
-constraints for every *polymorphic* variable (uppercase-first `` 'A ``/`` `R ``, see
-[Type variables](#type-variables)) they contain, and prints the resulting
-substitution(s):
+`$[ T1 op T2 ; T3 op T4 ; ... ]` (with `op` one of `<=`, `>=`, `=`; the `$` sets it
+apart from a tuple) solves the given constraints for every *polymorphic* variable
+(uppercase-first `` 'A ``/`` `R ``, see [Type variables](#type-variables)) they
+contain, and prints the resulting substitution(s):
 
 ```
-> [[ 'A <= INT ; 'A >= 42L ]] ;;
-[[
+> $[ 'A <= INT ; 'A >= 42L ] ;;
+$[
    'A: 42L | INT & 'A
-]]
+]
 ```
 
 A constraint set can be satisfiable in more than one way; tallying then prints one
-`[[ ... ]]` block per alternative substitution.
+`$[ ... ]` block per alternative substitution.
 
 ### Explicit substitutions and application
 
-`[[ v1: T1 ; v2: T2 ; ... ]]` builds a substitution directly (rather than solving for
+`$[ v1: T1 ; v2: T2 ; ... ]` builds a substitution directly (rather than solving for
 one), mapping variable `v1` to `T1`, etc. Writing a type (or another substitution)
 right after a substitution or a tally *applies* it — this is how you plug a solved
 constraint back into a type:
 
 ```
-> 'a [[ 'a: LGL ]] ;;
+> 'a $[ 'a: LGL ] ;;
 LGL
-> <class1,`C> [[ <class1,class2> <= <class1,`C> ]] ;;
+> <class1,`C> $[ <class1,class2> <= <class1,`C> ] ;;
 <class1, class2, . | `C>
 ```
 

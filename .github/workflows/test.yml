@@ -1,0 +1,58 @@
+name: Tests
+
+# Builds rstt and runs its tests (the REPL tests, the signature tests and the
+# property-based round trip of the printer and the parser) on pull requests,
+# and on demand. deploy.yml runs them too, on main, before deploying the web
+# REPL.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same pull request cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use OCaml 5.3.0
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5.3.0
+          opam-pin: false
+
+      - name: Install OCaml dependencies
+        run: |
+          make deps
+          make test-deps
+
+      # Also lists all the types that fail the round trip of the printer and
+      # the parser in a report (cf. src/tests/roundtripTests.ml).
+      - name: Run tests
+        env:
+          RSTT_ROUNDTRIP_REPORT: ${{ runner.temp }}/roundtrip.md
+        run: make test
+
+      # The report in the job summary, and its first failures (GitHub shows
+      # 10 per step) as error annotations, on the run and on the pull request.
+      - name: Report the round trip
+        if: always()
+        env:
+          REPORT: ${{ runner.temp }}/roundtrip.md
+        run: |
+          [ -s "$REPORT" ] || exit 0
+          cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+          file=src/tests/roundtripTests.ml
+          line=$(grep -n 'let%test_unit "round trip of the printer' "$file" | cut -d: -f1)
+          head -n 10 "$REPORT.annotations" | while IFS= read -r message; do
+            echo "::error file=$file,line=${line:-1},title=Round trip of the printer and the parser::$message"
+          done

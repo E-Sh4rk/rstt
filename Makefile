@@ -38,7 +38,7 @@ wasm:
 	chmod +w web/version.txt
 
 test-deps:
-	opam install ppx_expect
+	opam install ppx_expect qcheck-core
 
 web-deps:
 	opam install js_of_ocaml js_of_ocaml-ppx wasm_of_ocaml-compiler

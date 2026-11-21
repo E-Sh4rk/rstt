@@ -3,7 +3,10 @@ module Reserved = Labels.Reserved
 
 module PtrStar = struct
   let sym () = format_of_string "*"
-  let prec = 5
+  (* Tighter than everything but the atomic types, attributes included (6):
+     the parser reads [*T<>] as the pointer with attributes, so a pointer to
+     a type with attributes needs parentheses: [*(T<>)]. *)
+  let prec = 7
   let assoc = Prec.NoAssoc
   let opinfo () = (sym (), prec, assoc)
 end

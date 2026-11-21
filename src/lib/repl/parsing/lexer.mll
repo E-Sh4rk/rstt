@@ -11,6 +11,11 @@
     | 'b' -> '\008'
     | 't' -> '\009'
     | c   -> c
+
+  let unread n lexbuf =
+    lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - n ;
+    lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with
+      pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - n }
 }
 
 let backslash_escapes = ['\\' '\'' '"' 'n' 't' 'b' 'r' ' ']
@@ -38,6 +43,9 @@ rule token = parse
 | "type" { TYPE } | "class" { CLASS } | "set" { SET }
 | int as i { INT (Z.of_string i) }
 | (int as i)"L" { LINT (Z.of_string i) }
+(* Make sure [(5..)] is not read as a double but as an interval. *)
+| (int as i)"..." { unread 2 lexbuf ; DINT (Z.of_string i) }
+| (int as i)".." { unread 2 lexbuf ; INT (Z.of_string i) }
 | (int as i)"." { DINT (Z.of_string i) }
 | '"'      { read_string (fun s -> STRING s) (Buffer.create 17) lexbuf }
 | '@' '"'  { read_string (fun s -> METHOD s) (Buffer.create 17) lexbuf }
@@ -63,7 +71,11 @@ rule token = parse
 | "..." { ELLIPSIS } | ".." { DPOINT } | '.' { DOT } | '*' { STAR }
 | "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW } | "-->" { CARROW }
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE } | "@(" { ALPAREN }
-| "[" { LBRACKET } | "]" { RBRACKET } | "[[" { LLBRACKET } | "]]" { RRBRACKET }
+| "[" { LBRACKET } | "]" { RBRACKET }
+(* Opens a substitution, a tally or a group of expressions, which a plain
+   ] closes, e.g. $[ 'a: INT ]. Types never contain $, so it is never the [
+   of a tuple. *)
+| "$[" { DLBRACKET }
 | "<=" { LEQ } | ">=" { GEQ } | "<" { LT } | ">" { GT }
 | "||" { TTOR } | "&&" { TTAND } | '|' { TOR } | '&' { TAND } | '~' { TNEG } | '\\' { TDIFF }
 | eof { EOF }
