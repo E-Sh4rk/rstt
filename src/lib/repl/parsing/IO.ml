@@ -20,31 +20,26 @@ let parse_program_file source_filename =
   let cin = open_in source_filename in
   let buf = from_channel cin in
   buf.lex_curr_p <- { buf.lex_curr_p with  pos_fname = source_filename };
-  Lexer.reset ~types:false ;
   parse_with_errors Parser.program buf
 
 let parse_program str =
   let buf = from_string str in
   buf.lex_curr_p <- { buf.lex_curr_p with pos_fname = "_" };
-  Lexer.reset ~types:false ;
   parse_with_errors Parser.program buf
 
 let parse_type str =
   let buf = from_string str in
   buf.lex_curr_p <- { buf.lex_curr_p with pos_fname = "_" };
-  Lexer.reset ~types:true ;
   parse_with_errors Parser.ty_main buf
 
 let parse_funsig str =
   let buf = from_string str in
   buf.lex_curr_p <- { buf.lex_curr_p with pos_fname = "_" };
-  Lexer.reset ~types:true ;
   parse_with_errors Parser.funsig_main buf
 
 let parse_command buf =
   try
     buf.lex_curr_p <- { buf.lex_curr_p with pos_fname = "_" };
-    Lexer.reset ~types:false ;
     parse_with_errors Parser.command buf
   with
   | (LexicalError _ as e) | (SyntaxError _ as e) ->

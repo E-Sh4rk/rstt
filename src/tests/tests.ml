@@ -53,22 +53,22 @@ let%expect_test "tests" =
     vec13: CHR | INT | LGL | RAW
     vec14: clx
     vec15: ("test" | (42L..) | tt) | CHR1 \ ^CHR1 | INT1 \ ^INT1 | LGL1 \ ^LGL1
-    vec16: [[
+    vec16: $[
               'A: p(LGL) | p(CHR | LGL) & 'A
-           ]]
+           ]
     vec17:
-    vec18: [[
+    vec18: $[
               'A: p(LGL)
-           ]]
+           ]
     vec19:
-    vec20: [[
+    vec20: $[
               'A: p(LGL) | p(CHR | LGL) & 'A | p(CHR | LGL) & 'B ;
               'B: p(CHR | LGL) & 'B
-           ]]
-    vec21: [[
+           ]
+    vec21: $[
               'A: p(LGL) & 'A | p(CHR | LGL) & 'A & 'B ;
               'B: p(LGL) | p(CHR | LGL) & 'B
-           ]]
+           ]
     vec22: 42
     vec23: DBL1 \ (..)
     vec24: DBL1 \ 42.
@@ -105,24 +105,24 @@ let%expect_test "tests" =
     arg2: true
     arg3: true
     arg4: true
-    arg5: [[
+    arg5: $[
              'A: empty
-          ]]
-          [[
+          ]
+          $[
              'A: INT & 'A ;
              'B: LGL & 'B ;
              'C: INT & 'C ;
              `R: { _b : `R ; _c : `R ; _d : 'D | `R ;; empty? | `R }
-          ]]
-          [[
+          ]
+          $[
              'B: empty
-          ]]
-          [[
+          ]
+          $[
              'C: empty
-          ]]
-          [[
+          ]
+          $[
              'D: empty
-          ]]
+          ]
     arg6: (a: INT, b: DBL, ...: any)
     arg7: @(INT, b: DBL, ...: any)
     arg8: (a: INT, b: DBL, ...: INT, named: raw)
@@ -140,9 +140,9 @@ let%expect_test "tests" =
     arr4: INT -> INT
     class1: <class1>
     class2: <class1, `c>
-    class3: [[
+    class3: $[
                `C: { _class1 : `C ; _class2 : tt | `C ;; ff | `C }
-            ]]
+            ]
     class4: <class1, class2, . | `C>
     class5: <class1, ...>
     class6: INT<class1, ...>

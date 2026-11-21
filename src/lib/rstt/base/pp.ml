@@ -298,6 +298,6 @@ let subst' aliases fmt s =
   in
   let b1 = Subst.bindings1 s |> List.map (fun b -> `T b) in
   let b2 = Subst.bindings2 s |> List.map (fun b -> `R b) in
-  Format.fprintf fmt "@[<v 0>[[@[<v 1>%a@]@,]]@]"
+  Format.fprintf fmt "@[<v 0>$[@[<v 1>%a@]@,]@]"
     (Prec.print_seq pp_binding' " ;") (b1@b2)
 let subst = subst' []

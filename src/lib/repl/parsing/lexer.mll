@@ -16,20 +16,6 @@
     lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - n ;
     lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with
       pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - n }
-
-  (* [[[ ... ]]] delimits substitutions, tallies and expressions, but two
-     brackets also open or close nested tuples: [[[null], tt]],
-     [[tt, [null]]]. Inside an open tuple ([open_brackets] > 0), [[[] and
-     [[]]] are two brackets.  *)
-  let types_only = ref false
-  let open_brackets = ref 0
-
-  let reset ~types =
-    types_only := types ;
-    open_brackets := 0
-
-  let lbracket () = incr open_brackets ; Parser.LBRACKET
-  let rbracket () = open_brackets := max 0 (!open_brackets - 1) ; Parser.RBRACKET
 }
 
 let backslash_escapes = ['\\' '\'' '"' 'n' 't' 'b' 'r' ' ']
@@ -85,9 +71,11 @@ rule token = parse
 | "..." { ELLIPSIS } | ".." { DPOINT } | '.' { DOT } | '*' { STAR }
 | "?" { QUESTION_MARK } | "^" { HAT } | "->" { ARROW } | "-->" { CARROW }
 | '(' { LPAREN } | ')' { RPAREN } | "{" { LBRACE } | "}" { RBRACE } | "@(" { ALPAREN }
-| "[" { lbracket () } | "]" { rbracket () }
-| "[[" { if !types_only || !open_brackets > 0 then (unread 1 lexbuf ; lbracket ()) else LLBRACKET }
-| "]]" { if !open_brackets > 0 then (unread 1 lexbuf ; rbracket ()) else RRBRACKET }
+| "[" { LBRACKET } | "]" { RBRACKET }
+(* Opens a substitution, a tally or a group of expressions, which a plain
+   ] closes, e.g. $[ 'a: INT ]. Types never contain $, so it is never the [
+   of a tuple. *)
+| "$[" { DLBRACKET }
 | "<=" { LEQ } | ">=" { GEQ } | "<" { LT } | ">" { GT }
 | "||" { TTOR } | "&&" { TTAND } | '|' { TOR } | '&' { TAND } | '~' { TNEG } | '\\' { TDIFF }
 | eof { EOF }

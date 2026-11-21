@@ -192,7 +192,7 @@ let split_classes_elts lst =
 %token TT FF EPTR_ANY EPTR
 %token QUESTION_MARK DPOINT DOT
 %token LPAREN RPAREN LBRACE RBRACE ALPAREN
-%token LBRACKET RBRACKET LLBRACKET RRBRACKET
+%token LBRACKET RBRACKET DLBRACKET
 %token LEQ GEQ LT GT
 %token TOR TAND TNEG TDIFF TTOR TTAND
 %token EOF
@@ -249,25 +249,25 @@ simpl_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
 | ty=ty { CTy (reg ty) }
-| LLBRACKET e=expr_nocmp RRBRACKET { e }
+| DLBRACKET e=expr_nocmp RBRACKET { e }
 
 atomic_expr:
 | s=tsubst { CSubst s }
 | t=tally { CTally t }
 | ty=atomic_ty { CTy (reg ty) }
-| LLBRACKET e=expr_nocmp RRBRACKET { e }
+| DLBRACKET e=expr_nocmp RBRACKET { e }
 
 op:
 | LEQ { LEQ } | EQUAL { EQ } | GEQ { GEQ }
 
 tsubst:
-| LLBRACKET bindings=separated_list(SEMICOLON, subst_binding) RRBRACKET { bindings }
+| DLBRACKET bindings=separated_list(SEMICOLON, subst_binding) RBRACKET { bindings }
 
 %inline subst_binding:
 | v=VARID COLON ty=ty { (v, reg ty) }
 
 tally:
-| LLBRACKET cs=separated_nonempty_list(SEMICOLON, tally_binding) RRBRACKET { cs }
+| DLBRACKET cs=separated_nonempty_list(SEMICOLON, tally_binding) RBRACKET { cs }
 
 %inline tally_binding:
 | ty1=ty op=op ty2=ty { (reg ty1, op, reg ty2) }
