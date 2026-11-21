@@ -33,6 +33,8 @@ let%expect_test "tests" =
     tuple7: true
     tuple8: arrow
     tuple9: true
+    tuple10: [tt, [null, null]]
+    tuple11: true
     vec1: LGL | (INT1 | RAW1)
     vec2: true
     vec3: v('b) | v1('a)

@@ -24,6 +24,8 @@ class "my class" = @print ;;
 "tuple7": tuple2 <= tuple ;;
 "tuple8": arrow ;;
 "tuple9": any --> any <= arrow ;;
+"tuple10": [tt, [null, null]] ;;
+"tuple11": [ [null], tt] <= [ [any], lgl] ;;
 
 "vec1": INT1 | LGL | v1(RAW) ;;
 "vec2": v1(^vec) = ^vec1 ;;
