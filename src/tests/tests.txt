@@ -18,6 +18,12 @@ class "my class" = @print ;;
 "tuple1": [] ;;
 "tuple2": [p(42L),p(73L)] <= [p(INT),p(INT)] ;;
 "tuple3": [int,lgl] ;;
+"tuple4": tuple0 = [] ;;
+"tuple5": tuple2 = [any, any] ;;
+"tuple6": [int,lgl] <= tuple2 ;;
+"tuple7": tuple2 <= tuple ;;
+"tuple8": arrow ;;
+"tuple9": any --> any <= arrow ;;
 
 "vec1": INT1 | LGL | v1(RAW) ;;
 "vec2": v1(^vec) = ^vec1 ;;

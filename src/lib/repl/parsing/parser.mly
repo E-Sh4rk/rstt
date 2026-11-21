@@ -40,6 +40,18 @@ let parse_id_or_builtin str =
     | "c_true" -> r (TCConst CTrue)
     | "c_false" -> r (TCConst CFalse)
     | "c_ptr" -> r (TCConst CPtr)
+    (* The names the printer gives to the top types of sstt's components *)
+    | "tuple" -> r (TTy (Tuples.any |> Descr.mk_tuples |> Ty.mk_descr))
+    | "arrow" -> r (TTy (Arrows.any |> Descr.mk_arrows |> Ty.mk_descr))
+    | "record" -> r (TTy (Records.any |> Descr.mk_records |> Ty.mk_descr))
+    | "enum" -> r (TTy (Enums.any |> Descr.mk_enums |> Ty.mk_descr))
+    | "tag" -> r (TTy (Tags.any |> Descr.mk_tags |> Ty.mk_descr))
+    | str when String.starts_with ~prefix:"tuple" str
+               && String.length str > 5
+               && String.for_all (fun c -> c >= '0' && c <= '9')
+                    (String.sub str 5 (String.length str - 5)) ->
+      let n = int_of_string (String.sub str 5 (String.length str - 5)) in
+      r (TTuple (List.init n (fun _ -> TAny)))
     | str -> r (TId str)
 
 let parse_builtin_prim str =
