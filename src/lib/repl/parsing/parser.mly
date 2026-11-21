@@ -226,9 +226,8 @@ elt:
 | o=printing_options e=expr BREAK { Expr (o, e) }
 
 option_value:
-| v=label { v }
+| v=label { v } (* a string too *)
 | i=INT { Z.to_string i }
-| s=STRING { s }
 
 %inline printing_options:
 |       { { name=None ; raw=false } }
@@ -309,7 +308,6 @@ class_tail:
 
 real_class_name:
 | id=label { id }
-| str=STRING { str }
 
 class_name:
 | id=real_class_name { Classes.Class id }
@@ -435,9 +433,11 @@ cstr:
 | lbl=label COLON t=bool_ty { `LstNamed (lbl, t) }
 | ty=bool_ty { `LstTl ty }
 
-(* Field names may be any identifier, including keywords *)
+(* Field names may be any identifier, including keywords, or any string
+   between double quotes (cf. [Utils.quote_name]) *)
 label:
 | id=ID { id }
+| s=STRING { s }
 | s=SHORT { s }
 | s=SLEN { let (_,_,s) = s in s }
 | s=VLEN { let (_,s) = s in s }

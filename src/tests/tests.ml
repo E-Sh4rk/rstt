@@ -87,6 +87,9 @@ let%expect_test "tests" =
     lst6: { a: ff }
     lst7: { a: "brrr", INT }
     lst8: { `r } -> { a: 42L, `r }
+    lst9: { "a b": INT, "$date": CHR, type: lgl }
+    lst10: true
+    lst11: { x: "y", "z" }
     eptr1: externalptr
     eptr2: externalptr \ externalptr(empty)
     arg1: true
@@ -121,6 +124,7 @@ let%expect_test "tests" =
     arg13: @(LGL, INT?, ...: INT)
     arg14: (a: INT, ...: `r)
     arg15: (a: INT, ...: `r)
+    arg16: ("vctrs:::s3_fallback": INT, na.rm: LGL)
     arr1: INT --> INT
     arr2: INT -> INT
     arr3: INT -> INT

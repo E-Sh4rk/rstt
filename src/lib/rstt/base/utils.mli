@@ -3,9 +3,8 @@ open Sstt
 val slugify : string -> string
 
 val quote_name : string -> string
-(** A name (of a field, a parameter or a class) as the parser reads it: as is
-    if it is an identifier, between double quotes otherwise (e.g. ["$date"],
-    ["a b"]). *)
+(** A name (of a field, a parameter or a class). If it is not an identified,
+     between double quotes (e.g. ["$date"], ["a b"]). *)
 
 val partition_map3 : ('e -> [< `A of 'a | `B of 'b | `C of 'c]) -> 'e list -> 'a list * 'b list * 'c list
 
