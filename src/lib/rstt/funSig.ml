@@ -44,6 +44,32 @@ let map_sig f fl fc { dom ; ret } =
   let dom = map_arg f fl fc dom in
   { dom ; ret=map f fl fc ret }
 
+(* === Label variables as classes === *)
+
+(* A class of an [FAttr] may be a label variable, [#c] in the syntax: a string
+   argument resolves it to the class of that name. *)
+let class_label str =
+  if String.length str > 1 && str.[0] = '#'
+  then Some (String.sub str 1 (String.length str - 1)) else None
+
+(* [map_class_names f c] applies [f] to the name of every class of [c] (method
+   classes are left as they are). *)
+let map_class_names f c =
+  let cls c = match c with Classes.Class str -> Classes.Class (f str) | c -> c in
+  let rec line (Classes.L (c, sub)) = Classes.L (cls c, List.map line sub) in
+  match c with
+  | Builder.CAny | Builder.CNoClass -> c
+  | Builder.CClasses { Classes.pos ; neg ; unk ; tail } ->
+    Builder.CClasses { Classes.pos = List.map line pos ; neg = List.map cls neg ;
+                       unk = List.map line unk ; tail }
+
+(* The label variables among the classes of [c]. *)
+let class_labels c =
+  let vars = ref [] in
+  ignore (map_class_names (fun str ->
+    Option.iter (fun x -> vars := x :: !vars) (class_label str) ; str) c) ;
+  List.rev !vars
+
 (* === Groups === *)
 
 (* The variables of a group [g] are those whose name ends with ["_g"]. *)
@@ -115,7 +141,10 @@ let rec regular_ty t =
   | FGVar gv -> unresolved_group gv
   | FRegular t -> t
   | FList a -> Builder.TList (Lst.map_atom regular_label regular_ty a)
-  | FAttr a -> Builder.TAttr (Attr.map_atom regular_ty Fun.id a)
+  | FAttr a ->
+    (match class_labels a.Attr.classes with
+     | x :: _ -> raise (Not_regular ("label variable "^x^" is unresolved"))
+     | [] -> Builder.TAttr (Attr.map_atom regular_ty Fun.id a))
 
 let regular_arg polymorphic a =
   let a = Arg.map_atom regular_label regular_ty a in
@@ -523,7 +552,11 @@ let instantiate t assign inst =
     | FLVar x -> (match assign x with Some str -> str_pat str | None -> ty)
     | FGVar _ | FRegular _ -> ty
     | FList { bindings ; tl } -> FList { bindings = record bindings ; tl = inst_ty tl }
-    | FAttr a -> FAttr (Attr.map_atom inst_ty Fun.id a)
+    | FAttr a ->
+      let cls str = match class_label str with
+        | Some x -> (match assign x with Some str' -> str' | None -> str)
+        | None -> str in
+      FAttr (Attr.map_atom inst_ty (map_class_names cls) a)
   (* Each binding is tagged with the group that produced it, if any, so that a
      clash can name the groups to give up on. *)
   and inst_bindings bindings =
