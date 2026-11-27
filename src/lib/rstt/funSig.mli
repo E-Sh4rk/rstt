@@ -46,7 +46,8 @@ val to_regular : ?polymorphic:bool -> ('v,'r,'i) t -> ('v,'r,'i) Builder.t
     its arrows).
     If [polymorphic] is true (it defaults to false), the domain of the
     resulting arrow is built with [TPolyArg] instead of [TArg].
-    @raise [Invalid_argument] if the [is_regular_ty t] is false.
+    If some arrows are not regular (according to [is_regular_ty t]), they are discarded.
+    @raise [Invalid_argument] if no arrow is regular.
 *)
 
 val to_regular_ty : ('v,'r,'i) ty -> ('v,'r,'i) Builder.t

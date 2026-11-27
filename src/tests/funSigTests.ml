@@ -63,6 +63,16 @@ let%expect_test "regular signatures" =
     get: Not a regular signature: label variable k is unresolved.
     |}]
 
+let%expect_test "non-regular arrows are discarded" =
+  let both = id @ mk in
+  Format.printf "%b@." (is_regular_ty both) ;
+  print_sig "both" both ;
+  [%expect {|
+    false
+    both: (x: int) ->
+    int
+    |}]
+
 let%expect_test "specialization" =
   print_spec "get" get (call [lst ; str "foo"]) ;
   print_spec "mk" mk (call [str "foo"]) ;

@@ -153,10 +153,13 @@ let regular_arg polymorphic a =
 let regular_arrow polymorphic { dom ; ret } =
   Builder.TArrow (regular_arg polymorphic dom, regular_ty ret)
 
-let regular_sig polymorphic t =
-  match List.map (regular_arrow polymorphic) t with
+let intersect_arrows arrows =
+  match arrows with
   | [] -> invalid_arg "A signature must have at least one arrow."
   | a::arrows -> List.fold_left (fun t a -> Builder.TCap (t, a)) a arrows
+
+let regular_sig polymorphic t =
+  List.map (regular_arrow polymorphic) t |> intersect_arrows
 
 let is_regular_ty t =
   match regular_sig false t with
@@ -166,7 +169,13 @@ let is_regular_ty t =
 let fail_not_regular kind f t =
   try f t with Not_regular msg -> invalid_arg ("Not a regular "^kind^": "^msg^".")
 
-let to_regular ?(polymorphic=false) t = fail_not_regular "signature" (regular_sig polymorphic) t
+(* The arrows that are not regular are discarded. If none is left, the reason
+   why the first one is not regular is reported. *)
+let to_regular ?(polymorphic=false) t =
+  let regular a = try Some (regular_arrow polymorphic a) with Not_regular _ -> None in
+  match List.filter_map regular t with
+  | [] -> fail_not_regular "signature" (regular_sig polymorphic) t
+  | arrows -> intersect_arrows arrows
 let to_regular_ty t = fail_not_regular "type" regular_ty t
 let to_regular_arg ?(polymorphic=false) t = fail_not_regular "argument" (regular_arg polymorphic) t
 
