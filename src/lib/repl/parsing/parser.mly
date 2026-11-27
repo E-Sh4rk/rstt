@@ -312,6 +312,7 @@ real_class_name:
 class_name:
 | id=real_class_name { Classes.Class id }
 | m=METHOD { Classes.Method m }
+| id=SYMID { Classes.Class ("#" ^ id) }
 
 (* [a \ b \ c] is the same as [a \ (b, c)] *)
 class_line:

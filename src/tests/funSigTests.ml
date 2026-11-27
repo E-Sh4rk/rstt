@@ -272,6 +272,39 @@ let%expect_test "parsing and specializing" =
     { foo: int }
     |}]
 
+let%expect_test "label variables as classes" =
+  let spec name s arg =
+    match parse s with None -> () | Some t -> print_spec name t arg in
+  (* A label variable may also stand for a class, written [#c] among the
+     classes: the string the argument gives is then the class (R's
+     [class(x) <- "c"], or [structure(x, class = "c")]). *)
+  print_parsed "(x: 'a<...>, v: #c) -> 'a<#c>" ;
+  spec "set" "(x: 'a<...>, v: #c) -> 'a<#c>" (call [int ; str "foo"]) ;
+  spec "set-named" "(x: 'a<...>, v: #c) -> 'a<#c>" (call ~named:["v", str "foo"] [int]) ;
+  (* Among other classes, and before a row variable (prepending a class). *)
+  spec "prepend" "(x: 'a<`c>, v: #c) -> 'a<#c, `c>" (call [int ; str "foo"]) ;
+  spec "with-classes" "(x: 'a, v: #c) -> 'a<#c, bar, ...>" (call [int ; str "foo"]) ;
+  (* It is not the class [c]. *)
+  spec "not-c" "(x: 'a, v: #c) -> 'a<#c>" (call [int ; str "c"]) ;
+  (* A string the argument does not determine leaves it unresolved. *)
+  spec "not-a-string" "(x: 'a, v: #c) -> 'a<#c>" (call [int ; int]) ;
+  spec "two-strings" "(x: 'a, v: #c) -> 'a<#c>" (call [int ; TCup (str "a", str "b")]) ;
+  [%expect {|
+    (x: 'a<...>, v: #c) -> 'a<#c>: (not regular)
+    set: (x: 'a<...>, v: "foo") ->
+    'a<foo>
+    set-named: (x: 'a<...>, v: "foo") ->
+    'a<foo>
+    prepend: (x: 'a<`c>, v: "foo") ->
+    'a<foo, `c>
+    with-classes: (x: 'a, v: "foo") ->
+    'a<foo, bar, ...>
+    not-c: (x: 'a, v: "c") ->
+    'a<c>
+    not-a-string: Not a regular signature: label variable c is unresolved.
+    two-strings: Not a regular signature: label variable c is unresolved.
+    |}]
+
 let%expect_test "polymorphic domain" =
   let dom t = match t with
     | TArrow (TArg _, _) -> "TArg"
